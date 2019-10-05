@@ -1,0 +1,12 @@
+__pycache__/
+data
+runs
+.ipynb_checkpoints/
+.vscode
+.venv
+queue/
+*.egg-info
+failed.json
+queued.json
+incomplete.json
+succeeded.json
