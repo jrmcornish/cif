@@ -194,8 +194,8 @@ def images(dataset, baseline=False):
         "model": "multiscale-realnvp",
 
         "train_batch_size": 100,
-        "valid_batch_size": 1000,
-        "test_batch_size": 1000,
+        "valid_batch_size": 500,
+        "test_batch_size": 500,
 
         "lr": 1e-4,
         "max_bad_valid_epochs": 50,
