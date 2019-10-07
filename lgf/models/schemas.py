@@ -1,14 +1,12 @@
-def get_model_structure(config):
-    base_structure = get_base_density_structure(config)
-    structure = add_normalization_layers(base_structure, config)
-    return structure
+def get_schema(config):
+    return add_normalization_layers(get_base_schema(config), config)
 
 
-def get_base_density_structure(config):
-    structure = []
+def get_base_schema(config):
+    schema = []
 
     if config["logit_tf_lambda"] is not None:
-        structure.append({
+        schema.append({
             "type": "logit",
             "lambda": config["logit_tf_lambda"],
             "scale": config["logit_tf_scale"]
@@ -18,19 +16,19 @@ def get_base_density_structure(config):
     model = config["model"]
 
     if model == "multiscale-realnvp":
-        structure += get_multiscale_realnvp_density_structure(
+        schema += get_multiscale_realnvp_schema(
             coupler_num_blocks=config["g"]["num_blocks"],
             coupler_num_hidden_channels_per_block=config["g"]["num_hidden_channels_per_block"],
         )
 
     elif model == "flat-realnvp":
-        structure += get_flat_realnvp_density_structure(
+        schema += get_flat_realnvp_schema(
             num_density_layers=config["num_density_layers"],
             coupler_hidden_units=config["g"]["hidden_units"]
         )
 
     elif model == "maf":
-        structure += get_maf_density_structure(
+        schema += get_maf_schema(
             num_density_layers=config["num_density_layers"],
             ar_map_hidden_units=config["g"]["hidden_units"]
         )
@@ -38,19 +36,17 @@ def get_base_density_structure(config):
     else:
         assert False, f"Invalid model {model}"
 
-    return structure
+    return schema
 
 
-def add_normalization_layers(base_structure, config):
-    structure = []
+def add_normalization_layers(base_schema, config):
+    schema = []
 
-    for layer in base_structure:
+    for layer in base_schema:
         if layer["type"] == "acl":
             layer["num_u_channels"] = 0
-            layer["p_hidden_channels"] = None
-            layer["q_hidden_channels"] = None
 
-        structure.append(layer)
+        schema.append(layer)
 
         if layer["type"] in ["acl", "made"]:
             if config["num_u_channels"] > 0:
@@ -64,34 +60,41 @@ def add_normalization_layers(base_structure, config):
                     cond_affine = {
                         **cond_affine,
                         "st_net": {"type": "mlp", **config["st"]},
-                        "p_net": {"type": "mlp", **config["p"]},
-                        "q_net": {"type": "mlp", **config["q"]}
+                        "p_net": get_full_net_config("mlp", config["p"]),
+                        "q_net": get_full_net_config("mlp", config["q"])
                     }
 
                 elif config["model"] == "multiscale-realnvp":
                     cond_affine = {
                         **cond_affine,
                         "st_net": {"type": "resnet", **config["st"]},
-                        "p_net": {"type": "resnet", **config["p"]},
-                        "q_net": {"type": "resnet", **config["q"]}
+                        "p_net": get_full_net_config("resnet", config["p"]),
+                        "q_net": get_full_net_config("resnet", config["q"])
                     }
 
                 else:
                     assert False, f"Invalid model {config['model']}"
 
-                structure.append(cond_affine)
+                schema.append(cond_affine)
 
             elif config["batch_norm"]:
-                structure.append({"type": "batch-norm"})
+                schema.append({"type": "batch-norm"})
 
-    return structure
+    return schema
 
 
-def get_multiscale_realnvp_density_structure(
+def get_full_net_config(net_type, net_config):
+    if net_config is None:
+        return {"type": "constant"}
+    else:
+        return {"type": net_type, **net_config}
+
+
+def get_multiscale_realnvp_schema(
         coupler_num_blocks,
         coupler_num_hidden_channels_per_block
 ):
-    structure = [
+    schema = [
         {"type": "acl", "mask_type": "checkerboard", "reverse_mask": False},
         {"type": "acl", "mask_type": "checkerboard", "reverse_mask": True},
         {"type": "acl", "mask_type": "checkerboard", "reverse_mask": False},
@@ -106,7 +109,7 @@ def get_multiscale_realnvp_density_structure(
         {"type": "acl", "mask_type": "checkerboard", "reverse_mask": True}
     ]
 
-    for layer in structure:
+    for layer in schema:
         if layer["type"] == "acl":
             layer["separate_coupler_nets"] = False
             layer["coupler_net"] = {
@@ -115,10 +118,10 @@ def get_multiscale_realnvp_density_structure(
                 "num_hidden_channels_per_block": coupler_num_hidden_channels_per_block
             }
 
-    return structure
+    return schema
 
 
-def get_flat_realnvp_density_structure(
+def get_flat_realnvp_schema(
         num_density_layers,
         coupler_hidden_units
 ):
@@ -139,7 +142,7 @@ def get_flat_realnvp_density_structure(
     return result
 
 
-def get_maf_density_structure(
+def get_maf_schema(
         num_density_layers,
         ar_map_hidden_units
 ):

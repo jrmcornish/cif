@@ -86,7 +86,7 @@ class TwoDimensionalDensityVisualizer(DensityVisualizer):
         )
 
         probs = []
-        for x1_x2_batch, in loader:
+        for x1_x2_batch, in tqdm.tqdm(loader, leave=False, desc="Plotting"):
             log_prob = density.metrics(x1_x2_batch, self._num_elbo_samples)["log-prob"]
             probs.append(torch.exp(log_prob))
 

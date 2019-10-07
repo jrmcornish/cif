@@ -11,30 +11,32 @@ import torch.optim as optim
 from .trainer import Trainer
 from .datasets import get_loaders
 from .visualizer import DummyDensityVisualizer, ImageDensityVisualizer, TwoDimensionalDensityVisualizer
-from .model import get_model_structure, get_model
+from .models import get_schema, get_density
 from .writer import Writer, DummyWriter
 
 
 def train(config):
-    density_structure, density, trainer, writer = setup_experiment(config)
+    schema, density, trainer, writer = setup_experiment(config)
 
     writer.write_json("config", config)
-    writer.write_json("density", {
-        "structure": density_structure,
+    writer.write_json("model", {
+        "schema": schema,
         "num_params": num_params(density)
     })
 
+    print("\nConfig:")
     print(json.dumps(config, indent=4))
-    print(json.dumps(density_structure, indent=4))
-    print(f"Number of parameters: {num_params(density):,}")
+    print("\nModel (x->z):")
+    print(json.dumps(schema, indent=4))
+    print(f"\nNumber of parameters: {num_params(density):,}\n")
 
     with contextlib.suppress(KeyboardInterrupt):
         trainer.train()
 
 
 def print_model(config):
-    density_structure, density, _, _ = setup_experiment({**config, "enable_logging": False})
-    print(json.dumps(density_structure, indent=4))
+    schema, density, _, _ = setup_experiment({**config, "enable_logging": False})
+    print(json.dumps(schema, indent=4))
     print(f"Number of parameters: {num_params(density):,}")
 
 
@@ -62,8 +64,8 @@ def setup_experiment(config):
 
     x_shape = train_loader.dataset.x.shape[1:]
 
-    density_structure = get_model_structure(config=config)
-    density = get_model(structure=density_structure, x_shape=x_shape)
+    schema = get_schema(config=config)
+    density = get_density(schema=schema, x_shape=x_shape)
 
     opt = optim.Adam(
         density.parameters(),
@@ -118,7 +120,7 @@ def setup_experiment(config):
         device=device
     )
 
-    return density_structure, density, trainer, writer
+    return schema, density, trainer, writer
 
 
 def infer_config_values(config):

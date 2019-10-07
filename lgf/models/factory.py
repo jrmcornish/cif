@@ -4,7 +4,6 @@ import torch
 import torch.nn as nn
 
 from .components.bijections import (
-    InverseBijection,
     FlipBijection,
     CheckerboardMasked2dAffineCouplingBijection,
     ChannelwiseMaskedAffineCouplingBijection,
@@ -30,20 +29,20 @@ from .components.helpers import (
 from .components.networks import get_mlp, get_resnet
 
 
-def get_model(
-        structure,
+def get_density(
+        schema,
         x_shape
 ):
-    if not structure:
+    if not schema:
         return get_standard_gaussian_density(x_shape=x_shape)
 
-    layer_config = structure[0]
+    layer_config = schema[0]
 
     if layer_config["type"] == "split":
         split_x_shape = (x_shape[0] // 2, *x_shape[1:])
         return SplitDensity(
-            density_1=get_model(
-                structure=structure[1:],
+            density_1=get_density(
+                schema=schema[1:],
                 x_shape=split_x_shape
             ),
             density_2=get_standard_gaussian_density(x_shape=split_x_shape),
@@ -52,45 +51,29 @@ def get_model(
 
     bijection = get_bijection(layer_config=layer_config, x_shape=x_shape)
 
-    prior = get_model(
-        structure=structure[1:],
+    prior = get_density(
+        schema=schema[1:],
         x_shape=bijection.z_shape
     )
 
-    return get_density(
-        layer_config=layer_config,
-        bijection=bijection,
-        prior=prior
-    )
-
-
-def get_density(
-        layer_config,
-        bijection,
-        prior
-):
     if layer_config.get("num_u_channels", 0) == 0:
         return BijectionDensity(bijection=bijection, prior=prior)
 
-    def get_conditional_density(net_config):
-        if net_config is None:
-            return get_constant_gaussian_conditional_density(
-                num_u_channels=layer_config["num_u_channels"]
-            )
-
-        else:
-            return get_mean_field_gaussian_conditional_density(
+    else:
+        return ELBODensity(
+            bijection=bijection,
+            prior=prior,
+            p_u_density=get_conditional_density(
                 num_u_channels=layer_config["num_u_channels"],
-                net_config=net_config,
-                x_shape=bijection.x_shape
+                net_config=layer_config["p_net"],
+                x_shape=x_shape
+            ),
+            q_u_density=get_conditional_density(
+                num_u_channels=layer_config["num_u_channels"],
+                net_config=layer_config["q_net"],
+                x_shape=x_shape
             )
-
-    return ELBODensity(
-        bijection=bijection,
-        prior=prior,
-        p_u_density=get_conditional_density(layer_config["p_net"]),
-        q_u_density=get_conditional_density(layer_config["q_net"])
-    )
+        )
 
 
 def get_bijection(
@@ -99,12 +82,12 @@ def get_bijection(
 ):
     if layer_config["type"] == "acl":
         return get_acl_bijection(
-            x_shape=x_shape,
             mask_type=layer_config["mask_type"],
             reverse_mask=layer_config["reverse_mask"],
             num_u_channels=layer_config["num_u_channels"],
             separate_coupler_nets=layer_config["separate_coupler_nets"],
-            coupler_net_config=layer_config["coupler_net"]
+            coupler_net_config=layer_config["coupler_net"],
+            x_shape=x_shape
         )
 
     elif layer_config["type"] == "squeeze":
@@ -115,12 +98,6 @@ def get_bijection(
 
     elif layer_config["type"] == "flatten":
         return ViewBijection(x_shape=x_shape, z_shape=(np.prod(x_shape),))
-
-    elif layer_config["type"] == "1x1conv":
-        if layer_config["lu"]:
-            return Invertible1x1ConvLUBijection(x_shape=x_shape)
-        else:
-            return Invertible1x1ConvBijection(x_shape=x_shape)
 
     elif layer_config["type"] == "cond-affine":
         return ConditionalAffineBijection(
@@ -152,12 +129,12 @@ def get_bijection(
 
 
 def get_acl_bijection(
-        x_shape,
         mask_type,
         reverse_mask,
         num_u_channels,
         separate_coupler_nets,
-        coupler_net_config
+        coupler_net_config,
+        x_shape
 ):
     num_x_channels = x_shape[0]
 
@@ -280,13 +257,11 @@ def get_coupler_with_separate_nets(
 
 def get_uniform_density(x_shape):
     return BijectionDensity(
-        bijection=InverseBijection(
-            bijection=LogitTransformBijection(
-                x_shape=x_shape,
-                lam=0,
-                scale=1
-            )
-        ),
+        bijection=LogitTransformBijection(
+            x_shape=x_shape,
+            lam=0,
+            scale=1
+        ).inverse(),
         prior=UniformDensity(x_shape)
     )
 
@@ -297,6 +272,24 @@ def get_standard_gaussian_density(x_shape):
         stddev=torch.ones(x_shape),
         num_fixed_samples=64
     )
+
+
+def get_conditional_density(
+        num_u_channels,
+        net_config,
+        x_shape
+):
+    if net_config["type"] == "constant":
+        return get_constant_gaussian_conditional_density(
+            num_u_channels=num_u_channels
+        )
+
+    else:
+        return get_mean_field_gaussian_conditional_density(
+            num_u_channels=num_u_channels,
+            net_config=net_config,
+            x_shape=x_shape
+        )
 
 
 def get_constant_gaussian_conditional_density(num_u_channels):
