@@ -17,7 +17,7 @@ def get_base_schema(config):
 
     if model == "multiscale-realnvp":
         schema += get_multiscale_realnvp_schema(
-            coupler_hidden_channels=config["g_nets"]["hidden_channels"],
+            coupler_hidden_channels=config["g_nets"]["hidden_channels"]
         )
 
     elif model == "flat-realnvp":
@@ -49,32 +49,13 @@ def add_normalization_layers(base_schema, config):
 
         if layer["type"] in ["acl", "made"]:
             if config["num_u_channels"] > 0:
-                cond_affine = {
-                    "type": "cond-affine",
-                    "separate_coupler_nets": False,
-                    "num_u_channels": config["num_u_channels"]
-                }
-
-                if config["model"] in ["flat-realnvp", "maf"]:
-                    cond_affine = {
-                        **cond_affine,
-                        "st_net": {"type": "mlp", "hidden_units": config["st_nets"]["hidden_units"]},
-                        "p_net": validate_net_config("mlp", config["p_nets"]),
-                        "q_net": validate_net_config("mlp", config["q_nets"])
-                    }
-
-                elif config["model"] == "multiscale-realnvp":
-                    cond_affine = {
-                        **cond_affine,
-                        "st_net": {"type": "resnet", "hidden_channels": config["st_nets"]["hidden_channels"]},
-                        "p_net": validate_net_config("resnet", config["p_nets"]),
-                        "q_net": validate_net_config("resnet", config["q_nets"])
-                    }
-
-                else:
-                    assert False, f"Invalid model {config['model']}"
-
-                schema.append(cond_affine)
+                schema.append(get_cond_affine_layer_config(
+                    model=config["model"],
+                    num_u_channels=config["num_u_channels"],
+                    st_nets_config=config["st_nets"],
+                    p_nets_config=config["p_nets"],
+                    q_nets_config=config["q_nets"]
+                ))
 
             elif config["batch_norm"]:
                 schema.append({"type": "batch-norm"})
@@ -82,19 +63,37 @@ def add_normalization_layers(base_schema, config):
     return schema
 
 
-def validate_net_config(net_type, net_config):
-    if net_type == "resnet":
-        return {
-            "type": "resnet",
-            "hidden_channels": net_config["hidden_channels"]
-        }
-    elif net_type == "mlp":
-        return {
-            "type": "mlp",
-            "hidden_units": net_config["hidden_units"]
-        }
-    else:
-        assert False, f"Invalid net type {net_type}"
+def get_cond_affine_layer_config(
+        model,
+        num_u_channels,
+        st_nets_config,
+        p_nets_config,
+        q_nets_config
+):
+    def get_full_net_config(net_config):
+        if model == "multiscale-realnvp":
+            return {
+                "type": "resnet",
+                "hidden_channels": net_config["hidden_channels"]
+            }
+
+        elif model in ["flat-realnvp", "maf"]:
+            return {
+                "type": "mlp",
+                "hidden_units": net_config["hidden_units"],
+                "activation": "tanh"
+            }
+
+        else:
+            assert False, f"Invalid model {model}"
+
+    return {
+        "type": "cond-affine",
+        "num_u_channels": num_u_channels,
+        "coupler": {"shift_scale_net": get_full_net_config(st_nets_config)},
+        "p_net": get_full_net_config(p_nets_config),
+        "q_net": get_full_net_config(q_nets_config)
+    }
 
 
 def get_multiscale_realnvp_schema(coupler_hidden_channels):
@@ -115,10 +114,11 @@ def get_multiscale_realnvp_schema(coupler_hidden_channels):
 
     for layer in schema:
         if layer["type"] == "acl":
-            layer["separate_coupler_nets"] = False
-            layer["coupler_net"] = {
-                "type": "resnet",
-                "hidden_channels": coupler_hidden_channels
+            layer["coupler"] = {
+                "shift_scale_net": {
+                    "type": "resnet",
+                    "hidden_channels": coupler_hidden_channels
+                }
             }
 
     return schema
@@ -135,11 +135,18 @@ def get_flat_realnvp_schema(
             "type": "acl",
             "mask_type": "alternating_channel",
             "reverse_mask": i % 2 == 0,
-            "coupler_net": {
-                "type": "mlp",
-                "hidden_units": coupler_hidden_units
-            },
-            "separate_coupler_nets": True,
+            "coupler": {
+                "shift_net": {
+                    "type": "mlp",
+                    "hidden_units": coupler_hidden_units,
+                    "activation": "relu"
+                },
+                "scale_net": {
+                    "type": "mlp",
+                    "hidden_units": coupler_hidden_units,
+                    "activation": "tanh"
+                }
+            }
         })
 
     return result
@@ -157,7 +164,8 @@ def get_maf_schema(
 
         result.append({
             "type": "made",
-            "ar_map_hidden_units": ar_map_hidden_units
+            "ar_map_hidden_units": ar_map_hidden_units,
+            "ar_map_activation": "tanh"
         })
 
     return result

@@ -85,8 +85,7 @@ def get_bijection(
             mask_type=layer_config["mask_type"],
             reverse_mask=layer_config["reverse_mask"],
             num_u_channels=layer_config["num_u_channels"],
-            separate_coupler_nets=layer_config["separate_coupler_nets"],
-            coupler_net_config=layer_config["coupler_net"],
+            coupler_config=layer_config["coupler"],
             x_shape=x_shape
         )
 
@@ -105,8 +104,7 @@ def get_bijection(
             coupler=get_coupler(
                 num_input_channels=layer_config["num_u_channels"],
                 output_shape=x_shape,
-                separate_nets=layer_config["separate_coupler_nets"],
-                net_config=layer_config["st_net"]
+                config=layer_config["coupler"]
             )
         )
 
@@ -115,7 +113,7 @@ def get_bijection(
         return MADEBijection(
             num_inputs=x_shape[0],
             hidden_units=layer_config["ar_map_hidden_units"],
-            activation=nn.Tanh
+            activation=get_activation(layer_config["ar_map_activation"])
         )
 
     elif layer_config["type"] == "batch-norm":
@@ -132,8 +130,7 @@ def get_acl_bijection(
         mask_type,
         reverse_mask,
         num_u_channels,
-        separate_coupler_nets,
-        coupler_net_config,
+        coupler_config,
         x_shape
 ):
     num_x_channels = x_shape[0]
@@ -144,8 +141,7 @@ def get_acl_bijection(
             coupler=get_coupler(
                 num_input_channels=num_x_channels+num_u_channels,
                 output_shape=x_shape,
-                separate_nets=separate_coupler_nets,
-                net_config=coupler_net_config
+                config=coupler_config
             ),
             reverse_mask=reverse_mask
         )
@@ -170,8 +166,7 @@ def get_acl_bijection(
             coupler=get_coupler(
                 num_input_channels=num_coupler_in_channels+num_u_channels,
                 output_shape=(num_coupler_out_channels, *x_shape[1:]),
-                separate_nets=separate_coupler_nets,
-                net_config=coupler_net_config
+                config=coupler_config
             )
         )
 
@@ -179,22 +174,25 @@ def get_acl_bijection(
 def get_coupler(
         num_input_channels,
         output_shape,
-        separate_nets,
-        net_config
+        config
 ):
-    if separate_nets:
+    if "shift_net" in config and "scale_net" in config:
         return get_coupler_with_separate_nets(
             num_input_channels=num_input_channels,
             output_shape=output_shape,
-            net_config=net_config
+            shift_net_config=config["shift_net"],
+            scale_net_config=config["scale_net"]
         )
 
-    else:
+    elif "shift_scale_net" in config:
         return get_coupler_with_shared_net(
             num_input_channels=num_input_channels,
             output_shape=output_shape,
-            net_config=net_config
+            net_config=config["shift_scale_net"]
         )
+
+    else:
+        assert False, "Unspecified coupler net config"
 
 
 def get_coupler_with_shared_net(
@@ -209,7 +207,7 @@ def get_coupler_with_shared_net(
             num_inputs=num_input_channels,
             hidden_units=net_config["hidden_units"],
             output_dim=2*output_shape[0],
-            activation=nn.Tanh
+            activation=get_activation(net_config["activation"])
         )
 
     elif net_config["type"] == "resnet":
@@ -234,21 +232,26 @@ def get_coupler_with_shared_net(
 def get_coupler_with_separate_nets(
         num_input_channels,
         output_shape,
-        net_config
+        shift_net_config,
+        scale_net_config
 ):
-    assert net_config["type"] == "mlp", "Should share convolutional coupler weights"
     assert len(output_shape) == 1
 
-    def get_mlp_coupler_net(activation):
+    def get_coupler_net(net_config):
+        assert net_config["type"] == "mlp", "Should share convolutional coupler weights"
+
         return get_mlp(
             num_inputs=num_input_channels,
             hidden_units=net_config["hidden_units"],
             output_dim=output_shape[0],
-            activation=activation
+            activation=get_activation(net_config["activation"])
         )
 
     return JoiningModule(
-        modules=[get_mlp_coupler_net(nn.Tanh), get_mlp_coupler_net(nn.ReLU)],
+        modules=[
+            get_coupler_net(shift_net_config),
+            get_coupler_net(scale_net_config)
+        ],
         output_names=["scale", "shift"]
     )
 
@@ -324,7 +327,7 @@ def get_mean_field_gaussian_conditional_density(
             num_inputs=num_x_channels,
             hidden_units=net_config["hidden_units"],
             output_dim=num_output_channels,
-            activation=nn.Tanh
+            activation=get_activation(net_config["activation"])
         )
 
     else:
@@ -337,3 +340,12 @@ def get_mean_field_gaussian_conditional_density(
             dim=1
         )
     )
+
+
+def get_activation(name):
+    if name == "tanh":
+        return nn.Tanh
+    elif name == "relu":
+        return nn.ReLU
+    else:
+        assert False, f"Invalid activation {name}"
