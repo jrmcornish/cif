@@ -2,7 +2,7 @@ def two_uniforms(baseline=False):
     config = {
         "dataset": "2uniforms",
 
-        "model": "flat-realnvp",
+        "model": "maf",
 
         "train_batch_size": 1000,
         "valid_batch_size": 1000,
@@ -208,8 +208,7 @@ def images(dataset, baseline=False):
         config = {
             **config,
             "g_nets": {
-                "num_blocks": 8,
-                "num_hidden_channels_per_block": 64
+                "hidden_channels": [64] * 8
             },
             "num_u_channels": 0
         }
