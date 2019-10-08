@@ -39,31 +39,33 @@ class ResidualBlock(nn.Module):
 
 def get_resnet(
         num_input_channels,
-        num_blocks,
-        num_hidden_channels_per_block,
+        hidden_channels,
         num_output_channels
 ):
-    layers = (
-        [
-            nn.Conv2d(
-                in_channels=num_input_channels,
-                out_channels=num_hidden_channels_per_block,
-                kernel_size=3,
-                padding=1,
-                bias=False
-            )
-        ]
-        + [ResidualBlock(num_hidden_channels_per_block) for _ in range(num_blocks)]
-        + [
-            nn.BatchNorm2d(num_hidden_channels_per_block),
-            nn.ReLU(),
-            nn.Conv2d(
-                in_channels=num_hidden_channels_per_block,
-                out_channels=num_output_channels,
-                kernel_size=1
-            )
-        ]
-    )
+    num_hidden_channels = hidden_channels[0] if hidden_channels else num_output_channels
+
+    layers = [
+        nn.Conv2d(
+            in_channels=num_input_channels,
+            out_channels=num_hidden_channels,
+            kernel_size=3,
+            padding=1,
+            bias=False
+        )
+    ]
+
+    for num_hidden_channels in hidden_channels:
+        layers.append(ResidualBlock(num_hidden_channels))
+
+    layers += [
+        nn.BatchNorm2d(num_hidden_channels),
+        nn.ReLU(),
+        nn.Conv2d(
+            in_channels=num_hidden_channels,
+            out_channels=num_output_channels,
+            kernel_size=1
+        )
+    ]
 
     return ScaledTanh2dModule(
         module=nn.Sequential(*layers),

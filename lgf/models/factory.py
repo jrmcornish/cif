@@ -214,12 +214,10 @@ def get_coupler_with_shared_net(
 
     elif net_config["type"] == "resnet":
         assert len(output_shape) == 3
-        assert net_config["num_blocks"] > 0
 
         coupler_net = get_resnet(
             num_input_channels=num_input_channels,
-            num_blocks=net_config["num_blocks"],
-            num_hidden_channels_per_block=net_config["num_hidden_channels_per_block"],
+            hidden_channels=net_config["hidden_channels"],
             num_output_channels=2*output_shape[0]
         )
 
@@ -314,12 +312,10 @@ def get_mean_field_gaussian_conditional_density(
 
     if net_config["type"] == "resnet":
         assert len(x_shape) == 3
-        assert net_config['num_blocks'] > 0
 
         network = get_resnet(
             num_input_channels=num_x_channels,
-            num_blocks=net_config['num_blocks'],
-            num_hidden_channels_per_block=net_config['num_hidden_channels_per_block'],
+            hidden_channels=net_config["hidden_channels"],
             num_output_channels=num_output_channels
         )
 
