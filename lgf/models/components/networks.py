@@ -73,16 +73,55 @@ def get_resnet(
     )
 
 
-def get_mlp(num_inputs, hidden_units, output_dim, activation, log_softmax_outputs=False):
+def get_mlp(num_inputs, hidden_units, num_outputs, activation, log_softmax_outputs=False):
     layers = []
-    prev_dim = num_inputs
-    for dim in hidden_units:
-        layers.append(nn.Linear(prev_dim, dim))
+    prev_num_hidden_units = num_inputs
+    for num_hidden_units in hidden_units:
+        layers.append(nn.Linear(prev_num_hidden_units, num_hidden_units))
         layers.append(activation())
-        prev_dim = dim
-    layers.append(nn.Linear(prev_dim, output_dim))
+        prev_num_hidden_units = num_hidden_units
+    layers.append(nn.Linear(prev_num_hidden_units, num_outputs))
 
     if log_softmax_outputs:
         layers.append(nn.LogSoftmax(dim=1))
 
     return nn.Sequential(*layers)
+
+
+def get_glow_cnn(num_input_channels, num_hidden_channels, num_output_channels):
+    conv1 = nn.Conv2d(
+        in_channels=num_input_channels,
+        out_channels=num_hidden_channels,
+        kernel_size=3,
+        padding=1,
+        bias=False
+    )
+
+    conv2 = nn.Conv2d(
+        in_channels=num_hidden_channels,
+        out_channels=num_hidden_channels,
+        kernel_size=1,
+        bias=False
+    )
+
+    conv3 = nn.Conv2d(
+        in_channels=num_hidden_channels,
+        out_channels=num_output_channels,
+        kernel_size=3,
+        padding=1
+    )
+    conv3.weight.data.zero_()
+    conv3.bias.data.zero_()
+
+    batchnorm1 = nn.BatchNorm2d(num_hidden_channels)
+    batchnorm2 = nn.BatchNorm2d(num_hidden_channels)
+
+    return nn.Sequential(
+        conv1,
+        batchnorm1,
+        nn.ReLU(),
+        conv2,
+        batchnorm2,
+        nn.ReLU(),
+        conv3
+    )

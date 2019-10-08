@@ -23,3 +23,8 @@ from .reshaping import (
 )
 
 from .logit import LogitTransformBijection
+
+from .invconv import (
+    Invertible1x1ConvBijection,
+    Invertible1x1ConvLUBijection
+)

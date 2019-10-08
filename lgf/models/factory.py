@@ -103,7 +103,7 @@ def get_bijection(
             x_shape=x_shape,
             coupler=get_coupler(
                 num_input_channels=layer_config["num_u_channels"],
-                output_shape=x_shape,
+                num_output_channels=x_shape[0],
                 config=layer_config["coupler"]
             )
         )
@@ -140,7 +140,7 @@ def get_acl_bijection(
             x_shape=x_shape,
             coupler=get_coupler(
                 num_input_channels=num_x_channels+num_u_channels,
-                output_shape=x_shape,
+                num_output_channels=num_x_channels,
                 config=coupler_config
             ),
             reverse_mask=reverse_mask
@@ -157,15 +157,14 @@ def get_acl_bijection(
         if reverse_mask:
             mask = ~mask
 
-        num_coupler_in_channels = torch.sum(mask).item()
-        num_coupler_out_channels = num_x_channels - num_coupler_in_channels
+        num_passthrough_channels = torch.sum(mask).item()
 
         return ChannelwiseMaskedAffineCouplingBijection(
             x_shape=x_shape,
             mask=mask,
             coupler=get_coupler(
-                num_input_channels=num_coupler_in_channels+num_u_channels,
-                output_shape=(num_coupler_out_channels, *x_shape[1:]),
+                num_input_channels=num_passthrough_channels+num_u_channels,
+                num_output_channels=num_x_channels-num_passthrough_channels,
                 config=coupler_config
             )
         )
@@ -173,13 +172,13 @@ def get_acl_bijection(
 
 def get_coupler(
         num_input_channels,
-        output_shape,
+        num_output_channels,
         config
 ):
     if "shift_net" in config and "scale_net" in config:
         return get_coupler_with_separate_nets(
             num_input_channels=num_input_channels,
-            output_shape=output_shape,
+            num_output_channels=num_output_channels,
             shift_net_config=config["shift_net"],
             scale_net_config=config["scale_net"]
         )
@@ -187,7 +186,7 @@ def get_coupler(
     elif "shift_scale_net" in config:
         return get_coupler_with_shared_net(
             num_input_channels=num_input_channels,
-            output_shape=output_shape,
+            num_output_channels=num_output_channels,
             net_config=config["shift_scale_net"]
         )
 
@@ -197,26 +196,22 @@ def get_coupler(
 
 def get_coupler_with_shared_net(
         num_input_channels,
-        output_shape,
+        num_output_channels,
         net_config
 ):
     if net_config["type"] == "mlp":
-        assert len(output_shape) == 1
-
         coupler_net = get_mlp(
             num_inputs=num_input_channels,
             hidden_units=net_config["hidden_units"],
-            output_dim=2*output_shape[0],
+            num_outputs=2*num_output_channels,
             activation=get_activation(net_config["activation"])
         )
 
     elif net_config["type"] == "resnet":
-        assert len(output_shape) == 3
-
         coupler_net = get_resnet(
             num_input_channels=num_input_channels,
             hidden_channels=net_config["hidden_channels"],
-            num_output_channels=2*output_shape[0]
+            num_output_channels=2*num_output_channels
         )
 
     else:
@@ -231,19 +226,17 @@ def get_coupler_with_shared_net(
 
 def get_coupler_with_separate_nets(
         num_input_channels,
-        output_shape,
+        num_output_channels,
         shift_net_config,
         scale_net_config
 ):
-    assert len(output_shape) == 1
-
     def get_coupler_net(net_config):
         assert net_config["type"] == "mlp", "Should share convolutional coupler weights"
 
         return get_mlp(
             num_inputs=num_input_channels,
             hidden_units=net_config["hidden_units"],
-            output_dim=output_shape[0],
+            num_outputs=num_output_channels,
             activation=get_activation(net_config["activation"])
         )
 
@@ -326,7 +319,7 @@ def get_mean_field_gaussian_conditional_density(
         network = get_mlp(
             num_inputs=num_x_channels,
             hidden_units=net_config["hidden_units"],
-            output_dim=num_output_channels,
+            num_outputs=num_output_channels,
             activation=get_activation(net_config["activation"])
         )
 
