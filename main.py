@@ -13,8 +13,8 @@ parser.add_argument("--print-model", action="store_true", help="Print the model 
 parser.add_argument("--baseline", action="store_true", help="Run baseline flow instead of LGF")
 parser.add_argument("--nosave", action="store_true", help="Don't save anything to disk")
 parser.add_argument("--nochkpt", action="store_true", help="Disable checkpointing")
-parser.add_argument("--data-root", default="data", help="Location of training data")
-parser.add_argument("--logdir-root", default="runs", help="Location of log files")
+parser.add_argument("--data-root", default="data/", help="Location of training data (default: %(default)s)")
+parser.add_argument("--logdir-root", default="runs/", help="Location of log files (default: %(default)s)")
 parser.add_argument("--dataset", choices=[
     "2uniforms",
     "8gaussians", "checkerboard", "2spirals",

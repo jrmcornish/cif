@@ -9,6 +9,18 @@ Code release for [Localised Generative Flows](https://arxiv.org/abs/1909.13833) 
 1. Make sure you have `pipenv` installed. Run e.g. `pip install pipenv` if not.
 2. From the same directory as `Pipfile`, run `pipenv install`
 
+### Datasets
+
+Our code runs on several types of datasets, including synthetic 2-D data, UCI data, and image data. For a full list run
+
+    pipenv run ./main.py --help
+
+The 2-D datasets are automatically generated, and the image datasets are downloaded automatically. However the UCI datasets will need to be manually downloaded from [this location](https://zenodo.org/record/1161203). The following should do the trick:
+
+    mkdir -p DATA_ROOT && wget -O - https://zenodo.org/record/1161203/files/data.tar.gz | tar --strip-components=1 -C DATA_ROOT -xvf - data/{gas,hepmass,miniboone,power}
+
+Replace `DATA_ROOT` with the desired path to the data files. This path then needs to be specified as an argument to `main.py`.
+
 ### Training
 
 To train our model on a simple 2D dataset, run:
@@ -21,15 +33,9 @@ By default, this will create a directory `runs/`, which will contain Tensorboard
 
 Keep this running, and navigate to http://localhost:8008, where the results should be visible.
 
-Other datasets can also be launched using the same command as above. Run
+Each dataset has a default configuration set up for it that is described in the paper. For comparison purposes, for each model we also provide a standard baseline flow with roughly the same number of parameters. To run these, simply add the `--baseline` option when running `main.py`.
 
-    pipenv run ./main.py --help
-
-to see the full options.
-
-Each dataset has a default configuration set up for it that is described in the paper. However, to try out alternative configurations, simply modify the relevant options in `config.py`.
-
-For comparison purposes, we also provide comparable baseline models (i.e. not LGFs) for each configuration. To run these, simply add the `--baseline` option when running `main.py`.
+To inspect the model (either LGF or baseline) used for a given dataset, add the `--print-model` argument. To try out alternative configurations, simply modify the relevant options in `config.py`.
 
 ## Example results
 
