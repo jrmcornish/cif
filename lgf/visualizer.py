@@ -12,12 +12,8 @@ import tqdm
 
 
 class DensityVisualizer:
-    def __init__(self, writer, writer_tag_group):
+    def __init__(self, writer):
         self._writer = writer
-        self._writer_tag_group = writer_tag_group
-
-    def _tag(self, suffix):
-        return f"{self._writer_tag_group}/{suffix}"
 
     def visualize(self, density, epoch):
         raise NotImplementedError
@@ -40,7 +36,7 @@ class ImageDensityVisualizer(DensityVisualizer):
             normalize=True, scale_each=True
         )
 
-        self._writer.write_image(self._tag("samples"), grid, global_step=epoch)
+        self._writer.write_image("samples", grid, global_step=epoch)
 
 
 class TwoDimensionalDensityVisualizer(DensityVisualizer):
@@ -50,8 +46,8 @@ class TwoDimensionalDensityVisualizer(DensityVisualizer):
     _PADDING = .2
     _BATCH_SIZE = 1000
 
-    def __init__(self, writer, writer_tag_group, train_loader, num_elbo_samples, device):
-        super().__init__(writer=writer, writer_tag_group=writer_tag_group)
+    def __init__(self, writer, train_loader, num_elbo_samples, device):
+        super().__init__(writer=writer)
 
         self._x = train_loader.dataset.x
 
@@ -104,4 +100,4 @@ class TwoDimensionalDensityVisualizer(DensityVisualizer):
         x = x[torch.randint(high=x.shape[0], size=(self._NUM_TRAIN_POINTS_TO_SHOW,))]
         plt.scatter(x[:, 0], x[:, 1], c="k", marker=".", s=7, linewidth=0.5, alpha=0.5)
 
-        self._writer.write_figure(self._tag("density"), fig, epoch)
+        self._writer.write_figure("density", fig, epoch)

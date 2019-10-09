@@ -20,8 +20,8 @@ def train(config):
 
     writer.write_json("config", config)
     writer.write_json("model", {
-        "schema": schema,
-        "num_params": num_params(density)
+        "num_params": num_params(density),
+        "schema": schema
     })
 
     print("\nConfig:")
@@ -79,23 +79,16 @@ def setup_experiment(config):
         writer = DummyWriter()
 
     if config["dataset"] in ["cifar10", "svhn", "fashion-mnist", "mnist"]:
-        visualizer = ImageDensityVisualizer(
-            writer=writer,
-            writer_tag_group=config["dataset"]
-        )
+        visualizer = ImageDensityVisualizer(writer=writer)
     elif x_shape == (2,):
         visualizer = TwoDimensionalDensityVisualizer(
             writer=writer,
-            writer_tag_group=config["dataset"],
             train_loader=train_loader,
             num_elbo_samples=config["num_test_elbo_samples"],
             device=device
         )
     else:
-        visualizer = DummyDensityVisualizer(
-            writer=writer,
-            writer_tag_group=config["dataset"]
-        )
+        visualizer = DummyDensityVisualizer(writer=writer)
 
     train_loss = lambda density, x: -density.metrics(x, config["num_train_elbo_samples"])["elbo"]
     valid_loss = lambda density, x: -density.metrics(x, config["num_valid_elbo_samples"])["log-prob"]
