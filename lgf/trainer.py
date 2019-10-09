@@ -8,7 +8,7 @@ import torch
 from ignite.engine import Events, Engine
 from ignite.exceptions import NotComputableError
 from ignite.metrics import RunningAverage, Metric, Loss
-from ignite.handlers import ModelCheckpoint, EarlyStopping, TerminateOnNan
+from ignite.handlers import TerminateOnNan
 from ignite.contrib.handlers.tqdm_logger import ProgressBar
 from ignite.contrib.handlers.tensorboard_logger import TensorboardLogger, OutputHandler, GradsScalarHandler
 
@@ -86,24 +86,27 @@ class Trainer:
         self._device = device
 
         self._trainer = Engine(self._train_batch)
-        self._trainer.add_event_handler(Events.EPOCH_STARTED, self._checkpoint)
+        self._evaluator = Engine(self._validate_batch)
+        self._tester = Engine(self._test_batch)
+
+        AverageMetric().attach(self._trainer)
+        AverageMetric().attach(self._evaluator)
+        AverageMetric().attach(self._tester)
+
+        ProgressBar(persist=True).attach(self._trainer, ["loss"])
+        ProgressBar(persist=False, desc="Validating").attach(self._evaluator)
+        ProgressBar(persist=False, desc="Testing").attach(self._tester)
+
         self._trainer.add_event_handler(Events.EPOCH_STARTED, lambda _: self._module.train())
         self._trainer.add_event_handler(Events.ITERATION_COMPLETED, TerminateOnNan())
         self._trainer.add_event_handler(Events.ITERATION_COMPLETED, self._log_training_info)
+        self._trainer.add_event_handler(Events.EPOCH_COMPLETED, self._periodic_checkpoint)
+
         self._trainer.add_event_handler(Events.EPOCH_COMPLETED, self._validate)
-        self._trainer.add_event_handler(Events.EPOCH_COMPLETED, self._test)
-        AverageMetric().attach(self._trainer)
-        ProgressBar(persist=False).attach(self._trainer, ["loss"])
-
-        self._evaluator = Engine(self._validate_batch)
         self._evaluator.add_event_handler(Events.EPOCH_STARTED, lambda _: self._module.eval())
-        AverageMetric().attach(self._evaluator)
-        ProgressBar(persist=False, desc="Validating").attach(self._evaluator)
 
-        self._tester = Engine(self._test_batch)
+        self._trainer.add_event_handler(Events.EPOCH_COMPLETED, self._test)
         self._tester.add_event_handler(Events.EPOCH_STARTED, lambda _: self._module.eval())
-        AverageMetric().attach(self._tester)
-        ProgressBar(persist=False, desc="Testing").attach(self._tester)
 
     def train(self):
         self._trainer.run(data=self._train_loader, max_epochs=self._max_epochs)
@@ -141,7 +144,7 @@ class Trainer:
         valid_loss = state.metrics["loss"]
 
         if valid_loss < self._best_valid_loss:
-            print(f"\nBest validation loss {valid_loss} after epoch {engine.state.epoch}")
+            print(f"Best validation loss {valid_loss} after epoch {engine.state.epoch}")
             self._num_bad_valid_epochs = 0
             self._best_valid_loss = valid_loss
             self._save_checkpoint(tag="best_valid")
@@ -149,8 +152,12 @@ class Trainer:
         else:
             self._num_bad_valid_epochs += 1
 
+            # We do this manually (i.e. don't use Ignite's early stopping) to permit
+            # saving/resuming more easily
             if self._num_bad_valid_epochs > self._max_bad_valid_epochs:
-                print(f"\nNo validation improvement after {self._num_bad_valid_epochs} epochs. Terminating.")
+                print(
+                    f"No validation improvement after {self._num_bad_valid_epochs} epochs. Terminating."
+                )
                 self._trainer.terminate()
 
     def _validate_batch(self, engine, batch):
@@ -175,18 +182,24 @@ class Trainer:
                 norm += param.grad.norm().item()**2
         return np.sqrt(norm)
 
-    def _checkpoint(self, engine):
+    def _periodic_checkpoint(self, engine):
         epoch = engine.state.epoch
-        if self._should_save_checkpoints and (epoch - 1) % self._epochs_per_checkpoint == 0:
-            self._save_checkpoint(tag=f"before_epoch_{epoch:09}")
+        if (epoch - 1) % self._epochs_per_checkpoint == 0:
+            self._save_checkpoint(tag=f"epoch_{epoch:09}")
 
     def _save_checkpoint(self, tag):
+        if not self._should_save_checkpoints:
+            return
+
+        # We do this manually (i.e. don't use Ignite's checkpointing) because
+        # Ignite only allows saving objects, not scalars (e.g. the current epoch) 
         checkpoint = {
             "epoch": self._trainer.state.epoch,
             "iteration": self._trainer.state.iteration,
             "module_state_dict": self._module.state_dict(),
             "opt_state_dict": self._opt.state_dict(),
-            "best_valid_loss": self._best_valid_loss
+            "best_valid_loss": self._best_valid_loss,
+            "num_bad_valid_epochs": self._num_bad_valid_epochs
         }
 
         self._writer.write_checkpoint(tag, checkpoint)
