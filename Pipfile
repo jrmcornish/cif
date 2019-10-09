@@ -15,7 +15,6 @@ sklearn = "*"
 matplotlib = "*"
 pymongo = "*"
 tensorboardx = {editable = true,git = "git://github.com/lanpa/tensorboardX.git"}
-gputil = "*"
 tensorflow = "*"
 pandas = "*"
 pytorch-ignite = "*"
