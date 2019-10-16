@@ -2,14 +2,15 @@
 
 import argparse
 
-from lgf.experiment import train, print_model
+from lgf.experiment import train, print_density, print_schema, infer_config_values
 
 from config import two_uniforms, two_d, uci, images
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--seed", type=int, default=0, help="Random seed to use")
-parser.add_argument("--print-model", action="store_true", help="Print the model schema and exit")
+parser.add_argument("--print-density", action="store_true", help="Print the Pytorch Density and exit")
+parser.add_argument("--print-schema", action="store_true", help="Print the model schema and exit")
 parser.add_argument("--baseline", action="store_true", help="Run baseline flow instead of LGF")
 parser.add_argument("--nosave", action="store_true", help="Don't save anything to disk")
 parser.add_argument("--nochkpt", action="store_true", help="Disable checkpointing")
@@ -45,7 +46,14 @@ config = {
     **config
 }
 
-if args.print_model:
-    print_model(config)
+config = infer_config_values(config)
+
+if args.print_density or args.print_schema:
+    if args.print_density:
+        print_density(config)
+
+    if args.print_schema:
+        print_schema(config)
+
 else:
     train(config)

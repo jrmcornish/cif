@@ -6,7 +6,7 @@ import torch.nn.functional as F
 
 from .bijection import Bijection
 
-from ..helpers import SplittingModule
+from ..couplers import SharedCoupler
 
 
 class MaskedLinear(nn.Module):
@@ -49,8 +49,8 @@ class MADEBijection(Bijection):
 
         for dim in range(z.size(1)):
             result = self.ar_map(x)
-            means = result["mean"]
-            log_stds = result["log-std"]
+            means = result["shift"]
+            log_stds = result["log-scale"]
 
             x[:, dim] = z[:, dim] * torch.exp(log_stds[:, dim]) + means[:, dim]
 
@@ -58,8 +58,8 @@ class MADEBijection(Bijection):
 
     def _x_to_z(self, x, **kwargs):
         result = self.ar_map(x)
-        means = result["mean"]
-        log_stds = result["log-std"]
+        means = result["shift"]
+        log_stds = result["log-scale"]
 
         z = (x - means) * torch.exp(-log_stds)
 
@@ -77,17 +77,13 @@ class MADEBijection(Bijection):
             hidden_units,
             activation
     ):
-        output_names = ["mean", "log-std"]
-
-        return SplittingModule(
-            module=self._get_ar_mlp(
+        return SharedCoupler(
+            shift_log_scale_net=self._get_ar_mlp(
                 num_inputs=num_inputs,
                 hidden_units=hidden_units,
-                num_outputs_per_input=len(output_names),
+                num_outputs_per_input=2,
                 activation=activation
-            ),
-            output_names=output_names,
-            dim=1
+            )
         )
 
     def _get_ar_mlp(

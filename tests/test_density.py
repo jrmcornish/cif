@@ -13,7 +13,7 @@ from lgf.models.components.densities import (
     ConcreteDensity,
     ConcreteConditionalDensity
 )
-from lgf.models.components.helpers import SplittingModule
+from lgf.models.components.couplers import SharedCoupler
 from lgf.models.components.networks import get_mlp
 from lgf.models.components.bijections import ConditionalAffineBijection
 from lgf.models.factory import get_coupler
@@ -80,15 +80,13 @@ class TestDiagonalGaussianConditionalDensity(unittest.TestCase):
         self.shape = (dim,)
         self.cond_shape = (cond_dim,)
 
-        self.mean_log_std_map = SplittingModule(
-            module=get_mlp(
+        self.mean_log_std_map = SharedCoupler(
+            shift_log_scale_net=get_mlp(
                 num_inputs=cond_dim,
                 hidden_units=[10, 10, 10],
                 num_outputs=2*dim,
                 activation=nn.Tanh
-            ),
-            output_names=["mean", "log-stddev"],
-            dim=1
+            )
         )
         self.density = DiagonalGaussianConditionalDensity(self.mean_log_std_map)
 
@@ -101,8 +99,8 @@ class TestDiagonalGaussianConditionalDensity(unittest.TestCase):
             log_prob = self.density.log_prob(inputs, cond_inputs)["log-prob"]
             mean_log_std = self.mean_log_std_map(cond_inputs)
 
-        means = mean_log_std["mean"]
-        stds = torch.exp(mean_log_std["log-stddev"])
+        means = mean_log_std["shift"]
+        stds = torch.exp(mean_log_std["log-scale"])
 
         scipy_log_probs = stats.norm.logpdf(inputs, loc=means, scale=stds)
         scipy_log_prob = scipy_log_probs.reshape((batch_size, -1)).sum(axis=1, keepdims=True)
@@ -125,8 +123,8 @@ class TestDiagonalGaussianConditionalDensity(unittest.TestCase):
         self.assertEqual(samples.shape, (batch_size * num_samples, *self.shape))
 
         samples = samples.view(batch_size, num_samples, *self.shape)
-        means = mean_log_std["mean"].flatten()
-        stds = torch.exp(mean_log_std["log-stddev"]).flatten()
+        means = mean_log_std["shift"].flatten()
+        stds = torch.exp(mean_log_std["log-scale"]).flatten()
         for m in range(1, num_moments+1):
             moments = torch.mean(samples**m, dim=1)
             ground_truth = torch.empty_like(moments)
@@ -149,7 +147,7 @@ class TestDiagonalGaussianConditionalDensity(unittest.TestCase):
 
         self.assertEqual(entropies.shape, (batch_size, 1))
 
-        log_stddev = mean_log_std["log-stddev"]
+        log_stddev = mean_log_std["log-scale"]
         ground_truth_entropies = stats.norm.entropy(scale=torch.exp(log_stddev)).reshape(batch_size, -1).sum(axis=1, keepdims=True)
         errors = np.abs(ground_truth_entropies - entropies.numpy())
         self.assertLess(errors.max(), 1e-4)
@@ -172,10 +170,11 @@ class TestELBODensity(unittest.TestCase):
         bijection = ConditionalAffineBijection(
             x_shape=input_shape,
             coupler=get_coupler(
-                num_input_channels=u_dim,
-                num_output_channels=x_dim,
+                input_shape=(u_dim,),
+                num_channels_per_output=x_dim,
                 config={
-                    "shift_scale_net": {
+                    "independent_nets": False,
+                    "shift_log_scale_net": {
                         "type": "mlp",
                         "hidden_units": [40, 30],
                         "activation": "tanh"
@@ -200,15 +199,13 @@ class TestELBODensity(unittest.TestCase):
 
     def _u_density(self, u_dim, x_dim):
         return DiagonalGaussianConditionalDensity(
-            mean_log_std_map=SplittingModule(
-                module=get_mlp(
+            coupler=SharedCoupler(
+                shift_log_scale_net=get_mlp(
                     num_inputs=x_dim,
                     hidden_units=[10, 10, 10],
                     num_outputs=2*u_dim,
                     activation=nn.Tanh
-                ),
-                output_names=["mean", "log-stddev"],
-                dim=1
+                )
             )
         )
 

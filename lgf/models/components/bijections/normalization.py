@@ -52,21 +52,21 @@ class ConditionalAffineBijection(Bijection):
         self.coupler = coupler
 
     def _x_to_z(self, x, **kwargs):
-        shift, scale = self._shift_scale(kwargs["u"])
-        z = (x + shift) * torch.exp(scale)
-        return {"z": z, "log-jac": self._log_jac_x_to_z(scale)}
+        shift, log_scale = self._shift_log_scale(kwargs["u"])
+        z = (x + shift) * torch.exp(log_scale)
+        return {"z": z, "log-jac": self._log_jac_x_to_z(log_scale)}
 
     def _z_to_x(self, z, **kwargs):
-        shift, scale = self._shift_scale(kwargs["u"])
-        x = z * torch.exp(-scale) - shift
-        return {"x": x, "log-jac": self._log_jac_z_to_x(scale)}
+        shift, log_scale = self._shift_log_scale(kwargs["u"])
+        x = z * torch.exp(-log_scale) - shift
+        return {"x": x, "log-jac": self._log_jac_z_to_x(log_scale)}
 
-    def _shift_scale(self, u):
-        shift_scale = self.coupler(u)
-        return shift_scale["shift"], shift_scale["scale"]
+    def _shift_log_scale(self, u):
+        shift_log_scale = self.coupler(u)
+        return shift_log_scale["shift"], shift_log_scale["log-scale"]
 
-    def _log_jac_x_to_z(self, scale):
-        return scale.flatten(start_dim=1).sum(dim=1, keepdim=True)
+    def _log_jac_x_to_z(self, log_scale):
+        return log_scale.flatten(start_dim=1).sum(dim=1, keepdim=True)
 
-    def _log_jac_z_to_x(self, scale):
-        return -self._log_jac_x_to_z(scale)
+    def _log_jac_z_to_x(self, log_scale):
+        return -self._log_jac_x_to_z(log_scale)

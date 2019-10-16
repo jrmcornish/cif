@@ -34,6 +34,7 @@ def diagonal_gaussian_sample(means, stddevs):
 
     return samples, log_probs
 
+
 def diagonal_gaussian_entropy(stddevs):
     flat_stddevs = stddevs.flatten(start_dim=1)
     _, dim = flat_stddevs.shape
@@ -76,10 +77,10 @@ class DiagonalGaussianDensity(Density):
 class DiagonalGaussianConditionalDensity(nn.Module):
     def __init__(
             self,
-            mean_log_std_map
+            coupler
     ):
         super().__init__()
-        self.mean_log_std_map = mean_log_std_map
+        self.coupler = coupler
 
     def forward(self, mode, *args):
         if mode == "log-prob":
@@ -116,5 +117,5 @@ class DiagonalGaussianConditionalDensity(nn.Module):
         return diagonal_gaussian_entropy(stddevs)
 
     def _means_and_stddevs(self, cond_inputs):
-        mean_log_std = self.mean_log_std_map(cond_inputs)
-        return mean_log_std["mean"], torch.exp(mean_log_std["log-stddev"])
+        result = self.coupler(cond_inputs)
+        return result["shift"], torch.exp(result["log-scale"])

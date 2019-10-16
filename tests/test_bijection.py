@@ -24,7 +24,7 @@ from lgf.models.components.bijections import (
 from lgf.models.factory import get_acl_bijection, get_coupler
 
 
-class TestBijection:
+class _TestBijection:
     def test_z_to_x_correct_output_format(self):
         z = torch.randn(self.batch_size, *self.bijection.z_shape)
 
@@ -96,8 +96,8 @@ class TestBijection:
             return torch.randn(self.batch_size, *self.u_shape)
 
 
-class TestMADEBijection(TestBijection, unittest.TestCase):
-    _AR_MAP_OUTPUT_NAMES = ["mean", "log-std"]
+class TestMADEBijection(_TestBijection, unittest.TestCase):
+    _AR_MAP_OUTPUT_NAMES = ["shift", "log-scale"]
 
     def setUp(self):
         self.batch_size = 1000
@@ -186,7 +186,7 @@ class TestMADEBijection(TestBijection, unittest.TestCase):
                     self.assertTrue(torch.isfinite(result[output_name]).all())
 
 
-class TestCompositeBijection(TestBijection, unittest.TestCase):
+class TestCompositeBijection(_TestBijection, unittest.TestCase):
     def setUp(self):
         self.batch_size = 100
         self.eps = 1e-5
@@ -209,7 +209,7 @@ class TestCompositeBijection(TestBijection, unittest.TestCase):
         self.bijection = CompositeBijection(layers, "x-to-z")
 
 
-class TestFlipBijection(TestBijection, unittest.TestCase):
+class TestFlipBijection(_TestBijection, unittest.TestCase):
     def setUp(self):
         self.batch_size = 100
         self.eps = 1e-6
@@ -242,7 +242,7 @@ class TestFlipBijection(TestBijection, unittest.TestCase):
         self.assertTrue((log_jac == 0).all())
 
 
-class TestViewBijection(TestBijection, unittest.TestCase):
+class TestViewBijection(_TestBijection, unittest.TestCase):
     def setUp(self):
         self.batch_size = 100
         self.u_shape = None
@@ -250,7 +250,7 @@ class TestViewBijection(TestBijection, unittest.TestCase):
         self.bijection = ViewBijection((10, 4), (20, 2))
 
 
-class TestBatchNormBijection(TestBijection, unittest.TestCase):
+class TestBatchNormBijection(_TestBijection, unittest.TestCase):
     def setUp(self):
         self.batch_size = 100
         self.eps = 1e-5
@@ -264,7 +264,7 @@ class TestBatchNormBijection(TestBijection, unittest.TestCase):
 
 
 def get_channelwise_masked_acl_test(u_dim):
-    class Test(TestBijection, unittest.TestCase):
+    class Test(_TestBijection, unittest.TestCase):
         def setUp(self):
             self.batch_size = 100
             self.eps = 1e-6
@@ -278,10 +278,11 @@ def get_channelwise_masked_acl_test(u_dim):
                 x_shape=(x_dim,),
                 mask=mask,
                 coupler=get_coupler(
-                    num_input_channels=num_x_channels + u_dim,
-                    num_output_channels=x_dim - num_x_channels,
+                    input_shape=(num_x_channels + u_dim,),
+                    num_channels_per_output=x_dim - num_x_channels,
                     config={
-                        "shift_scale_net": {
+                        "independent_nets": False,
+                        "shift_log_scale_net": {
                             "type": "mlp",
                             "hidden_units": [10, 20],
                             "activation": "tanh"
@@ -298,7 +299,7 @@ TestUnconditionalChannelwiseMaskedAffineCouplingBijection = get_channelwise_mask
 
 
 def get_checkerboard_masked_acl_test(num_u_channels):
-    class Test(TestBijection, unittest.TestCase):
+    class Test(_TestBijection, unittest.TestCase):
         def setUp(self):
             self.batch_size = 100
             self.eps = 1e-6
@@ -309,10 +310,11 @@ def get_checkerboard_masked_acl_test(num_u_channels):
             self.bijection = CheckerboardMasked2dAffineCouplingBijection(
                 x_shape=x_shape,
                 coupler=get_coupler(
-                    num_input_channels=num_x_channels + num_u_channels,
-                    num_output_channels=num_x_channels,
+                    input_shape=(num_x_channels + num_u_channels, *x_shape[1:]),
+                    num_channels_per_output=num_x_channels,
                     config={
-                        "shift_scale_net": {
+                        "independent_nets": False,
+                        "shift_log_scale_net": {
                             "type": "resnet",
                             "hidden_channels": [24, 24]
                         }
@@ -328,7 +330,7 @@ TestConditionalCheckerboardMasked2dAffineCouplingBijection = get_checkerboard_ma
 TestUnconditionalCheckerboardMasked2dAffineCouplingBijection = get_checkerboard_masked_acl_test(num_u_channels=10)
 
 
-class TestLogitTransformBijection(TestBijection, unittest.TestCase):
+class TestLogitTransformBijection(_TestBijection, unittest.TestCase):
     def setUp(self):
         self.batch_size = 100
         self.u_shape = None
@@ -336,7 +338,7 @@ class TestLogitTransformBijection(TestBijection, unittest.TestCase):
         self.bijection = LogitTransformBijection(x_shape=(10, 4), lam=0.02, scale=500)
 
 
-class TestSqueeze2dBijection(TestBijection, unittest.TestCase):
+class TestSqueeze2dBijection(_TestBijection, unittest.TestCase):
     def setUp(self):
         self.x_shape = (1, 4, 4)
         self.z_shape = (4, 2, 2)
@@ -417,7 +419,7 @@ class TestSqueeze2dBijection(TestBijection, unittest.TestCase):
         self.assertTrue((z[:, 1, 1] == result4).all())
 
 
-class TestUnconditionalInvertible1x1ConvBijection(TestBijection, unittest.TestCase):
+class TestUnconditionalInvertible1x1ConvBijection(_TestBijection, unittest.TestCase):
     def setUp(self):
         x_shape = (1, 4, 4)
         self.batch_size = 1000
@@ -428,7 +430,7 @@ class TestUnconditionalInvertible1x1ConvBijection(TestBijection, unittest.TestCa
         )
 
 
-class TestConditionalInvertible1x1ConvBijection(TestBijection, unittest.TestCase):
+class TestConditionalInvertible1x1ConvBijection(_TestBijection, unittest.TestCase):
     def setUp(self):
         x_shape = (1, 4, 4)
         self.batch_size = 1000
@@ -440,7 +442,7 @@ class TestConditionalInvertible1x1ConvBijection(TestBijection, unittest.TestCase
         )
 
 
-class TestUnconditionalInvertible1x1ConvLUBijectionBijection(TestBijection, unittest.TestCase):
+class TestUnconditionalInvertible1x1ConvLUBijectionBijection(_TestBijection, unittest.TestCase):
     def setUp(self):
         x_shape = (3, 4, 4)
         self.batch_size = 1000

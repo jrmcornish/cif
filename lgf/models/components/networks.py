@@ -1,7 +1,14 @@
 import torch
 import torch.nn as nn
 
-from .helpers import ScaledTanh2dModule
+
+class ConstantNetwork(nn.Module):
+    def __init__(self, value):
+        super().__init__()
+        self.register_buffer("value", value)
+
+    def forward(self, inputs):
+        return self.value.expand(inputs.shape[0], *self.value.shape)
 
 
 class ResidualBlock(nn.Module):
@@ -35,6 +42,18 @@ class ResidualBlock(nn.Module):
             padding=1,
             bias=False
         )
+
+
+class ScaledTanh2dModule(nn.Module):
+    def __init__(self, module, num_channels):
+        super().__init__()
+        self.module = module
+        self.weights = nn.Parameter(torch.ones(num_channels, 1, 1))
+
+    def forward(self, inputs):
+        out = self.module(inputs)
+        out = self.weights * torch.tanh(out)
+        return out
 
 
 def get_resnet(

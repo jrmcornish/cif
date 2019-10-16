@@ -34,15 +34,18 @@ def train(config):
         trainer.train()
 
 
-def print_model(config):
-    schema, density, _, _ = setup_experiment({**config, "enable_logging": False})
-    print(json.dumps(schema, indent=4))
+def print_density(config):
+    _, density, _, _ = setup_experiment({**config, "enable_logging": False})
+    print(density)
     print(f"Number of parameters: {num_params(density):,}")
 
 
-def setup_experiment(config):
-    config = infer_config_values(config)
+def print_schema(config):
+    schema = get_schema(config=config)
+    print(json.dumps(schema, indent=4))
 
+
+def setup_experiment(config):
     torch.manual_seed(config["seed"])
     np.random.seed(config["seed"]+1)
     random.seed(config["seed"]+2)
@@ -116,6 +119,7 @@ def setup_experiment(config):
     return schema, density, trainer, writer
 
 
+# TODO: Fix
 def infer_config_values(config):
     config = copy.deepcopy(config)
 
@@ -145,7 +149,6 @@ def infer_config_values(config):
         config["st_net"] = None
         config["separate_st_nets"] = None
         config["st_hidden_channels"] = None
-
 
     assert not (config["num_u_channels"] > 0 and config.get("batch_norm", False))
     config["batch_norm"] = config["num_u_channels"] == 0

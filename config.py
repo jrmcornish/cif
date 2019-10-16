@@ -2,7 +2,7 @@ def two_uniforms(baseline=False):
     config = {
         "dataset": "2uniforms",
 
-        "model": "maf",
+        "model": "flat-realnvp",
 
         "train_batch_size": 1000,
         "valid_batch_size": 1000,
@@ -19,32 +19,25 @@ def two_uniforms(baseline=False):
         config = {
             **config,
             "num_density_layers": 10,
-            "g_nets": {
-                "hidden_units": [50] * 4
-            },
+            "g_nets_size": [50] * 4,
             "num_u_channels": 0
         }
 
     else:
         config = {
             **config,
+
             "num_density_layers": 5,
-            "g_nets": {
-                "hidden_units": [10] * 2
-            },
             "num_u_channels": 1,
-            "st_nets": {
-                "hidden_units": [10] * 2,
-            },
-            "p_nets": {
-                "hidden_units": [50] * 4,
-            },
-            "q_nets": {
-                "hidden_units": [50] * 4,
-            },
-            "num_train_elbo_samples": 10,
-            "num_test_elbo_samples": 100,
-            "num_valid_elbo_samples": 100,
+
+            "g_nets_size": [10] * 2,
+            "st_nets_size": [10] * 2,
+            "p_nets_size": [50] * 4,
+            "q_nets_size": [50] * 4,
+
+            "num_train_elbo_samples": 1,
+            "num_valid_elbo_samples": 5,
+            "num_test_elbo_samples": 100
         }
 
     return config
@@ -71,9 +64,7 @@ def two_d(dataset, baseline=False):
         config = {
             **config,
             "num_density_layers": 20,
-            "g_nets": {
-                "hidden_units": [50] * 4
-            },
+            "g_nets_size": [50] * 4,
             "num_u_channels": 0
         }
 
@@ -81,22 +72,14 @@ def two_d(dataset, baseline=False):
         config = {
             **config,
             "num_density_layers": 5,
-            "g_nets": {
-                "hidden_units": [50] * 4
-            },
+            "g_nets_size": [50] * 4,
             "num_u_channels": 1,
-            "st_nets": {
-                "hidden_units": [10] * 2,
-            },
-            "p_nets": {
-                "hidden_units": [50] * 4,
-            },
-            "q_nets": {
-                "hidden_units": [50] * 4,
-            },
-            "num_train_elbo_samples": 10,
-            "num_test_elbo_samples": 100,
-            "num_valid_elbo_samples": 100,
+            "st_nets_size": [10] * 2,
+            "p_nets_size": [50] * 4,
+            "q_nets_size": [50] * 4,
+            "num_train_elbo_samples": 1,
+            "num_valid_elbo_samples": 5,
+            "num_test_elbo_samples": 100
         }
 
     return config
@@ -124,9 +107,7 @@ def uci(dataset, baseline=False):
             config = {
                 **config,
                 "num_density_layers": 10,
-                "g_nets": {
-                    "hidden_units": [200] * 2
-                },
+                "g_nets_size": [200] * 2,
                 "num_u_channels": 0
             }
 
@@ -134,19 +115,11 @@ def uci(dataset, baseline=False):
             config = {
                 **config,
                 "num_density_layers": 10,
-                "g_nets": {
-                    "hidden_units": [100] * 2
-                },
+                "g_nets_size": [100] * 2,
                 "num_u_channels": 2,
-                "st_nets": {
-                    "hidden_units": [100] * 2,
-                },
-                "p_nets": {
-                    "hidden_units": [200] * 2,
-                },
-                "q_nets": {
-                    "hidden_units": [200] * 2,
-                },
+                "st_nets_size": [100] * 2,
+                "p_nets_size": [200] * 2,
+                "q_nets_size": [200] * 2,
                 "num_train_elbo_samples": 1,
                 "num_valid_elbo_samples": 5,
                 "num_test_elbo_samples": 10
@@ -157,9 +130,7 @@ def uci(dataset, baseline=False):
             config = {
                 **config,
                 "num_density_layers": 10,
-                "g_nets": {
-                    "hidden_units": [512] * 2
-                },
+                "g_nets_size": [512] * 2,
                 "num_u_channels": 0
             }
 
@@ -167,19 +138,11 @@ def uci(dataset, baseline=False):
             config = {
                 **config,
                 "num_density_layers": 10,
-                "g_nets": {
-                    "hidden_units": [128] * 2
-                },
+                "g_nets_size": [128] * 2,
                 "num_u_channels": 5 if dataset == "hepmass" else 10,
-                "st_nets": {
-                    "hidden_units": [128] * 2,
-                },
-                "p_nets": {
-                    "hidden_units": [512] * 2,
-                },
-                "q_nets": {
-                    "hidden_units": [512] * 2,
-                },
+                "st_nets_size": [128] * 2,
+                "p_nets_size": [512] * 2,
+                "q_nets_size": [512] * 2,
                 "num_train_elbo_samples": 1,
                 "num_valid_elbo_samples": 5,
                 "num_test_elbo_samples": 10
@@ -207,28 +170,18 @@ def images(dataset, baseline=False):
     if baseline:
         config = {
             **config,
-            "g_nets": {
-                "hidden_channels": [64] * 8
-            },
+            "g_nets_size": [64] * 8,
             "num_u_channels": 0
         }
 
     else:
         config = {
             **config,
-            "g_nets": {
-                "hidden_channels": [64] * 4
-            },
+            "g_nets_size": [64] * 4,
             "num_u_channels": 1,
-            "st_nets": {
-                "hidden_channels": [8] * 2
-            },
-            "p_nets": {
-                "hidden_channels": [64] * 2
-            },
-            "q_nets": {
-                "hidden_channels": [64] * 2
-            },
+            "st_nets_size": [8] * 2,
+            "p_nets_size": [64] * 2,
+            "q_nets_size": [64] * 2,
             "num_train_elbo_samples": 1,
             "num_valid_elbo_samples": 5,
             "num_test_elbo_samples": 10
