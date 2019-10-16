@@ -24,19 +24,19 @@ def get_base_schema(config):
 
     if model == "multiscale-realnvp":
         schema += get_multiscale_realnvp_schema(
-            coupler_hidden_channels=config["g_nets_size"]
+            coupler_hidden_channels=config["g_nets_hidden_channels"]
         )
 
     elif model == "flat-realnvp":
         schema += get_flat_realnvp_schema(
             num_density_layers=config["num_density_layers"],
-            coupler_hidden_units=config["g_nets_size"]
+            coupler_hidden_channels=config["g_nets_hidden_channels"]
         )
 
     elif model == "maf":
         schema += get_maf_schema(
             num_density_layers=config["num_density_layers"],
-            ar_map_hidden_units=config["g_nets_size"]
+            ar_coupler_hidden_channels=config["g_nets_hidden_channels"]
         )
 
     else:
@@ -98,9 +98,9 @@ def get_q_coupler_config(config):
 def get_coupler_config(shift_prefix, log_scale_prefix, shift_log_scale_prefix, config):
     model = config["model"]
 
-    shift_key = f"{shift_prefix}_nets_size"
-    log_scale_key = f"{log_scale_prefix}_nets_size"
-    shift_log_scale_key = f"{shift_log_scale_prefix}_nets_size"
+    shift_key = f"{shift_prefix}_nets_hidden_channels"
+    log_scale_key = f"{log_scale_prefix}_nets_hidden_channels"
+    shift_log_scale_key = f"{shift_log_scale_prefix}_nets_hidden_channels"
 
     if shift_key in config and log_scale_key in config:
         return {
@@ -135,7 +135,7 @@ def get_net_config(net_size, model):
         return {
             "type": "mlp",
             "activation": "tanh",
-            "hidden_units": net_size
+            "hidden_channels": net_size
         }
 
     else:
@@ -174,7 +174,7 @@ def get_multiscale_realnvp_schema(coupler_hidden_channels):
 
 def get_flat_realnvp_schema(
         num_density_layers,
-        coupler_hidden_units
+        coupler_hidden_channels
 ):
     result = [{"type": "flatten"}]
 
@@ -187,12 +187,12 @@ def get_flat_realnvp_schema(
                 "independent_nets": True,
                 "shift_net": {
                     "type": "mlp",
-                    "hidden_units": coupler_hidden_units,
+                    "hidden_channels": coupler_hidden_channels,
                     "activation": "relu"
                 },
                 "log_scale_net": {
                     "type": "mlp",
-                    "hidden_units": coupler_hidden_units,
+                    "hidden_channels": coupler_hidden_channels,
                     "activation": "tanh"
                 }
             },
@@ -204,7 +204,7 @@ def get_flat_realnvp_schema(
 
 def get_maf_schema(
         num_density_layers,
-        ar_map_hidden_units
+        ar_coupler_hidden_channels
 ):
     result = [{"type": "flatten"}]
 
@@ -214,8 +214,8 @@ def get_maf_schema(
 
         result.append({
             "type": "made",
-            "ar_map_hidden_units": ar_map_hidden_units,
-            "ar_map_activation": "tanh"
+            "ar_coupler_hidden_channels": ar_coupler_hidden_channels,
+            "ar_coupler_activation": "tanh"
         })
 
     return result

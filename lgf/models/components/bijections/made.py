@@ -15,10 +15,10 @@ class MaskedLinear(nn.Module):
 
         assert len(input_degrees.shape) == len(output_degrees.shape) == 1
 
-        num_inputs = input_degrees.shape[0]
-        num_outputs = output_degrees.shape[0]
+        num_input_channels = input_degrees.shape[0]
+        num_output_channels = output_degrees.shape[0]
 
-        self.linear = nn.Linear(num_inputs, num_outputs)
+        self.linear = nn.Linear(num_input_channels, num_output_channels)
 
         mask = output_degrees.view(-1, 1) >= input_degrees
         self.register_buffer("mask", mask.to(self.linear.weight.dtype))
@@ -30,15 +30,15 @@ class MaskedLinear(nn.Module):
 class MADEBijection(Bijection):
     def __init__(
             self,
-            num_inputs,
-            hidden_units,
+            num_input_channels,
+            hidden_channels,
             activation
     ):
-        super().__init__(x_shape=(num_inputs,), z_shape=(num_inputs,))
+        super().__init__(x_shape=(num_input_channels,), z_shape=(num_input_channels,))
 
         self.ar_map = self._get_ar_map(
-            num_inputs=num_inputs,
-            hidden_units=hidden_units,
+            num_input_channels=num_input_channels,
+            hidden_channels=hidden_channels,
             activation=activation
         )
 
@@ -73,14 +73,14 @@ class MADEBijection(Bijection):
 
     def _get_ar_map(
             self,
-            num_inputs,
-            hidden_units,
+            num_input_channels,
+            hidden_channels,
             activation
     ):
         return SharedCoupler(
             shift_log_scale_net=self._get_ar_mlp(
-                num_inputs=num_inputs,
-                hidden_units=hidden_units,
+                num_input_channels=num_input_channels,
+                hidden_channels=hidden_channels,
                 num_outputs_per_input=2,
                 activation=activation
             )
@@ -88,26 +88,26 @@ class MADEBijection(Bijection):
 
     def _get_ar_mlp(
             self,
-            num_inputs,
-            hidden_units,
+            num_input_channels,
+            hidden_channels,
             num_outputs_per_input,
             activation
     ):
-        assert num_inputs >= 2
-        assert all([num_inputs <= d for d in hidden_units]), "Random initialisation not yet implemented"
+        assert num_input_channels >= 2
+        assert all([num_input_channels <= d for d in hidden_channels]), "Random initialisation not yet implemented"
 
-        prev_degrees = torch.arange(1, num_inputs + 1, dtype=torch.int64)
+        prev_degrees = torch.arange(1, num_input_channels + 1, dtype=torch.int64)
         layers = []
 
-        for hidden_units in hidden_units:
-            degrees = torch.arange(hidden_units, dtype=torch.int64) % (num_inputs - 1) + 1
+        for hidden_channels in hidden_channels:
+            degrees = torch.arange(hidden_channels, dtype=torch.int64) % (num_input_channels - 1) + 1
 
             layers.append(MaskedLinear(prev_degrees, degrees))
             layers.append(activation())
 
             prev_degrees = degrees
 
-        degrees = torch.arange(num_inputs, dtype=torch.int64).repeat(num_outputs_per_input)
+        degrees = torch.arange(num_input_channels, dtype=torch.int64).repeat(num_outputs_per_input)
         layers.append(MaskedLinear(prev_degrees, degrees))
 
         return nn.Sequential(*layers)

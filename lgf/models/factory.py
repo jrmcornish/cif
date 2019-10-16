@@ -121,9 +121,9 @@ def get_bijection(
     elif layer_config["type"] == "made":
         assert len(x_shape) == 1
         return MADEBijection(
-            num_inputs=x_shape[0],
-            hidden_units=layer_config["ar_map_hidden_units"],
-            activation=get_activation(layer_config["ar_map_activation"])
+            num_input_channels=x_shape[0],
+            hidden_channels=layer_config["ar_coupler_hidden_channels"],
+            activation=get_activation(layer_config["ar_coupler_activation"])
         )
 
     elif layer_config["type"] == "batch-norm":
@@ -248,9 +248,9 @@ def get_coupler_net(input_shape, num_output_channels, net_config):
     if net_config["type"] == "mlp":
         assert len(input_shape) == 1
         return get_mlp(
-            num_inputs=input_shape[0],
-            hidden_units=net_config["hidden_units"],
-            num_outputs=num_output_channels,
+            num_input_channels=input_shape[0],
+            hidden_channels=net_config["hidden_channels"],
+            num_output_channels=num_output_channels,
             activation=get_activation(net_config["activation"])
         )
 

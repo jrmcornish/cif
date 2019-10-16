@@ -40,7 +40,7 @@ elif args.dataset in ["mnist", "fashion-mnist", "cifar10", "svhn"]:
 config = {
     "seed": args.seed,
     "should_save_checkpoints": not args.nochkpt,
-    "write_to_disk": not args.nosave,
+    "write_to_disk": not args.nosave and not args.print_density and not args.print_schema,
     "data_root": args.data_root,
     "logdir_root": args.logdir_root,
     **config

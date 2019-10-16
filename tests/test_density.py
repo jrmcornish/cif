@@ -82,9 +82,9 @@ class TestDiagonalGaussianConditionalDensity(unittest.TestCase):
 
         self.mean_log_std_map = SharedCoupler(
             shift_log_scale_net=get_mlp(
-                num_inputs=cond_dim,
-                hidden_units=[10, 10, 10],
-                num_outputs=2*dim,
+                num_input_channels=cond_dim,
+                hidden_channels=[10, 10, 10],
+                num_output_channels=2*dim,
                 activation=nn.Tanh
             )
         )
@@ -176,7 +176,7 @@ class TestELBODensity(unittest.TestCase):
                     "independent_nets": False,
                     "shift_log_scale_net": {
                         "type": "mlp",
-                        "hidden_units": [40, 30],
+                        "hidden_channels": [40, 30],
                         "activation": "tanh"
                     }
                 }
@@ -201,9 +201,9 @@ class TestELBODensity(unittest.TestCase):
         return DiagonalGaussianConditionalDensity(
             coupler=SharedCoupler(
                 shift_log_scale_net=get_mlp(
-                    num_inputs=x_dim,
-                    hidden_units=[10, 10, 10],
-                    num_outputs=2*u_dim,
+                    num_input_channels=x_dim,
+                    hidden_channels=[10, 10, 10],
+                    num_output_channels=2*u_dim,
                     activation=nn.Tanh
                 )
             )
@@ -238,9 +238,9 @@ class TestConcreteConditionalDensity(unittest.TestCase):
         self.lam = torch.exp(torch.rand(1))
 
         self.log_alpha_map = get_mlp(
-            num_inputs=np.prod(self.cond_shape),
-            hidden_units=[10, 10, 10],
-            num_outputs=np.prod(self.shape),
+            num_input_channels=np.prod(self.cond_shape),
+            hidden_channels=[10, 10, 10],
+            num_output_channels=np.prod(self.shape),
             activation=nn.Tanh
         )
         self.density = ConcreteConditionalDensity(self.log_alpha_map, self.lam)

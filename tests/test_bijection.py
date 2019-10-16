@@ -103,31 +103,31 @@ class TestMADEBijection(_TestBijection, unittest.TestCase):
         self.batch_size = 1000
         self.u_shape = None
         self.eps = 1e-6
-        self.num_inputs = 10
+        self.num_input_channels = 10
         self.bijection = MADEBijection(
-            num_inputs=self.num_inputs,
-            hidden_units=[11, 12, 10, 14],
+            num_input_channels=self.num_input_channels,
+            hidden_channels=[11, 12, 10, 14],
             activation=nn.Tanh
         )
 
     def test_single_input_fails(self):
         with self.assertRaises(Exception):
             MADEBijection(
-                num_inputs=1,
-                hidden_units=[10],
+                num_input_channels=1,
+                hidden_channels=[10],
                 activation=nn.Tanh
             )
 
     def create_MAR_map(self):
         self.bijection = MADEBijection(
-            num_inputs=self.num_inputs,
-            hidden_units=[11, 12, 10, 14],
+            num_input_channels=self.num_input_channels,
+            hidden_channels=[11, 12, 10, 14],
             activation=nn.Tanh
         )
         return self.bijection.ar_map
 
     def test_output_format(self):
-        x = torch.randn(self.batch_size, self.num_inputs)
+        x = torch.randn(self.batch_size, self.num_input_channels)
         f_x = self.bijection.ar_map(x)
 
         self.assertListEqual(list(f_x.keys()), self._AR_MAP_OUTPUT_NAMES)
@@ -135,7 +135,7 @@ class TestMADEBijection(_TestBijection, unittest.TestCase):
             output = f_x[name]
             batch_size, dim = output.size()
             self.assertEqual(batch_size, self.batch_size)
-            self.assertEqual(dim, self.num_inputs)
+            self.assertEqual(dim, self.num_input_channels)
 
     def test_first_coord_autoreg(self):
         x, f_x, y, f_y = self.perturb_inputs(0)
@@ -145,7 +145,7 @@ class TestMADEBijection(_TestBijection, unittest.TestCase):
             self.assertFalse((f_x[name][:, 1:] == f_y[name][:, 1:]).all())
 
     def test_middle_coords_autoreg(self):
-        for coord in range(1, self.num_inputs - 1):
+        for coord in range(1, self.num_input_channels - 1):
             self.assert_middle_coord_autoreg(coord)
 
     def assert_middle_coord_autoreg(self, coord):
@@ -166,7 +166,7 @@ class TestMADEBijection(_TestBijection, unittest.TestCase):
             self.assertTrue((f_x[name] == f_y[name]).all())
 
     def perturb_inputs(self, coord):
-        x = torch.randn(self.batch_size, self.num_inputs)
+        x = torch.randn(self.batch_size, self.num_input_channels)
         f_x = self.bijection.ar_map(x)
 
         noise = torch.zeros_like(x)
@@ -179,7 +179,7 @@ class TestMADEBijection(_TestBijection, unittest.TestCase):
     def test_no_nans(self):
         for _ in range(20):
             f = self.create_MAR_map()
-            inputs = torch.randn(self.batch_size, self.num_inputs)
+            inputs = torch.randn(self.batch_size, self.num_input_channels)
             for _ in range(20):
                 result = f(inputs)
                 for output_name in self._AR_MAP_OUTPUT_NAMES:
@@ -199,8 +199,8 @@ class TestCompositeBijection(_TestBijection, unittest.TestCase):
         layers = [ViewBijection(x_shape, (x_dim,))]
         for i in range(5):
             made = MADEBijection(
-                num_inputs=x_dim,
-                hidden_units=[40, 40],
+                num_input_channels=x_dim,
+                hidden_channels=[40, 40],
                 activation=nn.Tanh
             )
             layers.append(made)
@@ -284,7 +284,7 @@ def get_channelwise_masked_acl_test(u_dim):
                         "independent_nets": False,
                         "shift_log_scale_net": {
                             "type": "mlp",
-                            "hidden_units": [10, 20],
+                            "hidden_channels": [10, 20],
                             "activation": "tanh"
                         }
                     }

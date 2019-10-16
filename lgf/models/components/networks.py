@@ -92,14 +92,20 @@ def get_resnet(
     )
 
 
-def get_mlp(num_inputs, hidden_units, num_outputs, activation, log_softmax_outputs=False):
+def get_mlp(
+        num_input_channels,
+        hidden_channels,
+        num_output_channels,
+        activation,
+        log_softmax_outputs=False
+):
     layers = []
-    prev_num_hidden_units = num_inputs
-    for num_hidden_units in hidden_units:
-        layers.append(nn.Linear(prev_num_hidden_units, num_hidden_units))
+    prev_num_hidden_channels = num_input_channels
+    for num_hidden_channels in hidden_channels:
+        layers.append(nn.Linear(prev_num_hidden_channels, num_hidden_channels))
         layers.append(activation())
-        prev_num_hidden_units = num_hidden_units
-    layers.append(nn.Linear(prev_num_hidden_units, num_outputs))
+        prev_num_hidden_channels = num_hidden_channels
+    layers.append(nn.Linear(prev_num_hidden_channels, num_output_channels))
 
     if log_softmax_outputs:
         layers.append(nn.LogSoftmax(dim=1))
