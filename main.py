@@ -38,12 +38,12 @@ elif args.dataset in ["mnist", "fashion-mnist", "cifar10", "svhn"]:
     config = images(args.dataset, args.baseline)
 
 config = {
+    **config,
     "seed": args.seed,
     "should_save_checkpoints": not args.nochkpt,
     "write_to_disk": not args.nosave and not args.print_density and not args.print_schema,
     "data_root": args.data_root,
-    "logdir_root": args.logdir_root,
-    **config
+    "logdir_root": args.logdir_root
 }
 
 config = infer_config_values(config)
