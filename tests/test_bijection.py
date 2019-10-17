@@ -15,8 +15,8 @@ from lgf.models.components.bijections import (
     LogitTransformBijection,
     MADEBijection,
     BatchNormBijection,
-    Invertible1x1ConvBijection,
-    Invertible1x1ConvLUBijection,
+    BruteForceInvertible1x1ConvBijection,
+    LUInvertible1x1ConvBijection,
     CheckerboardMasked2dAffineCouplingBijection,
     ChannelwiseMaskedAffineCouplingBijection,
     Squeeze2dBijection,
@@ -419,37 +419,72 @@ class TestSqueeze2dBijection(_TestBijection, unittest.TestCase):
         self.assertTrue((z[:, 1, 1] == result4).all())
 
 
-class TestUnconditionalInvertible1x1ConvBijection(_TestBijection, unittest.TestCase):
+class TestUnconditionalBruteForceInvertible1x1ConvBijection(_TestBijection, unittest.TestCase):
     def setUp(self):
         x_shape = (1, 4, 4)
         self.batch_size = 1000
         self.u_shape = None
         self.eps = 1e-6
-        self.bijection = Invertible1x1ConvBijection(
+        self.bijection = BruteForceInvertible1x1ConvBijection(
             x_shape=x_shape
         )
 
 
-class TestConditionalInvertible1x1ConvBijection(_TestBijection, unittest.TestCase):
+class TestConditionalBruteForceInvertible1x1ConvBijection(_TestBijection, unittest.TestCase):
     def setUp(self):
         x_shape = (1, 4, 4)
         self.batch_size = 1000
         self.u_shape = (2, 4, 4)
         self.eps = 1e-6
-        self.bijection = Invertible1x1ConvBijection(
+        self.bijection = BruteForceInvertible1x1ConvBijection(
             x_shape=x_shape,
             num_u_channels=self.u_shape[0]
         )
 
 
-class TestUnconditionalInvertible1x1ConvLUBijectionBijection(_TestBijection, unittest.TestCase):
+class TestUnconditionalLUInvertible1x1ConvBijection(_TestBijection, unittest.TestCase):
+    def setUp(self):
+        x_shape = (1, 4, 4)
+        self.batch_size = 1000
+        self.u_shape = None
+        self.eps = 1e-6
+        self.bijection = LUInvertible1x1ConvBijection(
+            x_shape=x_shape
+        )
+
+
+class TestConditionalLUInvertible1x1ConvBijection(_TestBijection, unittest.TestCase):
+    def setUp(self):
+        x_shape = (1, 4, 4)
+        self.batch_size = 1000
+        self.u_shape = (2, 4, 4)
+        self.eps = 1e-6
+        self.bijection = LUInvertible1x1ConvBijection(
+            x_shape=x_shape,
+            num_u_channels=self.u_shape[0]
+        )
+
+
+class TestNonImageConditionalLUInvertible1x1ConvBijection(_TestBijection, unittest.TestCase):
+    def setUp(self):
+        x_shape = (2,)
+        self.batch_size = 1000
+        self.u_shape = (1,)
+        self.eps = 1e-6
+        self.bijection = LUInvertible1x1ConvBijection(
+            x_shape=x_shape,
+            num_u_channels=self.u_shape[0]
+        )
+
+
+class TestUnconditionalInvertible1x1ConvBijectionEquality(_TestBijection, unittest.TestCase):
     def setUp(self):
         x_shape = (3, 4, 4)
         self.batch_size = 1000
         self.u_shape = None
         self.eps = 5e-4
         self.jac_eps = 5e-4
-        self.bijection = Invertible1x1ConvLUBijection(
+        self.bijection = LUInvertible1x1ConvBijection(
             x_shape=x_shape
         )
 
@@ -458,7 +493,7 @@ class TestUnconditionalInvertible1x1ConvLUBijectionBijection(_TestBijection, uni
         self.bijection.sign_s = torch.sign(new_s)
         self.bijection.log_s = nn.Parameter(torch.log(torch.abs(new_s)))
 
-        self.bijection_to_compare = Invertible1x1ConvBijection(
+        self.bijection_to_compare = BruteForceInvertible1x1ConvBijection(
             x_shape=x_shape
         )
         self.bijection_to_compare.weights = nn.Parameter(self.bijection._get_weights())

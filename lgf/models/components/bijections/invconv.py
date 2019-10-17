@@ -7,8 +7,9 @@ import numpy as np
 from .bijection import Bijection
 
 
-class Invertible1x1ConvBijectionBase(Bijection):
+class Invertible1x1ConvBijection(Bijection):
     def __init__(self, x_shape, num_u_channels=0):
+        assert len(x_shape) == 1 or len(x_shape) == 3
         super().__init__(x_shape, x_shape)
 
         num_channels = x_shape[0]
@@ -25,7 +26,10 @@ class Invertible1x1ConvBijectionBase(Bijection):
             self.u_conv_weights_shape = [num_channels, num_u_channels] + [1 for _ in x_shape[1:]]
         
     def _convolve(self, inputs, weights, weights_shape):
-        return F.conv2d(inputs, weights.view(*weights_shape))
+        if len(weights_shape) < 3:
+            return torch.matmul(inputs, weights.T)
+        else:
+            return F.conv2d(inputs, weights.view(*weights_shape))
 
     def _log_jac_single(self):
         raise NotImplementedError
@@ -42,7 +46,7 @@ class Invertible1x1ConvBijectionBase(Bijection):
         return Vu
 
     def _x_to_z(self, x, **kwargs):
-        Vu = self._get_Vu(**kwargs)        
+        Vu = self._get_Vu(**kwargs)
         Wx = self._convolve(x, self._get_weights(), self.conv_weights_shape)
         z = Wx + Vu
 
@@ -57,7 +61,7 @@ class Invertible1x1ConvBijectionBase(Bijection):
         return {"x": x, "log-jac": -neg_log_jac}
 
 
-class Invertible1x1ConvBijection(Invertible1x1ConvBijectionBase):
+class BruteForceInvertible1x1ConvBijection(Invertible1x1ConvBijection):
     def __init__(self, x_shape, num_u_channels=0):
         super().__init__(x_shape, num_u_channels)
         self.weights = nn.Parameter(self.weights_init)
@@ -69,7 +73,7 @@ class Invertible1x1ConvBijection(Invertible1x1ConvBijectionBase):
         return torch.slogdet(self.weights)[1] * self.num_non_channel_elements
 
 
-class Invertible1x1ConvLUBijection(Invertible1x1ConvBijectionBase):
+class LUInvertible1x1ConvBijection(Invertible1x1ConvBijection):
     def __init__(self, x_shape, num_u_channels=0):
         super().__init__(x_shape, num_u_channels)
 
