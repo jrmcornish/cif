@@ -33,39 +33,6 @@ def concrete_sample(alphas, lam):
     return torch.exp(log_numerator - log_denominator)
 
 
-class ConcreteDensity(Density):
-    def __init__(self, alphas, lam, num_fixed_samples=0):
-        super().__init__()
-        assert len(alphas.shape) == 1
-        self.alphas = nn.Parameter(alphas)
-        self.lam = lam
-
-        if num_fixed_samples > 0:
-            self.register_buffer("_fixed_samples", self.sample(num_fixed_samples))
-
-    @property
-    def shape(self):
-        return self.alphas.shape
-
-    def _elbo(self, u):
-        log_prob = concrete_log_prob(
-            u,
-            self.alphas.expand_as(u),
-            self.lam
-        )
-        return {"elbo": log_prob}
-
-    # TODO: Pass through forward
-    def _sample(self, num_samples):
-        return concrete_sample(
-            self.alphas.expand(num_samples, *self.shape),
-            self.lam
-        )
-
-    def _fixed_sample(self):
-        return self._fixed_samples
-
-
 class ConcreteConditionalDensity(nn.Module):
     def __init__(
             self,
@@ -76,17 +43,37 @@ class ConcreteConditionalDensity(nn.Module):
         self.log_alpha_map = log_alpha_map
         self.lam = lam
 
-    # TODO: Should pass through forward
+    def forward(self, mode, *args):
+        if mode == "log-prob":
+            return self._log_prob(*args)
+        elif mode == "sample":
+            return self._sample(*args)
+        elif mode == "entropy":
+            return self._entropy(*args)
+        else:
+            assert False, f"Invalid mode {mode}"
+
     def log_prob(self, inputs, cond_inputs):
+        return self("log-prob", inputs, cond_inputs)
+
+    def sample(self, cond_inputs):
+        return self("sample", cond_inputs)
+
+    def _log_prob(self, inputs, cond_inputs):
         return {
             "log-prob": concrete_log_prob(inputs, self._alphas(cond_inputs), self.lam)
         }
 
-    # TODO: Should pass through forward
-    def sample(self, cond_inputs):
-        return concrete_sample(self._alphas(cond_inputs), self.lam)
+    def _sample(self, cond_inputs):
+        alphas = self._alphas(cond_inputs)
+        samples = concrete_sample(alphas, self.lam)
+        log_probs = concrete_log_prob(samples, alphas, self.lam)
+        return {
+            "log-prob": log_probs,
+            "sample": samples
+        }
 
-    def entropy(self, cond_inputs):
+    def _entropy(self, cond_inputs):
         raise NotImplementedError
 
     def _alphas(self, cond_inputs):

@@ -10,7 +10,6 @@ from lgf.models.components.densities import (
     DiagonalGaussianDensity,
     DiagonalGaussianConditionalDensity,
     ELBODensity,
-    ConcreteDensity,
     ConcreteConditionalDensity
 )
 from lgf.models.components.couplers import SharedCoupler
@@ -211,26 +210,6 @@ class TestELBODensity(unittest.TestCase):
 
 
 # TODO: Find reference distribution to compare concrete against
-class TestConcreteDensity(unittest.TestCase):
-    def setUp(self):
-        self.shape = (10,)
-        self.alpha = torch.exp(torch.rand(self.shape))
-        self.lam = torch.exp(torch.rand(1))
-        self.density = ConcreteDensity(self.alpha, self.lam, num_fixed_samples=64)
-
-    def test_elbo(self):
-        batch_size = 1000
-        u = torch.rand(batch_size, *self.shape)
-        with torch.no_grad():
-            log_prob = self.density.elbo(u)["elbo"]
-        self.assertEqual(log_prob.shape, (batch_size, 1))
-
-    def test_samples(self):
-        num_samples = 100000
-        samples = self.density.sample(num_samples)
-        self.assertEqual(samples.shape, (num_samples, *self.shape))
-
-
 class TestConcreteConditionalDensity(unittest.TestCase):
     def setUp(self):
         self.shape = (25,)
@@ -253,8 +232,7 @@ class TestConcreteConditionalDensity(unittest.TestCase):
         cond_inputs = torch.rand(batch_size, *self.cond_shape)
 
         with torch.no_grad():
-            samples = self.density.sample(cond_inputs.repeat_interleave(num_samples, dim=0))
-            log_alpha = self.log_alpha_map(cond_inputs)
+            samples = self.density.sample(cond_inputs.repeat_interleave(num_samples, dim=0))["sample"]
 
         self.assertEqual(samples.shape, (batch_size * num_samples, *self.shape))
 
