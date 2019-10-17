@@ -24,19 +24,19 @@ def get_base_schema(config):
 
     if model == "multiscale-realnvp":
         schema += get_multiscale_realnvp_schema(
-            coupler_hidden_channels=config["g_nets_hidden_channels"]
+            coupler_hidden_channels=config["g_nets"]
         )
 
     elif model == "flat-realnvp":
         schema += get_flat_realnvp_schema(
             num_density_layers=config["num_density_layers"],
-            coupler_hidden_channels=config["g_nets_hidden_channels"]
+            coupler_hidden_channels=config["g_nets"]
         )
 
     elif model == "maf":
         schema += get_maf_schema(
             num_density_layers=config["num_density_layers"],
-            ar_coupler_hidden_channels=config["g_nets_hidden_channels"]
+            ar_coupler_hidden_channels=config["g_nets"]
         )
 
     else:
@@ -98,48 +98,58 @@ def get_q_coupler_config(config):
 def get_coupler_config(shift_prefix, log_scale_prefix, shift_log_scale_prefix, config):
     model = config["model"]
 
-    shift_key = f"{shift_prefix}_nets_hidden_channels"
-    log_scale_key = f"{log_scale_prefix}_nets_hidden_channels"
-    shift_log_scale_key = f"{shift_log_scale_prefix}_nets_hidden_channels"
+    shift_key = f"{shift_prefix}_nets"
+    log_scale_key = f"{log_scale_prefix}_nets"
+    shift_log_scale_key = f"{shift_log_scale_prefix}_nets"
 
     if shift_key in config and log_scale_key in config:
         return {
             "independent_nets": True,
-            "shift_net": get_net_config(config[shift_key], model),
-            "log_scale_net": get_net_config(config[log_scale_key], model)
+            "shift_net": get_coupler_net_config(config[shift_key], model),
+            "log_scale_net": get_coupler_net_config(config[log_scale_key], model)
         }
 
     elif shift_log_scale_key in config:
         return {
             "independent_nets": False,
-            "shift_log_scale_net": get_net_config(config[shift_log_scale_key], model)
+            "shift_log_scale_net": get_coupler_net_config(config[shift_log_scale_key], model)
         }
 
     else:
         assert False, f"Must specify either `{shift_log_scale_key}', or both `{shift_key}' and `{log_scale_key}'"
 
 
-def get_net_config(net_size, model):
-    if net_size is None:
+def get_coupler_net_config(net_spec, model):
+    if net_spec in ["fixed-constant", "learned-constant"]:
         return {
-            "type": "null"
+            "type": "constant",
+            "value": 0,
+            "fixed": net_spec == "fixed-constant"
         }
 
-    elif model in ["multiscale-realnvp", "pure-cond-affine-resnet"]:
+    elif net_spec == "identity":
         return {
-            "type": "resnet",
-            "hidden_channels": net_size
-        }
-
-    elif model in ["pure-cond-affine-mlp", "maf", "flat-realnvp"]:
-        return {
-            "type": "mlp",
-            "activation": "tanh",
-            "hidden_channels": net_size
+            "type": "identity"
         }
 
     else:
-        assert False, f"Invalid model type {model}"
+        assert isinstance(net_spec, list), f"Invalid net specifier {net_spec}"
+
+        if model in ["multiscale-realnvp", "pure-cond-affine-resnet"]:
+            return {
+                "type": "resnet",
+                "hidden_channels": net_spec
+            }
+
+        elif model in ["pure-cond-affine-mlp", "maf", "flat-realnvp"]:
+            return {
+                "type": "mlp",
+                "activation": "tanh",
+                "hidden_channels": net_spec
+            }
+
+        else:
+            assert False, f"Invalid model {model}"
 
 
 def get_multiscale_realnvp_schema(coupler_hidden_channels):

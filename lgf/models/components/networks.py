@@ -3,9 +3,12 @@ import torch.nn as nn
 
 
 class ConstantNetwork(nn.Module):
-    def __init__(self, value):
+    def __init__(self, value, fixed):
         super().__init__()
-        self.register_buffer("value", value)
+        if fixed:
+            self.register_buffer("value", value)
+        else:
+            self.value = nn.Parameter(value)
 
     def forward(self, inputs):
         return self.value.expand(inputs.shape[0], *self.value.shape)

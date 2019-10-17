@@ -262,8 +262,13 @@ def get_coupler_net(input_shape, num_output_channels, net_config):
             num_output_channels=num_output_channels
         )
 
-    elif net_config["type"] == "null":
-        return ConstantNetwork(value=torch.zeros(num_output_channels, *input_shape[1:]))
+    elif net_config["type"] == "constant":
+        value = torch.full((num_output_channels, *input_shape[1:]), net_config["value"])
+        return ConstantNetwork(value=value, fixed=net_config["fixed"])
+
+    elif net_config["type"] == "identity":
+        assert num_output_channels == input_shape[0]
+        return lambda x: x
 
     else:
         assert False, f"Invalid net type {net_config['type']}"

@@ -2,7 +2,7 @@ def two_uniforms(baseline=False):
     config = {
         "dataset": "2uniforms",
 
-        "model": "flat-realnvp",
+        "model": "pure-cond-affine-mlp",
 
         "train_batch_size": 1000,
         "valid_batch_size": 1000,
@@ -19,7 +19,7 @@ def two_uniforms(baseline=False):
         config = {
             **config,
             "num_density_layers": 10,
-            "g_nets_hidden_channels": [50] * 4,
+            "g_nets": [50] * 4,
             "num_u_channels": 0
         }
 
@@ -30,10 +30,10 @@ def two_uniforms(baseline=False):
             "num_density_layers": 5,
             "num_u_channels": 1,
 
-            "g_nets_hidden_channels": [10] * 2,
-            "st_nets_hidden_channels": [10] * 2,
-            "p_nets_hidden_channels": [50] * 4,
-            "q_nets_hidden_channels": [50] * 4,
+            "g_nets": [50] * 4,
+            "st_nets": [10] * 2,
+            "p_nets": [50] * 4,
+            "q_nets": [50] * 4,
 
             "num_train_elbo_samples": 1,
             "num_valid_elbo_samples": 5,
@@ -64,7 +64,7 @@ def two_d(dataset, baseline=False):
         config = {
             **config,
             "num_density_layers": 20,
-            "g_nets_hidden_channels": [50] * 4,
+            "g_nets": [50] * 4,
             "num_u_channels": 0
         }
 
@@ -72,11 +72,11 @@ def two_d(dataset, baseline=False):
         config = {
             **config,
             "num_density_layers": 5,
-            "g_nets_hidden_channels": [50] * 4,
+            "g_nets": [50] * 4,
             "num_u_channels": 1,
-            "st_nets_hidden_channels": [10] * 2,
-            "p_nets_hidden_channels": [50] * 4,
-            "q_nets_hidden_channels": [50] * 4,
+            "st_nets": [10] * 2,
+            "p_nets": [50] * 4,
+            "q_nets": [50] * 4,
             "num_train_elbo_samples": 1,
             "num_valid_elbo_samples": 5,
             "num_test_elbo_samples": 100
@@ -107,7 +107,7 @@ def uci(dataset, baseline=False):
             config = {
                 **config,
                 "num_density_layers": 10,
-                "g_nets_hidden_channels": [200] * 2,
+                "g_nets": [200] * 2,
                 "num_u_channels": 0
             }
 
@@ -115,11 +115,11 @@ def uci(dataset, baseline=False):
             config = {
                 **config,
                 "num_density_layers": 10,
-                "g_nets_hidden_channels": [100] * 2,
+                "g_nets": [100] * 2,
                 "num_u_channels": 2,
-                "st_nets_hidden_channels": [100] * 2,
-                "p_nets_hidden_channels": [200] * 2,
-                "q_nets_hidden_channels": [200] * 2,
+                "st_nets": [100] * 2,
+                "p_nets": [200] * 2,
+                "q_nets": [200] * 2,
                 "num_train_elbo_samples": 1,
                 "num_valid_elbo_samples": 5,
                 "num_test_elbo_samples": 10
@@ -130,7 +130,7 @@ def uci(dataset, baseline=False):
             config = {
                 **config,
                 "num_density_layers": 10,
-                "g_nets_hidden_channels": [512] * 2,
+                "g_nets": [512] * 2,
                 "num_u_channels": 0
             }
 
@@ -138,11 +138,11 @@ def uci(dataset, baseline=False):
             config = {
                 **config,
                 "num_density_layers": 10,
-                "g_nets_hidden_channels": [128] * 2,
+                "g_nets": [128] * 2,
                 "num_u_channels": 5 if dataset == "hepmass" else 10,
-                "st_nets_hidden_channels": [128] * 2,
-                "p_nets_hidden_channels": [512] * 2,
-                "q_nets_hidden_channels": [512] * 2,
+                "st_nets": [128] * 2,
+                "p_nets": [512] * 2,
+                "q_nets": [512] * 2,
                 "num_train_elbo_samples": 1,
                 "num_valid_elbo_samples": 5,
                 "num_test_elbo_samples": 10
@@ -170,18 +170,18 @@ def images(dataset, baseline=False):
     if baseline:
         config = {
             **config,
-            "g_nets_hidden_channels": [64] * 8,
+            "g_nets": [64] * 8,
             "num_u_channels": 0
         }
 
     else:
         config = {
             **config,
-            "g_nets_hidden_channels": [64] * 4,
+            "g_nets": [64] * 4,
             "num_u_channels": 1,
-            "st_nets_hidden_channels": [8] * 2,
-            "p_nets_hidden_channels": [64] * 2,
-            "q_nets_hidden_channels": [64] * 2,
+            "st_nets": [8] * 2,
+            "p_nets": [64] * 2,
+            "q_nets": [64] * 2,
             "num_train_elbo_samples": 1,
             "num_valid_elbo_samples": 5,
             "num_test_elbo_samples": 10

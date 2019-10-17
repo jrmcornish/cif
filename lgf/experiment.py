@@ -26,8 +26,6 @@ def train(config):
 
     print("\nConfig:")
     print(json.dumps(config, indent=4))
-    print("\nModel (x->z):")
-    print(json.dumps(schema, indent=4))
     print(f"\nNumber of parameters: {num_params(density):,}\n")
 
     with contextlib.suppress(KeyboardInterrupt):
