@@ -125,12 +125,16 @@ def get_glow_cnn(num_input_channels, num_hidden_channels, num_output_channels):
         bias=False
     )
 
+    bn1 = nn.BatchNorm2d(num_hidden_channels)
+
     conv2 = nn.Conv2d(
         in_channels=num_hidden_channels,
         out_channels=num_hidden_channels,
         kernel_size=1,
         bias=False
     )
+
+    bn2 = nn.BatchNorm2d(num_hidden_channels)
 
     conv3 = nn.Conv2d(
         in_channels=num_hidden_channels,
@@ -141,15 +145,6 @@ def get_glow_cnn(num_input_channels, num_hidden_channels, num_output_channels):
     conv3.weight.data.zero_()
     conv3.bias.data.zero_()
 
-    batchnorm1 = nn.BatchNorm2d(num_hidden_channels)
-    batchnorm2 = nn.BatchNorm2d(num_hidden_channels)
+    relu = nn.ReLU()
 
-    return nn.Sequential(
-        conv1,
-        batchnorm1,
-        nn.ReLU(),
-        conv2,
-        batchnorm2,
-        nn.ReLU(),
-        conv3
-    )
+    return nn.Sequential(conv1, bn1, relu, conv2, bn2, relu, conv3)

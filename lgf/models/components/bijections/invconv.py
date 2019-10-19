@@ -27,7 +27,7 @@ class Invertible1x1ConvBijection(Bijection):
         
     def _convolve(self, inputs, weights, weights_shape):
         if len(weights_shape) < 3:
-            return torch.matmul(inputs, weights.T)
+            return torch.matmul(inputs, weights.t())
         else:
             return F.conv2d(inputs, weights.view(*weights_shape))
 

@@ -12,7 +12,9 @@ from .components.bijections import (
     Squeeze2dBijection,
     LogitTransformBijection,
     ViewBijection,
-    ConditionalAffineBijection
+    ConditionalAffineBijection,
+    BruteForceInvertible1x1ConvBijection,
+    LUInvertible1x1ConvBijection
 )
 from .components.densities import (
     DiagonalGaussianDensity,
@@ -22,7 +24,12 @@ from .components.densities import (
     SplitDensity
 )
 from .components.couplers import IndependentCoupler, SharedCoupler
-from .components.networks import ConstantNetwork, get_mlp, get_resnet
+from .components.networks import (
+    ConstantNetwork,
+    get_mlp,
+    get_resnet,
+    get_glow_cnn
+)
 
 
 def get_density(
@@ -122,8 +129,8 @@ def get_bijection(
         assert len(x_shape) == 1
         return MADEBijection(
             num_input_channels=x_shape[0],
-            hidden_channels=layer_config["ar_coupler_hidden_channels"],
-            activation=get_activation(layer_config["ar_coupler_activation"])
+            hidden_channels=layer_config["hidden_channels"],
+            activation=get_activation(layer_config["activation"])
         )
 
     elif layer_config["type"] == "batch-norm":
@@ -131,6 +138,12 @@ def get_bijection(
 
     elif layer_config["type"] == "flip":
         return FlipBijection(x_shape=x_shape, dim=1)
+
+    elif layer_config["type"] == "invconv":
+        if layer_config["lu"]:
+            return LUInvertible1x1ConvBijection(x_shape=x_shape)
+        else:
+            return BruteForceInvertible1x1ConvBijection(x_shape=x_shape)
 
     else:
         assert False, f"Invalid layer type {layer_config['type']}"
@@ -152,9 +165,9 @@ def get_acl_bijection(config, x_shape):
         )
 
     else:
-        if config["mask_type"] == "split_channel":
+        if config["mask_type"] == "split-channel":
             mask = torch.arange(x_shape[0]) < x_shape[0] // 2
-        elif config["mask_type"] == "alternating_channel":
+        elif config["mask_type"] == "alternating-channel":
             mask = torch.arange(x_shape[0]) % 2 == 0
         else:
             assert False, f"Invalid mask type {config['mask_type']}"
@@ -245,10 +258,12 @@ def get_coupler_with_independent_nets(
 
 
 def get_coupler_net(input_shape, num_output_channels, net_config):
+    num_input_channels = input_shape[0]
+
     if net_config["type"] == "mlp":
         assert len(input_shape) == 1
         return get_mlp(
-            num_input_channels=input_shape[0],
+            num_input_channels=num_input_channels,
             hidden_channels=net_config["hidden_channels"],
             num_output_channels=num_output_channels,
             activation=get_activation(net_config["activation"])
@@ -257,8 +272,16 @@ def get_coupler_net(input_shape, num_output_channels, net_config):
     elif net_config["type"] == "resnet":
         assert len(input_shape) == 3
         return get_resnet(
-            num_input_channels=input_shape[0],
+            num_input_channels=num_input_channels,
             hidden_channels=net_config["hidden_channels"],
+            num_output_channels=num_output_channels
+        )
+
+    elif net_config["type"] == "glow-cnn":
+        assert len(input_shape) == 3
+        return get_glow_cnn(
+            num_input_channels=num_input_channels,
+            num_hidden_channels=net_config["num_hidden_channels"],
             num_output_channels=num_output_channels
         )
 
@@ -267,7 +290,7 @@ def get_coupler_net(input_shape, num_output_channels, net_config):
         return ConstantNetwork(value=value, fixed=net_config["fixed"])
 
     elif net_config["type"] == "identity":
-        assert num_output_channels == input_shape[0]
+        assert num_output_channels == num_input_channels
         return lambda x: x
 
     else:

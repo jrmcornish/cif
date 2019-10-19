@@ -36,7 +36,14 @@ def get_base_schema(config):
     elif model == "maf":
         schema += get_maf_schema(
             num_density_layers=config["num_density_layers"],
-            ar_coupler_hidden_channels=config["g_nets"]
+            hidden_channels=config["g_nets"]
+        )
+
+    elif model == "glow":
+        return get_glow_schema(
+            num_scales=config["num_scales"],
+            num_steps_per_scale=config["num_steps_per_scale"],
+            lu_decomposition=True
         )
 
     else:
@@ -158,9 +165,9 @@ def get_multiscale_realnvp_schema(coupler_hidden_channels):
         {"type": "acl", "mask_type": "checkerboard", "reverse_mask": True},
         {"type": "acl", "mask_type": "checkerboard", "reverse_mask": False},
         {"type": "squeeze", "factor": 2},
-        {"type": "acl", "mask_type": "split_channel", "reverse_mask": True},
-        {"type": "acl", "mask_type": "split_channel", "reverse_mask": False},
-        {"type": "acl", "mask_type": "split_channel", "reverse_mask": True},
+        {"type": "acl", "mask_type": "split-channel", "reverse_mask": True},
+        {"type": "acl", "mask_type": "split-channel", "reverse_mask": False},
+        {"type": "acl", "mask_type": "split-channel", "reverse_mask": True},
         {"type": "split"},
         {"type": "acl", "mask_type": "checkerboard", "reverse_mask": False},
         {"type": "acl", "mask_type": "checkerboard", "reverse_mask": True},
@@ -182,6 +189,46 @@ def get_multiscale_realnvp_schema(coupler_hidden_channels):
     return schema
 
 
+def get_glow_schema(
+        num_scales,
+        num_steps_per_scale,
+        coupler_num_hidden_channels,
+        lu_decomposition
+):
+    schema = []
+    for i in range(num_scales):
+        if i > 0:
+            schema.append({"type": "split"})
+
+        schema.append({"type": "squeeze", "factor": 2})
+
+        for _ in range(num_steps_per_scale):
+            schema += [
+                {
+                    "type": "batch-norm"
+                },
+                {
+                    "type": "invconv",
+                    "lu": lu_decomposition
+                },
+                {
+                    "type": "acl",
+                    "mask_type": "split-channel",
+                    "reverse_mask": False,
+                    "coupler": {
+                        "independent_nets": False,
+                        "shift_log_scale_net": {
+                            "type": "glow-cnn",
+                            "num_hidden_channels": coupler_num_hidden_channels
+                        }
+                    },
+                    "num_u_channels": 0
+                }
+            ]
+
+    return schema
+
+
 def get_flat_realnvp_schema(
         num_density_layers,
         coupler_hidden_channels
@@ -191,7 +238,7 @@ def get_flat_realnvp_schema(
     for i in range(num_density_layers):
         result.append({
             "type": "acl",
-            "mask_type": "alternating_channel",
+            "mask_type": "alternating-channel",
             "reverse_mask": i % 2 == 0,
             "coupler": {
                 "independent_nets": True,
@@ -214,7 +261,7 @@ def get_flat_realnvp_schema(
 
 def get_maf_schema(
         num_density_layers,
-        ar_coupler_hidden_channels
+        hidden_channels
 ):
     result = [{"type": "flatten"}]
 
@@ -224,8 +271,8 @@ def get_maf_schema(
 
         result.append({
             "type": "made",
-            "ar_coupler_hidden_channels": ar_coupler_hidden_channels,
-            "ar_coupler_activation": "tanh"
+            "hidden_channels": hidden_channels,
+            "activation": "tanh"
         })
 
     return result
