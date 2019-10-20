@@ -134,7 +134,10 @@ def get_bijection(
         )
 
     elif layer_config["type"] == "batch-norm":
-        return BatchNormBijection(x_shape=x_shape)
+        return BatchNormBijection(
+            x_shape=x_shape,
+            per_channel=layer_config["per_channel"]
+        )
 
     elif layer_config["type"] == "flip":
         return FlipBijection(x_shape=x_shape, dim=1)

@@ -255,7 +255,7 @@ class TestBatchNormBijection(_TestBijection, unittest.TestCase):
         self.batch_size = 100
         self.eps = 1e-5
 
-        self.bijection = BatchNormBijection(x_shape=(10, 2))
+        self.bijection = BatchNormBijection(x_shape=(10, 2), per_channel=True)
         self.u_shape = None
 
         # XXX: We have to do this because otherwise composing z_to_x with x_to_z won't be invertible 

@@ -47,6 +47,7 @@ class ResidualBlock(nn.Module):
         )
 
 
+# TODO: Add a bias
 class ScaledTanh2dModule(nn.Module):
     def __init__(self, module, num_channels):
         super().__init__()

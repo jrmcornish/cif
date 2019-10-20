@@ -184,7 +184,8 @@ def get_multiscale_realnvp_schema(coupler_hidden_channels):
                     }
                 },
                 {
-                    "type": "batch-norm"
+                    "type": "batch-norm",
+                    "per_channel": True
                 }
             ]
 
@@ -210,7 +211,8 @@ def get_glow_schema(
         for _ in range(num_steps_per_scale):
             schema += [
                 {
-                    "type": "batch-norm"
+                    "type": "batch-norm",
+                    "per_channel": True
                 },
                 {
                     "type": "invconv",
@@ -262,7 +264,8 @@ def get_flat_realnvp_schema(
                 "num_u_channels": 0
             },
             {
-                "type": "batch-norm"
+                "type": "batch-norm",
+                "per_channel": False # Irrelevant here since we flatten anyway
             }
         ]
 
@@ -286,7 +289,8 @@ def get_maf_schema(
                 "activation": "tanh"
             },
             {
-                "type": "batch-norm"
+                "type": "batch-norm",
+                "per_channel": False # Irrelevant here since we flatten anyway
             }
         ]
 

@@ -1,3 +1,5 @@
+import numpy as np
+
 import torch
 import torch.nn as nn
 
@@ -5,26 +7,35 @@ from .bijection import Bijection
 
 
 class BatchNormBijection(Bijection):
-    def __init__(self, x_shape, momentum=0.1, eps=1e-5):
+    def __init__(self, x_shape, per_channel, momentum=0.1, eps=1e-5):
         super().__init__(x_shape=x_shape, z_shape=x_shape)
 
         self.momentum = momentum
         self.eps = eps
 
-        self.beta = nn.Parameter(torch.zeros(x_shape))
-        self.gamma = nn.Parameter(torch.zeros(x_shape))
+        if per_channel:
+            param_shape = (x_shape[0], *[1 for _ in x_shape[1:]])
+            self.average_dims = [0] + list(range(2, len(x_shape) + 1))
+            self.log_jac_factor = np.prod(x_shape[1:])
+        else:
+            param_shape = x_shape
+            self.average_dims = [0]
+            self.log_jac_factor = 1
 
-        self.register_buffer("running_mean", torch.zeros(x_shape))
-        self.register_buffer("running_var", torch.ones(x_shape))
+        self.beta = nn.Parameter(torch.zeros(param_shape))
+        self.gamma = nn.Parameter(torch.zeros(param_shape))
+
+        self.register_buffer("running_mean", torch.zeros(param_shape))
+        self.register_buffer("running_var", torch.ones(param_shape))
 
     def _log_jac_x_to_z(self, var, batch_size):
-        log_jac_single = torch.sum(self.gamma - 0.5*torch.log(var + self.eps))
+        log_jac_single = self.log_jac_factor * torch.sum(self.gamma - 0.5*torch.log(var + self.eps))
         return log_jac_single.view(1, 1).expand(batch_size, 1)
 
     def _x_to_z(self, x, **kwargs):
         if self.training:
-            mean = torch.mean(x, dim=0)
-            var = torch.mean((x - mean)**2, dim=0)
+            mean = self._average(x)
+            var = self._average((x - mean)**2)
 
             self.running_mean.mul_(1 - self.momentum).add_(self.momentum * mean.data)
             self.running_var.mul_(1 - self.momentum).add_(self.momentum * var.data)
@@ -34,12 +45,23 @@ class BatchNormBijection(Bijection):
             var = self.running_var
 
         z = (x - mean) / torch.sqrt(var + self.eps) * torch.exp(self.gamma) + self.beta
-        return {"z": z, "log-jac": self._log_jac_x_to_z(var, x.shape[0])}
+        return {
+            "z": z,
+            "log-jac": self._log_jac_x_to_z(var, x.shape[0])
+        }
+
+    def _average(self, data):
+        # TODO: Maybe can do better by flattening?
+        return torch.mean(data, dim=self.average_dims, keepdim=True).squeeze(0)
 
     def _z_to_x(self, z, **kwargs):
         assert not self.training
+
         x = (z - self.beta) * torch.exp(-self.gamma) * torch.sqrt(self.running_var + self.eps) + self.running_mean
-        return {"x": x, "log-jac": -self._log_jac_x_to_z(self.running_var, z.shape[0])}
+        return {
+            "x": x,
+            "log-jac": -self._log_jac_x_to_z(self.running_var, z.shape[0])
+        }
 
 
 class ConditionalAffineBijection(Bijection):
