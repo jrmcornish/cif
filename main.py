@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import random
 
 from lgf.experiment import train, print_density, print_schema, infer_config_values
 
@@ -8,7 +9,7 @@ from config import two_uniforms, two_d, uci, images
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--seed", type=int, default=0, help="Random seed to use")
+parser.add_argument("--seed", type=int, help="Random seed to use.")
 parser.add_argument("--print-density", action="store_true", help="Print the Pytorch Density and exit")
 parser.add_argument("--print-schema", action="store_true", help="Print the model schema and exit")
 parser.add_argument("--baseline", action="store_true", help="Run baseline flow instead of LGF")
@@ -37,9 +38,14 @@ elif args.dataset in ["power", "gas", "hepmass", "miniboone"]:
 elif args.dataset in ["mnist", "fashion-mnist", "cifar10", "svhn"]:
     config = images(args.dataset, args.baseline)
 
+if args.seed is None:
+    seed = random.randint(0, 10000)
+else:
+    seed = args.seed
+
 config = {
     **config,
-    "seed": args.seed,
+    "seed": seed,
     "should_save_checkpoints": not args.nochkpt,
     "write_to_disk": not args.nosave and not args.print_density and not args.print_schema,
     "data_root": args.data_root,
