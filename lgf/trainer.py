@@ -54,8 +54,7 @@ class Trainer:
             writer,
             max_epochs,
             epochs_per_test,
-            should_save_checkpoints,
-            epochs_per_checkpoint,
+            should_checkpoint,
             device
     ):
         self._module = module
@@ -76,8 +75,8 @@ class Trainer:
         self._best_valid_loss = float("inf")
         self._num_bad_valid_epochs = 0
         self._epochs_per_test = epochs_per_test
-        self._epochs_per_checkpoint = epochs_per_checkpoint
-        self._should_save_checkpoints = should_save_checkpoints
+
+        self._should_checkpoint = should_checkpoint
 
         self._visualizer = visualizer
 
@@ -100,7 +99,7 @@ class Trainer:
         self._trainer.add_event_handler(Events.EPOCH_STARTED, lambda _: self._module.train())
         self._trainer.add_event_handler(Events.ITERATION_COMPLETED, TerminateOnNan())
         self._trainer.add_event_handler(Events.ITERATION_COMPLETED, self._log_training_info)
-        self._trainer.add_event_handler(Events.EPOCH_COMPLETED, self._periodic_checkpoint)
+        self._trainer.add_event_handler(Events.EPOCH_COMPLETED, lambda _: self._save_checkpoint("latest"))
 
         self._trainer.add_event_handler(Events.EPOCH_COMPLETED, self._validate)
         self._evaluator.add_event_handler(Events.EPOCH_STARTED, lambda _: self._module.eval())
@@ -182,13 +181,8 @@ class Trainer:
                 norm += param.grad.norm().item()**2
         return np.sqrt(norm)
 
-    def _periodic_checkpoint(self, engine):
-        epoch = engine.state.epoch
-        if (epoch - 1) % self._epochs_per_checkpoint == 0:
-            self._save_checkpoint(tag=f"epoch_{epoch:09}")
-
     def _save_checkpoint(self, tag):
-        if not self._should_save_checkpoints:
+        if not self._should_checkpoint:
             return
 
         # We do this manually (i.e. don't use Ignite's checkpointing) because

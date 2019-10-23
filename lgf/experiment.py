@@ -109,15 +109,13 @@ def setup_experiment(config):
         writer=writer,
         max_epochs=config["max_epochs"],
         epochs_per_test=config["epochs_per_test"],
-        should_save_checkpoints=config["should_save_checkpoints"],
-        epochs_per_checkpoint=config["epochs_per_checkpoint"],
+        should_checkpoint=config["should_checkpoint"],
         device=device
     )
 
     return schema, density, trainer, writer
 
 
-# TODO: Fix
 def infer_config_values(config):
     config = copy.deepcopy(config)
 
@@ -142,14 +140,9 @@ def infer_config_values(config):
         config["num_train_elbo_samples"] = 1
         config["num_valid_elbo_samples"] = 1
         config["num_test_elbo_samples"] = 1
-        config["p_net"] = None
-        config["q_net"] = None
-        config["st_net"] = None
-        config["separate_st_nets"] = None
-        config["st_hidden_channels"] = None
-
-    assert not (config["num_u_channels"] > 0 and config.get("batch_norm", False))
-    config["batch_norm"] = config["num_u_channels"] == 0
+        config["p_nets"] = None
+        config["q_nets"] = None
+        config["st_nets"] = None
 
     return config
 

@@ -13,8 +13,8 @@ parser.add_argument("--seed", type=int, help="Random seed to use.")
 parser.add_argument("--print-density", action="store_true", help="Print the Pytorch Density and exit")
 parser.add_argument("--print-schema", action="store_true", help="Print the model schema and exit")
 parser.add_argument("--baseline", action="store_true", help="Run baseline flow instead of LGF")
-parser.add_argument("--nosave", action="store_true", help="Don't save anything to disk")
 parser.add_argument("--nochkpt", action="store_true", help="Disable checkpointing")
+parser.add_argument("--nosave", action="store_true", help="Don't save anything to disk (including checkpoints)")
 parser.add_argument("--data-root", default="data/", help="Location of training data (default: %(default)s)")
 parser.add_argument("--logdir-root", default="runs/", help="Location of log files (default: %(default)s)")
 parser.add_argument("--dataset", choices=[
@@ -46,7 +46,7 @@ else:
 config = {
     **config,
     "seed": seed,
-    "should_save_checkpoints": not args.nochkpt,
+    "should_checkpoint": not args.nochkpt,
     "write_to_disk": not args.nosave and not args.print_density and not args.print_schema,
     "data_root": args.data_root,
     "logdir_root": args.logdir_root

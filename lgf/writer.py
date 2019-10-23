@@ -46,7 +46,15 @@ class Writer:
     def write_checkpoint(self, tag, data):
         os.makedirs(self._checkpoints_dir, exist_ok=True)
         checkpoint_path = os.path.join(self._checkpoints_dir, f"{tag}.pt")
-        torch.save(data, checkpoint_path)
+
+        tmp_checkpoint_path = os.path.join(
+            os.path.dirname(checkpoint_path),
+            f"{os.path.basename(checkpoint_path)}.tmp"
+        )
+
+        torch.save(data, tmp_checkpoint_path)
+        # rename is atomic, so we guarantee our checkpoints are always good
+        os.rename(tmp_checkpoint_path, checkpoint_path)
 
     @property
     def _checkpoints_dir(self):

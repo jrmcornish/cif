@@ -11,8 +11,7 @@ def two_uniforms(baseline=False):
         "lr": 1e-3,
         "max_bad_valid_epochs": 300,
         "max_epochs": 300,
-        "epochs_per_test": 5,
-        "epochs_per_checkpoint": 50
+        "epochs_per_test": 5
     }
 
     if baseline:
@@ -56,8 +55,7 @@ def two_d(dataset, baseline=False):
         "lr": 1e-3,
         "max_bad_valid_epochs": 500,
         "max_epochs": 500,
-        "epochs_per_test": 5,
-        "epochs_per_checkpoint": 50
+        "epochs_per_test": 5
     }
 
     if baseline:
@@ -98,8 +96,7 @@ def uci(dataset, baseline=False):
         "lr": 1e-3,
         "max_bad_valid_epochs": 30,
         "max_epochs": 1000,
-        "epochs_per_test": 5,
-        "epochs_per_checkpoint": 50
+        "epochs_per_test": 5
     }
 
     if dataset in ["gas", "power"]:
@@ -163,8 +160,7 @@ def images(dataset, baseline=False):
         "lr": 1e-4,
         "max_bad_valid_epochs": 50,
         "max_epochs": 1000,
-        "epochs_per_test": 1,
-        "epochs_per_checkpoint": 50
+        "epochs_per_test": 1
     }
 
     if baseline:
