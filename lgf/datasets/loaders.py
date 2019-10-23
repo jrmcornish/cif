@@ -22,13 +22,12 @@ def get_loaders(
         data_root,
         train_batch_size,
         valid_batch_size,
-        test_batch_size,
-        add_train_hflips
+        test_batch_size
 ):
     print("Loading data...", end="", flush=True)
 
     if dataset in ["cifar10", "svhn", "mnist", "fashion-mnist"]:
-        train_dset, valid_dset, test_dset = get_image_datasets(dataset, data_root, add_train_hflips)
+        train_dset, valid_dset, test_dset = get_image_datasets(dataset, data_root)
     elif dataset in ["miniboone", "hepmass", "power", "gas"]:
         train_dset, valid_dset, test_dset = get_UCI_datasets(dataset, data_root)
     else:

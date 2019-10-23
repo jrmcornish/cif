@@ -11,6 +11,10 @@ class BijectionDensity(Density):
         self.bijection = bijection
         self.prior = prior
 
+    def metrics(self, x, num_elbo_samples=1):
+        # Ignore num_elbo_samples, since exact
+        return super().metrics(x, num_elbo_samples=1)
+
     def _elbo(self, x):
         result = self.bijection.x_to_z(x)
         prior_term = self.prior.elbo(result["z"])["elbo"]
@@ -32,6 +36,10 @@ class BijectionMixtureDensity(Density):
         self.prior = prior
         self.bijections = nn.ModuleList(bijections)
         self.weight_map = weight_map
+
+    def metrics(self, x, num_elbo_samples=1):
+        # Ignore num_elbo_samples, since exact
+        return super().metrics(x, num_elbo_samples=1)
 
     def _elbo(self, x):
         K = len(self.bijections)

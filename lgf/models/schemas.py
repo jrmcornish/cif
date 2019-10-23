@@ -19,7 +19,7 @@ def get_pure_cond_affine_schema(config):
 def get_schema_from_base(config):
     base_schema = get_base_schema(config)
 
-    if config["logit_tf_lambda"] is not None:
+    if "logit_tf_lambda" in config and "logit_tf_scale" in config:
         logit_tf_layer = {
             "type": "logit",
             "lambda": config["logit_tf_lambda"],
@@ -46,25 +46,26 @@ def get_base_schema(config):
 
     if model == "multiscale-realnvp":
         return get_multiscale_realnvp_schema(
-            coupler_hidden_channels=config["g_nets"]
+            coupler_hidden_channels=config["g_hidden_channels"]
         )
 
     elif model == "flat-realnvp":
         return get_flat_realnvp_schema(
             num_density_layers=config["num_density_layers"],
-            coupler_hidden_channels=config["g_nets"]
+            coupler_hidden_channels=config["g_hidden_channels"]
         )
 
     elif model == "maf":
         return get_maf_schema(
             num_density_layers=config["num_density_layers"],
-            hidden_channels=config["g_nets"]
+            hidden_channels=config["g_hidden_channels"]
         )
 
     elif model == "glow":
         return get_glow_schema(
             num_scales=config["num_scales"],
             num_steps_per_scale=config["num_steps_per_scale"],
+            coupler_num_hidden_channels=config["g_num_hidden_channels"],
             lu_decomposition=True
         )
 
@@ -146,7 +147,17 @@ def get_coupler_net_config(net_spec, model):
             }
 
         else:
-            assert False, f"Invalid model {model}"
+            assert False, f"Invalid model {model} for net specification {net_spec}"
+
+    elif isinstance(net_spec, int):
+        if model == "glow":
+            return {
+                "type": "glow-cnn",
+                "num_hidden_channels": net_spec
+            }
+
+        else:
+            assert False, f"Invalid model {model} for net specification {net_spec}"
 
     else:
         assert False, f"Invalid net specifier {net_spec}"

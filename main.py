@@ -1,65 +1,69 @@
 #!/usr/bin/env python3
 
 import argparse
-import random
+import json
+import time
 
-from lgf.experiment import train, print_density, print_schema, infer_config_values
+from lgf.experiment import train, print_density, print_schema
 
-from config import two_uniforms, two_d, uci, images
+from config import get_config
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--seed", type=int, help="Random seed to use.")
+parser.add_argument("--model", choices=["maf", "flat-realnvp", "multiscale-realnvp", "glow"])
+parser.add_argument("--dataset", choices=[
+    "2uniforms", "8gaussians", "checkerboard", "2spirals",
+    "power", "gas", "hepmass", "miniboone",
+    "mnist", "fashion-mnist", "cifar10", "svhn"
+])
 parser.add_argument("--print-density", action="store_true", help="Print the Pytorch Density and exit")
 parser.add_argument("--print-schema", action="store_true", help="Print the model schema and exit")
+parser.add_argument("--print-config", action="store_true", help="Print the full config and exit")
 parser.add_argument("--baseline", action="store_true", help="Run baseline flow instead of LGF")
 parser.add_argument("--nochkpt", action="store_true", help="Disable checkpointing")
 parser.add_argument("--nosave", action="store_true", help="Don't save anything to disk (including checkpoints)")
 parser.add_argument("--data-root", default="data/", help="Location of training data (default: %(default)s)")
 parser.add_argument("--logdir-root", default="runs/", help="Location of log files (default: %(default)s)")
-parser.add_argument("--dataset", choices=[
-    "2uniforms",
-    "8gaussians", "checkerboard", "2spirals",
-    "power", "gas", "hepmass", "miniboone",
-    "mnist", "fashion-mnist", "cifar10", "svhn"
-], required=True)
+parser.add_argument("--config", default="{}", help="Override config entries (JSON)")
 
 args = parser.parse_args()
 
-if args.dataset == "2uniforms":
-    config = two_uniforms(args.baseline)
-
-elif args.dataset in ["8gaussians", "checkerboard", "2spirals"]:
-    config = two_d(args.dataset, args.baseline)
-
-elif args.dataset in ["power", "gas", "hepmass", "miniboone"]:
-    config = uci(args.dataset, args.baseline)
-
-elif args.dataset in ["mnist", "fashion-mnist", "cifar10", "svhn"]:
-    config = images(args.dataset, args.baseline)
-
-if args.seed is None:
-    seed = random.randint(0, 10000)
-else:
-    seed = args.seed
+config = get_config(
+    model=args.model,
+    dataset=args.dataset,
+    use_baseline=args.baseline
+)
 
 config = {
     **config,
-    "seed": seed,
+    **json.loads(args.config),
+    "dataset": args.dataset,
+    "model": args.model,
+    "seed": int(time.time() * 1e6) % 2**32,
     "should_checkpoint": not args.nochkpt,
-    "write_to_disk": not args.nosave and not args.print_density and not args.print_schema,
+    "write_to_disk": (
+        not args.nosave
+        and not args.print_density
+        and not args.print_schema
+        and not args.print_config
+    ),
     "data_root": args.data_root,
     "logdir_root": args.logdir_root
 }
 
-config = infer_config_values(config)
+should_train = True
 
-if args.print_density or args.print_schema:
-    if args.print_density:
-        print_density(config)
+if args.print_config:
+    print(json.dumps(config, indent=4))
+    should_train = False
 
-    if args.print_schema:
-        print_schema(config)
+if args.print_density:
+    print_density(config)
+    should_train = False
 
-else:
+if args.print_schema:
+    print_schema(config)
+    should_train = False
+
+if should_train:
     train(config)
