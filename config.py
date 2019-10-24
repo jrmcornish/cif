@@ -170,6 +170,14 @@ def get_images_config(dataset, model, use_baseline):
 
         config["train_batch_size"] = 100
 
+        if dataset in ["cifar10", "svhn"]:
+            config["logit_tf_lambda"] = 0.05
+            config["logit_tf_scale"] = 256
+
+        elif dataset in ["mnist", "fashion-mnist"]:
+            config["logit_tf_lambda"] = 1e-6
+            config["logit_tf_scale"] = 256
+
     elif model == "glow":
         if use_baseline:
             config = {
@@ -192,16 +200,11 @@ def get_images_config(dataset, model, use_baseline):
 
         config["train_batch_size"] = 64
 
+        if dataset in ["cifar10", "svhn", "mnist", "fashion-mnist"]:
+            config["centering_tf_scale"] = 256
+
     else:
         assert False, f"Invalid model {model} for dataset {dataset}"
-
-    if dataset in ["cifar10", "svhn"]:
-        config["logit_tf_lambda"] = 0.05
-        config["logit_tf_scale"] = 256
-
-    elif dataset in ["mnist", "fashion-mnist"]:
-        config["logit_tf_lambda"] = 1e-6
-        config["logit_tf_scale"] = 256
 
     config = {
         **config,

@@ -17,15 +17,7 @@ def get_pure_cond_affine_schema(config):
 
 
 def get_schema_from_base(config):
-    base_schema = get_base_schema(config)
-
-    if "logit_tf_lambda" in config and "logit_tf_scale" in config:
-        logit_tf_layer = {
-            "type": "logit",
-            "lambda": config["logit_tf_lambda"],
-            "scale": config["logit_tf_scale"]
-        }
-        base_schema = [logit_tf_layer] + base_schema
+    base_schema = get_preproc_schema(config) + get_base_schema(config)
 
     schema = []
     for layer in base_schema:
@@ -39,6 +31,38 @@ def get_schema_from_base(config):
             schema.append(layer)
 
     return schema
+
+
+def get_preproc_schema(config):
+    if "logit_tf_lambda" in config and "logit_tf_scale" in config:
+        assert "rescale_tf_scale" not in config
+        return get_logit_tf_schema(
+            lam=config["logit_tf_lambda"],
+            scale=config["logit_tf_scale"]
+        )
+
+    elif "centering_tf_scale" in config:
+        assert "logit_tf_lambda" not in config
+        assert "logit_tf_scale" not in config
+        return get_centering_tf_schema(scale=config["centering_tf_scale"])
+
+    else:
+        return []
+
+
+def get_logit_tf_schema(lam, scale):
+    return [
+        {"type": "scalar-mult", "value": (1 - 2*lam) / scale},
+        {"type": "scalar-add", "value": lam},
+        {"type": "logit", "lambda": 0., "scale": 1.}
+    ]
+
+
+def get_centering_tf_schema(scale):
+    return [
+        {"type": "scalar-mult", "value": 1 / scale},
+        {"type": "scalar-add", "value": -.5}
+    ]
 
 
 def get_base_schema(config):

@@ -22,7 +22,11 @@ from .reshaping import (
     FlipBijection
 )
 
-from .logit import LogitTransformBijection
+from .preproc import (
+    LogitBijection,
+    PositiveScalarMultiplicationBijection,
+    ScalarAdditionBijection
+)
 
 from .invconv import (
     BruteForceInvertible1x1ConvBijection,

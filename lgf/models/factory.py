@@ -10,7 +10,9 @@ from .components.bijections import (
     MADEBijection,
     BatchNormBijection,
     Squeeze2dBijection,
-    LogitTransformBijection,
+    LogitBijection,
+    PositiveScalarMultiplicationBijection,
+    ScalarAdditionBijection,
     ViewBijection,
     ConditionalAffineBijection,
     BruteForceInvertible1x1ConvBijection,
@@ -82,11 +84,7 @@ def get_density(
 
 def get_uniform_density(x_shape):
     return BijectionDensity(
-        bijection=LogitTransformBijection(
-            x_shape=x_shape,
-            lam=0,
-            scale=1
-        ).inverse(),
+        bijection=LogitBijection(x_shape=x_shape).inverse(),
         prior=UniformDensity(x_shape)
     )
 
@@ -110,7 +108,16 @@ def get_bijection(
         return Squeeze2dBijection(x_shape=x_shape, factor=layer_config["factor"])
 
     elif layer_config["type"] == "logit":
-        return LogitTransformBijection(x_shape=x_shape, lam=layer_config["lambda"], scale=layer_config["scale"])
+        return LogitBijection(x_shape=x_shape)
+
+    elif layer_config["type"] == "scalar-mult":
+        return PositiveScalarMultiplicationBijection(
+            x_shape=x_shape,
+            value=layer_config["value"]
+        )
+
+    elif layer_config["type"] == "scalar-add":
+        return ScalarAdditionBijection(x_shape=x_shape, value=layer_config["value"])
 
     elif layer_config["type"] == "flatten":
         return ViewBijection(x_shape=x_shape, z_shape=(np.prod(x_shape),))
