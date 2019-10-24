@@ -4,6 +4,9 @@ import argparse
 import json
 import time
 
+import sys
+sys.setrecursionlimit(3000)
+
 from lgf.experiment import train, print_density, print_schema
 
 from config import get_config
