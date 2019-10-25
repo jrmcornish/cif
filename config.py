@@ -169,6 +169,8 @@ def get_images_config(dataset, model, use_baseline):
             }
 
         config["train_batch_size"] = 100
+        config["lr"] = 1e-4
+        config["weight_decay"] = 0
 
         if dataset in ["cifar10", "svhn"]:
             config["logit_tf_lambda"] = 0.05
@@ -199,6 +201,8 @@ def get_images_config(dataset, model, use_baseline):
             }
 
         config["train_batch_size"] = 64
+        config["lr"] = 2.35e-7
+        config["weight_decay"] = 5e-5
 
         if dataset in ["cifar10", "svhn", "mnist", "fashion-mnist"]:
             config["centering_tf_scale"] = 256
@@ -211,8 +215,6 @@ def get_images_config(dataset, model, use_baseline):
         "valid_batch_size": 500,
         "test_batch_size": 500,
 
-        "lr": 1e-4,
-        "weight_decay": 0.,
         "max_bad_valid_epochs": 50,
         "max_epochs": 1000,
         "epochs_per_test": 1,

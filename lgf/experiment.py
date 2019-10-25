@@ -66,7 +66,7 @@ def setup_experiment(config):
     schema = get_schema(config=config)
     density = get_density(schema=schema, x_shape=x_shape)
 
-    opt = optim.Adam(
+    opt = optim.Adamax(
         density.parameters(),
         lr=config["lr"],
         weight_decay=config["weight_decay"]
