@@ -66,7 +66,14 @@ def setup_experiment(config):
     schema = get_schema(config=config)
     density = get_density(schema=schema, x_shape=x_shape)
 
-    opt = optim.Adamax(
+    if config["opt"] == "adam":
+        opt_class = optim.Adam
+    elif config["opt"] == "adamax":
+        opt_class = optim.Adamax
+    else:
+        assert False, f"Invalid optimiser type {config['opt']}"
+
+    opt = opt_class(
         density.parameters(),
         lr=config["lr"],
         weight_decay=config["weight_decay"]

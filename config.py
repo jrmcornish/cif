@@ -80,6 +80,7 @@ def get_2d_config(dataset, model, use_baseline):
         "valid_batch_size": 1000,
         "test_batch_size": 10000,
 
+        "opt": "adam",
         "lr": 1e-3,
         "weight_decay": 0.,
         "epochs_per_test": 5,
@@ -137,6 +138,7 @@ def get_uci_config(dataset, model, use_baseline):
         "valid_batch_size": 5000,
         "test_batch_size": 5000,
 
+        "opt": "adam",
         "lr": 1e-3,
         "weight_decay": 0.,
         "max_bad_valid_epochs": 30,
@@ -169,8 +171,9 @@ def get_images_config(dataset, model, use_baseline):
             }
 
         config["train_batch_size"] = 100
+        config["opt"] = "adam"
         config["lr"] = 1e-4
-        config["weight_decay"] = 0
+        config["weight_decay"] = 0.
 
         if dataset in ["cifar10", "svhn"]:
             config["logit_tf_lambda"] = 0.05
@@ -201,11 +204,15 @@ def get_images_config(dataset, model, use_baseline):
             }
 
         config["train_batch_size"] = 64
-        config["lr"] = 2.35e-7
-        config["weight_decay"] = 5e-5
+        config["opt"] = "adamax"
+        config["lr"] = 5e-4
 
-        if dataset in ["cifar10", "svhn", "mnist", "fashion-mnist"]:
-            config["centering_tf_scale"] = 256
+        if dataset in ["cifar10"]:
+            config["weight_decay"] = 0.15
+        else:
+            config["weight_decay"] = 0.
+
+        config["centering_tf_scale"] = 256
 
     else:
         assert False, f"Invalid model {model} for dataset {dataset}"
