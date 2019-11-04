@@ -54,7 +54,8 @@ class Trainer:
             writer,
             max_epochs,
             epochs_per_test,
-            should_checkpoint,
+            should_checkpoint_latest,
+            should_checkpoint_best_valid,
             device
     ):
         self._module = module
@@ -76,7 +77,7 @@ class Trainer:
         self._num_bad_valid_epochs = 0
         self._epochs_per_test = epochs_per_test
 
-        self._should_checkpoint = should_checkpoint
+        self._should_checkpoint_best_valid = should_checkpoint_best_valid
 
         self._visualizer = visualizer
 
@@ -99,7 +100,9 @@ class Trainer:
         self._trainer.add_event_handler(Events.EPOCH_STARTED, lambda _: self._module.train())
         self._trainer.add_event_handler(Events.ITERATION_COMPLETED, TerminateOnNan())
         self._trainer.add_event_handler(Events.ITERATION_COMPLETED, self._log_training_info)
-        self._trainer.add_event_handler(Events.EPOCH_COMPLETED, lambda _: self._save_checkpoint("latest"))
+
+        if should_checkpoint_latest:
+            self._trainer.add_event_handler(Events.EPOCH_COMPLETED, lambda _: self._save_checkpoint("latest"))
 
         self._trainer.add_event_handler(Events.EPOCH_COMPLETED, self._validate)
         self._evaluator.add_event_handler(Events.EPOCH_STARTED, lambda _: self._module.eval())
@@ -146,7 +149,9 @@ class Trainer:
             print(f"Best validation loss {valid_loss} after epoch {engine.state.epoch}")
             self._num_bad_valid_epochs = 0
             self._best_valid_loss = valid_loss
-            self._save_checkpoint(tag="best_valid")
+
+            if self._should_checkpoint_best_valid:
+                self._save_checkpoint(tag="best_valid")
 
         else:
             self._num_bad_valid_epochs += 1
@@ -182,9 +187,6 @@ class Trainer:
         return np.sqrt(norm)
 
     def _save_checkpoint(self, tag):
-        if not self._should_checkpoint:
-            return
-
         # We do this manually (i.e. don't use Ignite's checkpointing) because
         # Ignite only allows saving objects, not scalars (e.g. the current epoch) 
         checkpoint = {

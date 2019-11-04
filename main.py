@@ -24,10 +24,11 @@ parser.add_argument("--print-schema", action="store_true", help="Print the model
 parser.add_argument("--print-config", action="store_true", help="Print the full config and exit")
 parser.add_argument("--baseline", action="store_true", help="Run baseline flow instead of LGF")
 parser.add_argument("--nochkpt", action="store_true", help="Disable checkpointing")
-parser.add_argument("--nosave", action="store_true", help="Don't save anything to disk (including checkpoints)")
+parser.add_argument("--checkpoints", choices=["best-valid", "latest", "both", "none"], default="both", help="Type of checkpoints to save")
+parser.add_argument("--nosave", action="store_true", help="Don't save anything to disk")
 parser.add_argument("--data-root", default="data/", help="Location of training data (default: %(default)s)")
 parser.add_argument("--logdir-root", default="runs/", help="Location of log files (default: %(default)s)")
-parser.add_argument("--config", default="{}", help="Override config entries (JSON)")
+parser.add_argument("--config", default="{}", help="Override config entries. Specify as JSON.")
 
 args = parser.parse_args()
 
@@ -43,13 +44,9 @@ config = {
     "dataset": args.dataset,
     "model": args.model,
     "seed": int(time.time() * 1e6) % 2**32,
-    "should_checkpoint": not args.nochkpt,
-    "write_to_disk": (
-        not args.nosave
-        and not args.print_density
-        and not args.print_schema
-        and not args.print_config
-    ),
+    "should_checkpoint_best_valid": args.checkpoints in ["best-valid", "both"],
+    "should_checkpoint_latest": args.checkpoints in ["latest", "both"],
+    "write_to_disk": not args.nosave,
     "data_root": args.data_root,
     "logdir_root": args.logdir_root
 }
@@ -61,7 +58,7 @@ if args.print_config:
     should_train = False
 
 if args.print_density:
-    print_density(config)
+    print_density({**config, "write_to_disk": False})
     should_train = False
 
 if args.print_schema:
