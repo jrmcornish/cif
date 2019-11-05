@@ -14,6 +14,7 @@ matplotlib = "*"
 tensorboardx = {editable = true,git = "git://github.com/lanpa/tensorboardX.git"}
 pandas = "*"
 pytorch-ignite = "*"
+pyro-ppl = "*"
 
 [requires]
 python_version = "3.7"

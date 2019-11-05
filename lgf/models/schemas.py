@@ -1,6 +1,6 @@
 def get_schema(config):
     model = config["model"] 
-    if model in ["glow", "multiscale-realnvp", "flat-realnvp", "maf"]:
+    if model in ["glow", "multiscale-realnvp", "flat-realnvp", "maf", "sos"]:
         return get_schema_from_base(config)
 
     elif model == "pure-cond-affine-mlp":
@@ -85,6 +85,14 @@ def get_base_schema(config):
             hidden_channels=config["g_hidden_channels"]
         )
 
+    elif model == "sos":
+        return get_sos_schema(
+            num_density_layers=config["num_density_layers"],
+            hidden_channels=config["g_hidden_channels"],
+            num_polynomials_per_layer=config["num_polynomials_per_layer"],
+            polynomial_degree=config["polynomial_degree"],
+        )
+
     elif model == "glow":
         return get_glow_schema(
             num_scales=config["num_scales"],
@@ -163,7 +171,7 @@ def get_coupler_net_config(net_spec, model):
                 "hidden_channels": net_spec
             }
 
-        elif model in ["pure-cond-affine-mlp", "maf", "flat-realnvp"]:
+        elif model in ["pure-cond-affine-mlp", "maf", "flat-realnvp", "sos"]:
             return {
                 "type": "mlp",
                 "activation": "tanh",
@@ -330,3 +338,26 @@ def get_maf_schema(
         ]
 
     return result
+
+
+# TODO: Batch norm?
+# TODO: Flip after each layer?
+def get_sos_schema(
+        num_density_layers,
+        hidden_channels,
+        num_polynomials_per_layer,
+        polynomial_degree
+):
+    return [{"type": "flatten"}] + [
+        {
+            "type": "sos",
+            "hidden_channels": hidden_channels,
+            "activation": "tanh",
+            "num_polynomials": num_polynomials_per_layer,
+            "polynomial_degree": polynomial_degree
+        },
+        {
+            "type": "batch-norm",
+            "per_channel": False # Irrelevant here since we flatten anyway
+        }
+    ] * num_density_layers

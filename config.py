@@ -1,3 +1,4 @@
+import warnings
 import copy
 
 
@@ -10,7 +11,7 @@ def get_config(dataset, model, use_baseline):
 
 
 def get_config_base(dataset, model, use_baseline):
-    if dataset in ["2uniforms", "8gaussians", "checkerboard", "2spirals"]:
+    if dataset in ["2uniforms", "8gaussians", "checkerboard", "2spirals", "rings"]:
         return get_2d_config(dataset, model, use_baseline)
 
     elif dataset in ["power", "gas", "hepmass", "miniboone"]:
@@ -24,7 +25,7 @@ def get_config_base(dataset, model, use_baseline):
 
 
 def get_2d_config(dataset, model, use_baseline):
-    assert model in ["flat-realnvp", "maf"], f"Invalid model {model} for dataset {dataset}"
+    assert model in ["flat-realnvp", "maf", "sos"], f"Invalid model {model} for dataset {dataset}"
 
     if dataset == "2uniforms":
         if use_baseline:
@@ -89,6 +90,16 @@ def get_2d_config(dataset, model, use_baseline):
         "num_valid_elbo_samples": 5,
         "num_test_elbo_samples": 100
     }
+
+    if model == "sos":
+        warnings.warn("Overriding `num_density_layers`")
+        config["num_density_layers"] = 3 if use_baseline else 2
+        config["num_polynomials_per_layer"] = 2
+        config["polynomial_degree"] = 4
+
+        config["st_nets"] = [10] * 2
+        config["p_nets"] = [30] * 4
+        config["q_nets"] =  [30] * 4
 
     return config
 

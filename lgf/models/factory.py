@@ -18,7 +18,8 @@ from .components.bijections import (
     ViewBijection,
     ConditionalAffineBijection,
     BruteForceInvertible1x1ConvBijection,
-    LUInvertible1x1ConvBijection
+    LUInvertible1x1ConvBijection,
+    SumOfSquaresPolynomialBijection
 )
 from .components.densities import (
     DiagonalGaussianDensity,
@@ -156,6 +157,16 @@ def get_bijection(
             return LUInvertible1x1ConvBijection(x_shape=x_shape)
         else:
             return BruteForceInvertible1x1ConvBijection(x_shape=x_shape)
+
+    elif layer_config["type"] == "sos":
+        assert len(x_shape) == 1
+        return SumOfSquaresPolynomialBijection(
+            num_input_channels=x_shape[0],
+            hidden_channels=layer_config["hidden_channels"],
+            activation=get_activation(layer_config["activation"]),
+            num_polynomials=layer_config["num_polynomials"],
+            polynomial_degree=layer_config["polynomial_degree"],
+        )
 
     else:
         assert False, f"Invalid layer type {layer_config['type']}"

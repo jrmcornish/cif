@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 class ConstantNetwork(nn.Module):
@@ -96,27 +97,6 @@ def get_resnet(
     )
 
 
-def get_mlp(
-        num_input_channels,
-        hidden_channels,
-        num_output_channels,
-        activation,
-        log_softmax_outputs=False
-):
-    layers = []
-    prev_num_hidden_channels = num_input_channels
-    for num_hidden_channels in hidden_channels:
-        layers.append(nn.Linear(prev_num_hidden_channels, num_hidden_channels))
-        layers.append(activation())
-        prev_num_hidden_channels = num_hidden_channels
-    layers.append(nn.Linear(prev_num_hidden_channels, num_output_channels))
-
-    if log_softmax_outputs:
-        layers.append(nn.LogSoftmax(dim=1))
-
-    return nn.Sequential(*layers)
-
-
 def get_glow_cnn(num_input_channels, num_hidden_channels, num_output_channels):
     conv1 = nn.Conv2d(
         in_channels=num_input_channels,
@@ -149,3 +129,68 @@ def get_glow_cnn(num_input_channels, num_hidden_channels, num_output_channels):
     relu = nn.ReLU()
 
     return nn.Sequential(conv1, bn1, relu, conv2, bn2, relu, conv3)
+
+
+def get_mlp(
+        num_input_channels,
+        hidden_channels,
+        num_output_channels,
+        activation,
+        log_softmax_outputs=False
+):
+    layers = []
+    prev_num_hidden_channels = num_input_channels
+    for num_hidden_channels in hidden_channels:
+        layers.append(nn.Linear(prev_num_hidden_channels, num_hidden_channels))
+        layers.append(activation())
+        prev_num_hidden_channels = num_hidden_channels
+    layers.append(nn.Linear(prev_num_hidden_channels, num_output_channels))
+
+    if log_softmax_outputs:
+        layers.append(nn.LogSoftmax(dim=1))
+
+    return nn.Sequential(*layers)
+
+
+class MaskedLinear(nn.Module):
+    def __init__(self, input_degrees, output_degrees):
+        super().__init__()
+
+        assert len(input_degrees.shape) == len(output_degrees.shape) == 1
+
+        num_input_channels = input_degrees.shape[0]
+        num_output_channels = output_degrees.shape[0]
+
+        self.linear = nn.Linear(num_input_channels, num_output_channels)
+
+        mask = output_degrees.view(-1, 1) >= input_degrees
+        self.register_buffer("mask", mask.to(self.linear.weight.dtype))
+
+    def forward(self, inputs):
+        return F.linear(inputs, self.mask*self.linear.weight, self.linear.bias)
+
+
+def get_ar_mlp(
+        num_input_channels,
+        hidden_channels,
+        num_outputs_per_input,
+        activation
+):
+    assert num_input_channels >= 2
+    assert all([num_input_channels <= d for d in hidden_channels]), "Random initialisation not yet implemented"
+
+    prev_degrees = torch.arange(1, num_input_channels + 1, dtype=torch.int64)
+    layers = []
+
+    for hidden_channels in hidden_channels:
+        degrees = torch.arange(hidden_channels, dtype=torch.int64) % (num_input_channels - 1) + 1
+
+        layers.append(MaskedLinear(prev_degrees, degrees))
+        layers.append(activation())
+
+        prev_degrees = degrees
+
+    degrees = torch.arange(num_input_channels, dtype=torch.int64).repeat(num_outputs_per_input)
+    layers.append(MaskedLinear(prev_degrees, degrees))
+
+    return nn.Sequential(*layers)

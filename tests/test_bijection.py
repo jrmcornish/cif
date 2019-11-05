@@ -101,15 +101,12 @@ class _TestBijection:
 
 
 class TestMADEBijection(_TestBijection, unittest.TestCase):
-    _AR_MAP_OUTPUT_NAMES = ["shift", "log-scale"]
-
     def setUp(self):
         self.batch_size = 1000
         self.u_shape = None
         self.eps = 1e-6
-        self.num_input_channels = 10
         self.bijection = MADEBijection(
-            num_input_channels=self.num_input_channels,
+            num_input_channels=5,
             hidden_channels=[11, 12, 10, 14],
             activation=nn.Tanh
         )
@@ -121,73 +118,6 @@ class TestMADEBijection(_TestBijection, unittest.TestCase):
                 hidden_channels=[10],
                 activation=nn.Tanh
             )
-
-    def create_MAR_map(self):
-        self.bijection = MADEBijection(
-            num_input_channels=self.num_input_channels,
-            hidden_channels=[11, 12, 10, 14],
-            activation=nn.Tanh
-        )
-        return self.bijection.ar_map
-
-    def test_output_format(self):
-        x = torch.randn(self.batch_size, self.num_input_channels)
-        f_x = self.bijection.ar_map(x)
-
-        self.assertListEqual(list(f_x.keys()), self._AR_MAP_OUTPUT_NAMES)
-        for name in self._AR_MAP_OUTPUT_NAMES:
-            output = f_x[name]
-            batch_size, dim = output.size()
-            self.assertEqual(batch_size, self.batch_size)
-            self.assertEqual(dim, self.num_input_channels)
-
-    def test_first_coord_autoreg(self):
-        x, f_x, y, f_y = self.perturb_inputs(0)
-
-        for name in self._AR_MAP_OUTPUT_NAMES:
-            self.assertTrue((f_x[name][:, 0] == f_y[name][:, 0]).all())
-            self.assertFalse((f_x[name][:, 1:] == f_y[name][:, 1:]).all())
-
-    def test_middle_coords_autoreg(self):
-        for coord in range(1, self.num_input_channels - 1):
-            self.assert_middle_coord_autoreg(coord)
-
-    def assert_middle_coord_autoreg(self, coord):
-        self.assertGreater(coord, 0)
-
-        x, f_x, y, f_y = self.perturb_inputs(coord)
-
-        self.assertTrue((x[:, :coord] == y[:, :coord]).all())
-        for name in self._AR_MAP_OUTPUT_NAMES:
-            self.assertTrue((f_x[name][:, :coord+1] == f_y[name][:, :coord+1]).all())
-            self.assertFalse((f_x[name][:, coord+1:] == f_y[name][:, coord+1:]).all())
-
-    def test_last_coord_autoreg(self):
-        x, f_x, y, f_y = self.perturb_inputs(-1)
-
-        self.assertTrue((x[:, :-1] == y[:, :-1]).all())
-        for name in self._AR_MAP_OUTPUT_NAMES:
-            self.assertTrue((f_x[name] == f_y[name]).all())
-
-    def perturb_inputs(self, coord):
-        x = torch.randn(self.batch_size, self.num_input_channels)
-        f_x = self.bijection.ar_map(x)
-
-        noise = torch.zeros_like(x)
-        noise[:, coord:] = torch.randn_like(noise[:, coord:])
-        y = x + noise
-        f_y = self.bijection.ar_map(y)
-
-        return x, f_x, y, f_y
-
-    def test_no_nans(self):
-        for _ in range(20):
-            f = self.create_MAR_map()
-            inputs = torch.randn(self.batch_size, self.num_input_channels)
-            for _ in range(20):
-                result = f(inputs)
-                for output_name in self._AR_MAP_OUTPUT_NAMES:
-                    self.assertTrue(torch.isfinite(result[output_name]).all())
 
 
 class TestCompositeBijection(_TestBijection, unittest.TestCase):

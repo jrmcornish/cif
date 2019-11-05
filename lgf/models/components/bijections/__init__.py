@@ -35,3 +35,5 @@ from .invconv import (
     BruteForceInvertible1x1ConvBijection,
     LUInvertible1x1ConvBijection
 )
+
+from .sos import SumOfSquaresPolynomialBijection

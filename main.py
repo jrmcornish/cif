@@ -10,7 +10,7 @@ sys.setrecursionlimit(3000)
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model", choices=["maf", "flat-realnvp", "multiscale-realnvp", "glow"])
+parser.add_argument("--model", choices=["sos", "maf", "flat-realnvp", "multiscale-realnvp", "glow"])
 parser.add_argument("--dataset", choices=[
     "2uniforms", "8gaussians", "checkerboard", "2spirals",
     "power", "gas", "hepmass", "miniboone",
