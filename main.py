@@ -7,10 +7,6 @@ import time
 import sys
 sys.setrecursionlimit(3000)
 
-from lgf.experiment import train, print_density, print_schema
-
-from config import get_config
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", choices=["maf", "flat-realnvp", "multiscale-realnvp", "glow"])
@@ -31,6 +27,8 @@ parser.add_argument("--logdir-root", default="runs/", help="Location of log file
 parser.add_argument("--config", default="{}", help="Override config entries. Specify as JSON.")
 
 args = parser.parse_args()
+
+from config import get_config
 
 config = get_config(
     model=args.model,
@@ -58,12 +56,15 @@ if args.print_config:
     should_train = False
 
 if args.print_density:
+    from lgf.experiment import print_density
     print_density({**config, "write_to_disk": False})
     should_train = False
 
 if args.print_schema:
+    from lgf.experiment import print_schema
     print_schema(config)
     should_train = False
 
 if should_train:
+    from lgf.experiment import train
     train(config)
