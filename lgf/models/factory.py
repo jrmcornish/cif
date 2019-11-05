@@ -11,7 +11,7 @@ from .components.bijections import (
     BatchNormBijection,
     Squeeze2dBijection,
     LogitBijection,
-    PositiveScalarMultiplicationBijection,
+    ScalarMultiplicationBijection,
     ScalarAdditionBijection,
     ViewBijection,
     ConditionalAffineBijection,
@@ -111,7 +111,7 @@ def get_bijection(
         return LogitBijection(x_shape=x_shape)
 
     elif layer_config["type"] == "scalar-mult":
-        return PositiveScalarMultiplicationBijection(
+        return ScalarMultiplicationBijection(
             x_shape=x_shape,
             value=layer_config["value"]
         )

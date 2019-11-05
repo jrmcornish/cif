@@ -24,7 +24,7 @@ from .reshaping import (
 
 from .preproc import (
     LogitBijection,
-    PositiveScalarMultiplicationBijection,
+    ScalarMultiplicationBijection,
     ScalarAdditionBijection
 )
 

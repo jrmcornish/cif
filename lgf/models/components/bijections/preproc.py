@@ -25,10 +25,10 @@ class LogitBijection(Bijection):
         return -self._log_jac_x_to_z(z)
 
 
-class PositiveScalarMultiplicationBijection(Bijection):
+class ScalarMultiplicationBijection(Bijection):
     def __init__(self, x_shape, value):
         assert np.isscalar(value)
-        assert value > 0
+        assert value != 0., "Scalar multiplication by zero is not a bijection"
 
         super().__init__(x_shape=x_shape, z_shape=x_shape)
 
@@ -50,7 +50,7 @@ class PositiveScalarMultiplicationBijection(Bijection):
     def _log_jac_x_to_z(self, x):
         return torch.full(
             size=(x.shape[0], 1),
-            fill_value=self.dim*np.log(self.value),
+            fill_value=self.dim*np.log(np.abs(self.value)),
             dtype=x.dtype,
             device=x.device
         )

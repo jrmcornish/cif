@@ -12,7 +12,9 @@ from lgf.models.components.bijections import (
     CompositeBijection,
     FlipBijection,
     ViewBijection,
-    LogitTransformBijection,
+    ScalarAdditionBijection,
+    ScalarMultiplicationBijection,
+    LogitBijection,
     MADEBijection,
     BatchNormBijection,
     BruteForceInvertible1x1ConvBijection,
@@ -330,12 +332,19 @@ TestConditionalCheckerboardMasked2dAffineCouplingBijection = get_checkerboard_ma
 TestUnconditionalCheckerboardMasked2dAffineCouplingBijection = get_checkerboard_masked_acl_test(num_u_channels=10)
 
 
-class TestLogitTransformBijection(_TestBijection, unittest.TestCase):
+class TestLogitBijection(_TestBijection, unittest.TestCase):
     def setUp(self):
         self.batch_size = 100
         self.u_shape = None
         self.eps = 1e-5
-        self.bijection = LogitTransformBijection(x_shape=(10, 4), lam=0.02, scale=500)
+
+        x_shape = (10, 4)
+        self.bijection = CompositeBijection([
+            # Necessary to have these because we get nans otherwise for logit
+            ScalarMultiplicationBijection(x_shape=x_shape, value=0.002),
+            ScalarAdditionBijection(x_shape=x_shape, value=0.02),
+            LogitBijection(x_shape=x_shape),
+        ], "x-to-z")
 
 
 class TestSqueeze2dBijection(_TestBijection, unittest.TestCase):
