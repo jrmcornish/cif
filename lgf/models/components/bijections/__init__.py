@@ -12,8 +12,11 @@ from .normalization import (
 from .made import MADEBijection
 
 from .acl import (
-    CheckerboardMasked2dAffineCouplingBijection,
-    ChannelwiseMaskedAffineCouplingBijection
+    Checkerboard2dAffineCouplingBijection,
+    SplitChannelwiseAffineCouplingBijection,
+    AlternatingChannelwiseAffineCouplingBijection,
+    MaskedChannelwiseAffineCouplingBijection,
+    MaskedChannelwiseAffineCouplingBijection
 )
 
 from .reshaping import (

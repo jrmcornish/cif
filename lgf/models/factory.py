@@ -5,8 +5,10 @@ import torch.nn as nn
 
 from .components.bijections import (
     FlipBijection,
-    CheckerboardMasked2dAffineCouplingBijection,
-    ChannelwiseMaskedAffineCouplingBijection,
+    Checkerboard2dAffineCouplingBijection,
+    MaskedChannelwiseAffineCouplingBijection,
+    SplitChannelwiseAffineCouplingBijection,
+    AlternatingChannelwiseAffineCouplingBijection,
     MADEBijection,
     BatchNormBijection,
     Squeeze2dBijection,
@@ -164,7 +166,7 @@ def get_acl_bijection(config, x_shape):
     num_u_channels = config["num_u_channels"]
 
     if config["mask_type"] == "checkerboard":
-        return CheckerboardMasked2dAffineCouplingBijection(
+        return Checkerboard2dAffineCouplingBijection(
             x_shape=x_shape,
             coupler=get_coupler(
                 input_shape=(num_x_channels+num_u_channels, *x_shape[1:]),
@@ -175,27 +177,29 @@ def get_acl_bijection(config, x_shape):
         )
 
     else:
-        if config["mask_type"] == "split-channel":
-            mask = torch.arange(x_shape[0]) < x_shape[0] // 2
-        elif config["mask_type"] == "alternating-channel":
-            mask = torch.arange(x_shape[0]) % 2 == 0
-        else:
-            assert False, f"Invalid mask type {config['mask_type']}"
-
-        if config["reverse_mask"]:
-            mask = ~mask
-
-        num_passthrough_channels = torch.sum(mask).item()
-
-        return ChannelwiseMaskedAffineCouplingBijection(
-            x_shape=x_shape,
-            mask=mask,
-            coupler=get_coupler(
+        def coupler_factory(num_passthrough_channels):
+            return get_coupler(
                 input_shape=(num_passthrough_channels+num_u_channels, *x_shape[1:]),
                 num_channels_per_output=num_x_channels-num_passthrough_channels,
                 config=config["coupler"]
             )
-        )
+
+        if config["mask_type"] == "alternating-channel":
+            return AlternatingChannelwiseAffineCouplingBijection(
+                x_shape=x_shape,
+                coupler_factory=coupler_factory,
+                reverse_mask=config["reverse_mask"]
+            )
+
+        elif config["mask_type"] == "split-channel":
+            return SplitChannelwiseAffineCouplingBijection(
+                x_shape=x_shape,
+                coupler_factory=coupler_factory,
+                reverse_mask=config["reverse_mask"]
+            )
+
+        else:
+            assert False, f"Invalid mask type {config['mask_type']}"
 
 
 def get_conditional_density(

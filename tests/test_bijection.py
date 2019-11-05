@@ -19,11 +19,13 @@ from lgf.models.components.bijections import (
     BatchNormBijection,
     BruteForceInvertible1x1ConvBijection,
     LUInvertible1x1ConvBijection,
-    CheckerboardMasked2dAffineCouplingBijection,
-    ChannelwiseMaskedAffineCouplingBijection,
+    Checkerboard2dAffineCouplingBijection,
+    SplitChannelwiseAffineCouplingBijection,
+    AlternatingChannelwiseAffineCouplingBijection,
+    MaskedChannelwiseAffineCouplingBijection,
     Squeeze2dBijection,
 )
-from lgf.models.factory import get_acl_bijection, get_coupler
+from lgf.models.factory import get_coupler
 
 
 class _TestBijection:
@@ -265,7 +267,7 @@ class TestBatchNormBijection(_TestBijection, unittest.TestCase):
         self.bijection.eval()
 
 
-def get_channelwise_masked_acl_test(u_dim):
+def get_channelwise_masked_acl_test(bijection_class, u_dim):
     class Test(_TestBijection, unittest.TestCase):
         def setUp(self):
             self.batch_size = 100
@@ -273,15 +275,12 @@ def get_channelwise_masked_acl_test(u_dim):
 
             self.u_shape = (u_dim,) if u_dim > 0 else None
 
-            x_dim = 20
-            mask = torch.arange(x_dim) % 2 == 0
-            num_x_channels = torch.sum(mask).item() 
-            self.bijection = ChannelwiseMaskedAffineCouplingBijection(
-                x_shape=(x_dim,),
-                mask=mask,
-                coupler=get_coupler(
-                    input_shape=(num_x_channels + u_dim,),
-                    num_channels_per_output=x_dim - num_x_channels,
+            num_x_channels = 21
+
+            def coupler_factory(num_passthrough_channels):
+                return get_coupler(
+                    input_shape=(num_passthrough_channels + u_dim,),
+                    num_channels_per_output=num_x_channels - num_passthrough_channels,
                     config={
                         "independent_nets": False,
                         "shift_log_scale_net": {
@@ -291,16 +290,21 @@ def get_channelwise_masked_acl_test(u_dim):
                         }
                     }
                 )
+
+            self.bijection = bijection_class(
+                x_shape=(num_x_channels,),
+                coupler_factory=coupler_factory,
+                reverse_mask=True
             )
 
     return Test
 
 
-TestConditionalChannelwiseMaskedAffineCouplingBijection = get_channelwise_masked_acl_test(u_dim=0)
-TestUnconditionalChannelwiseMaskedAffineCouplingBijection = get_channelwise_masked_acl_test(u_dim=10)
+TestConditionalChannelwiseMaskedAffineCouplingBijection = get_channelwise_masked_acl_test(bijection_class=SplitChannelwiseAffineCouplingBijection, u_dim=0)
+TestUnconditionalChannelwiseMaskedAffineCouplingBijection = get_channelwise_masked_acl_test(bijection_class=AlternatingChannelwiseAffineCouplingBijection, u_dim=10)
 
 
-def get_checkerboard_masked_acl_test(num_u_channels):
+def get_checkerboard_acl_test(num_u_channels):
     class Test(_TestBijection, unittest.TestCase):
         def setUp(self):
             self.batch_size = 100
@@ -309,7 +313,7 @@ def get_checkerboard_masked_acl_test(num_u_channels):
             self.u_shape = (num_u_channels, 28, 28) if num_u_channels > 0 else None
             num_x_channels = 1
             x_shape = (num_x_channels, 28, 28)
-            self.bijection = CheckerboardMasked2dAffineCouplingBijection(
+            self.bijection = Checkerboard2dAffineCouplingBijection(
                 x_shape=x_shape,
                 coupler=get_coupler(
                     input_shape=(num_x_channels + num_u_channels, *x_shape[1:]),
@@ -328,8 +332,8 @@ def get_checkerboard_masked_acl_test(num_u_channels):
     return Test
 
 
-TestConditionalCheckerboardMasked2dAffineCouplingBijection = get_checkerboard_masked_acl_test(num_u_channels=0)
-TestUnconditionalCheckerboardMasked2dAffineCouplingBijection = get_checkerboard_masked_acl_test(num_u_channels=10)
+TestConditionalCheckerboard2dAffineCouplingBijection = get_checkerboard_acl_test(num_u_channels=0)
+TestUnconditionalCheckerboard2dAffineCouplingBijection = get_checkerboard_acl_test(num_u_channels=10)
 
 
 class TestLogitBijection(_TestBijection, unittest.TestCase):

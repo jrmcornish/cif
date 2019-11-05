@@ -22,7 +22,7 @@ class AffineCouplingBijection(Bijection):
         return -self._log_jac_x_to_z(log_scale)
 
 
-class CheckerboardMasked2dAffineCouplingBijection(AffineCouplingBijection):
+class Checkerboard2dAffineCouplingBijection(AffineCouplingBijection):
     def __init__(
             self,
             x_shape,
@@ -59,37 +59,143 @@ class CheckerboardMasked2dAffineCouplingBijection(AffineCouplingBijection):
         return mask
 
 
-class ChannelwiseMaskedAffineCouplingBijection(AffineCouplingBijection):
+class ChannelwiseAffineCouplingBijection(AffineCouplingBijection):
     def __init__(
             self,
             x_shape,
-            coupler,
-            mask
+            coupler_factory,
+            num_passthrough_channels,
+            reverse_mask
     ):
-        super().__init__(x_shape=x_shape, coupler=coupler)
+        if reverse_mask:
+            num_passthrough_channels = x_shape[0] - num_passthrough_channels
 
-        assert torch.any(mask), "Not a bijection without passthrough"
+        assert num_passthrough_channels > 0, "Not a bijection without passthrough"
 
-        self.mask = mask
+        super().__init__(
+            x_shape=x_shape,
+            coupler=coupler_factory(num_passthrough_channels)
+        )
+
+        self.reverse_mask = reverse_mask
 
     def _x_to_z(self, x, **kwargs):
-        passthrough_x = x[:, self.mask]
-        modified_x = x[:, ~self.mask]
+        passthrough_x, modified_x = self._split(x)
+
         shift, log_scale = self._couple(passthrough_x, **kwargs)
 
-        z = torch.empty_like(x)
-        z[:, self.mask] = passthrough_x
-        z[:, ~self.mask] = (modified_x + shift) * torch.exp(log_scale)
+        z = self._combine(
+            passthrough_x,
+            (modified_x + shift) * torch.exp(log_scale)
+        )
 
         return {"z": z, "log-jac": self._log_jac_x_to_z(log_scale)}
 
     def _z_to_x(self, z, **kwargs):
-        passthrough_z = z[:, self.mask]
-        modified_z = z[:, ~self.mask]
+        passthrough_z, modified_z = self._split(z)
+
         shift, log_scale = self._couple(passthrough_z, **kwargs)
 
-        x = torch.empty_like(z)
-        x[:, self.mask] = passthrough_z
-        x[:, ~self.mask] = modified_z * torch.exp(-log_scale) - shift
+        x = self._combine(
+            passthrough_z,
+            modified_z * torch.exp(-log_scale) - shift
+        )
 
         return {"x": x, "log-jac": self._log_jac_z_to_x(log_scale)}
+
+    def _split(self, inputs):
+        passthrough, modified = self._do_split(inputs)
+
+        if self.reverse_mask:
+            passthrough, modified = modified, passthrough
+
+        return passthrough, modified
+
+    def _combine(self, outputs1, outputs2):
+        if self.reverse_mask:
+            outputs1, outputs2 = outputs2, outputs1
+
+        return self._do_combine(outputs1, outputs2)
+
+    def _do_split(self, inputs):
+        raise NotImplementedError
+
+    def _do_combine(self, outputs1, outputs2):
+        raise NotImplementedError
+
+
+class SplitChannelwiseAffineCouplingBijection(ChannelwiseAffineCouplingBijection):
+    def __init__(
+            self,
+            x_shape,
+            coupler_factory,
+            reverse_mask
+    ):
+        self.num_passthrough_channels = x_shape[0] // 2
+
+        super().__init__(
+            x_shape=x_shape,
+            coupler_factory=coupler_factory,
+            num_passthrough_channels=self.num_passthrough_channels,
+            reverse_mask=reverse_mask
+        )
+
+    def _do_split(self, inputs):
+        return inputs[:, :self.num_passthrough_channels], inputs[:, self.num_passthrough_channels:]
+
+    def _do_combine(self, inputs1, inputs2):
+        return torch.cat((inputs1, inputs2), dim=1)
+
+
+class AlternatingChannelwiseAffineCouplingBijection(ChannelwiseAffineCouplingBijection):
+    def __init__(
+            self,
+            x_shape,
+            coupler_factory,
+            reverse_mask
+    ):
+        super().__init__(
+            x_shape=x_shape,
+            coupler_factory=coupler_factory,
+            num_passthrough_channels=(x_shape[0] + 1) // 2,
+            reverse_mask=reverse_mask
+        )
+
+    def _do_split(self, inputs):
+        return inputs[:, ::2], inputs[:, 1::2]
+
+    def _do_combine(self, inputs1, inputs2):
+        # TODO: It might be possible to speed this up by using stack
+        result = inputs1.new_empty(inputs1.shape[0], *self.x_shape)
+        result[:, ::2] = inputs1
+        result[:, 1::2] = inputs2
+        return result
+
+
+# TODO: Unit test
+class MaskedChannelwiseAffineCouplingBijection(ChannelwiseAffineCouplingBijection):
+    def __init__(
+            self,
+            x_shape,
+            coupler_factory,
+            mask
+    ):
+        assert torch.any(mask), "Not a bijection without passthrough"
+
+        super().__init__(
+            x_shape=x_shape,
+            coupler_factory=coupler_factory,
+            num_passthrough_channels=mask.sum().item(),
+            reverse_mask=False
+        )
+
+        self.mask = mask
+
+    def _do_split(self, inputs):
+        return inputs[:, self.mask], inputs[:, ~self.mask]
+
+    def _do_combine(self, inputs1, inputs2):
+        result = inputs1.new_empty(inputs1.shape[0], *self.x_shape)
+        result[:, self.mask] = inputs1
+        result[:, ~self.mask] = inputs2
+        return result
