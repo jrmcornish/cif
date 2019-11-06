@@ -3,6 +3,7 @@
 import argparse
 import json
 import time
+import ast
 
 import sys
 sys.setrecursionlimit(3000)
@@ -20,11 +21,11 @@ parser.add_argument("--print-schema", action="store_true", help="Print the model
 parser.add_argument("--print-config", action="store_true", help="Print the full config and exit")
 parser.add_argument("--baseline", action="store_true", help="Run baseline flow instead of LGF")
 parser.add_argument("--nochkpt", action="store_true", help="Disable checkpointing")
-parser.add_argument("--checkpoints", choices=["best-valid", "latest", "both", "none"], default="both", help="Type of checkpoints to save")
+parser.add_argument("--checkpoints", choices=["best-valid", "latest", "both", "none"], default="both", help="Type of checkpoints to save (default: %(default)s)")
 parser.add_argument("--nosave", action="store_true", help="Don't save anything to disk")
 parser.add_argument("--data-root", default="data/", help="Location of training data (default: %(default)s)")
 parser.add_argument("--logdir-root", default="runs/", help="Location of log files (default: %(default)s)")
-parser.add_argument("--config", default="{}", help="Override config entries. Specify as JSON.")
+parser.add_argument("--config", default=[], action="append", help="Override config entries. Specify as `key=value`.")
 
 args = parser.parse_args()
 
@@ -36,9 +37,26 @@ config = get_config(
     use_baseline=args.baseline
 )
 
+def parse_config_arg(key_value):
+    assert "=" in key_value, "Must specify config items with format `key=value`"
+
+    k, v = key_value.split("=", maxsplit=1)
+
+    assert k, "Config item can't have empty key"
+    assert v, "Config item can't have empty value"
+
+    try:
+        v = ast.literal_eval(v)
+    except ValueError:
+        v = str(v)
+
+    return k, v
+
+args_config = dict(parse_config_arg(kv) for kv in args.config)
+
 config = {
     **config,
-    **json.loads(args.config),
+    **args_config,
     "dataset": args.dataset,
     "model": args.model,
     "seed": int(time.time() * 1e6) % 2**32,
