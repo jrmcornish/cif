@@ -18,7 +18,7 @@ parser.add_argument("--dataset", choices=[
 ], required=True)
 parser.add_argument("--baseline", action="store_true", help="Run baseline flow instead of LGF")
 parser.add_argument("--seed", type=int, help="Random seed to use. Defaults to using current time.")
-parser.add_argument("--print-density", action="store_true", help="Print the Pytorch Density and exit")
+parser.add_argument("--print-model", action="store_true", help="Print the model and exit")
 parser.add_argument("--print-schema", action="store_true", help="Print the model schema and exit")
 parser.add_argument("--print-config", action="store_true", help="Print the full config and exit")
 parser.add_argument("--nochkpt", action="store_true", help="Disable checkpointing")
@@ -77,9 +77,9 @@ if args.print_config:
     print(json.dumps(config, indent=4))
     should_train = False
 
-if args.print_density:
-    from lgf.experiment import print_density
-    print_density({**config, "write_to_disk": False})
+if args.print_model:
+    from lgf.experiment import print_model
+    print_model({**config, "write_to_disk": False})
     should_train = False
 
 if args.print_schema:

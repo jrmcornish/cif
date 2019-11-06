@@ -31,7 +31,7 @@ def train(config):
         trainer.train()
 
 
-def print_density(config):
+def print_model(config):
     _, density, _, _ = setup_experiment({**config, "enable_logging": False})
     print(density)
     print(f"Number of parameters: {num_params(density):,}")
