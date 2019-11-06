@@ -366,20 +366,28 @@ def get_sos_schema(
         num_polynomials_per_layer,
         polynomial_degree
 ):
-    return [{"type": "flatten"}] + [
-        {
-            "type": "sos",
-            "hidden_channels": hidden_channels,
-            "activation": "tanh",
-            "num_polynomials": num_polynomials_per_layer,
-            "polynomial_degree": polynomial_degree
-        },
-        {
-            "type": "batch-norm",
-            "per_channel": False
-        },
-        {
-            "type": "affine",
-            "per_channel": False
-        }
-    ] * num_density_layers
+    result = [{"type": "flatten"}]
+
+    for i in range(num_density_layers):
+        if i > 0:
+            result.append({"type": "flip"})
+
+        result += [
+            {
+                "type": "sos",
+                "hidden_channels": hidden_channels,
+                "activation": "tanh",
+                "num_polynomials": num_polynomials_per_layer,
+                "polynomial_degree": polynomial_degree
+            },
+            {
+                "type": "batch-norm",
+                "per_channel": False
+            },
+            {
+                "type": "affine",
+                "per_channel": False
+            }
+       ]
+
+    return result

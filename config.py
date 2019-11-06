@@ -100,9 +100,11 @@ def get_2d_config(dataset, model, use_baseline):
         config["num_polynomials_per_layer"] = 2
         config["polynomial_degree"] = 4
 
-        config["st_nets"] = [10] * 2
-        config["p_nets"] = [30] * 4
-        config["q_nets"] =  [30] * 4
+        config["batch_norm"] = True
+
+        config["st_nets"] = [40] * 2
+        config["p_nets"] = [40] * 4
+        config["q_nets"] =  [40] * 4
 
     return config
 
