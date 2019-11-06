@@ -77,6 +77,9 @@ def get_2d_config(dataset, model, use_baseline):
 
     config = {
         **config,
+
+        "batch_norm": use_baseline,
+
         "train_batch_size": 1000,
         "valid_batch_size": 1000,
         "test_batch_size": 10000,
@@ -86,8 +89,8 @@ def get_2d_config(dataset, model, use_baseline):
         "weight_decay": 0.,
         "epochs_per_test": 5,
 
-        "num_train_elbo_samples": 1,
-        "num_valid_elbo_samples": 5,
+        "num_train_elbo_samples": 10,
+        "num_valid_elbo_samples": 10,
         "num_test_elbo_samples": 100
     }
 
@@ -145,6 +148,9 @@ def get_uci_config(dataset, model, use_baseline):
 
     config = {
         **config,
+
+        "batch_norm": use_baseline,
+
         "train_batch_size": 1000,
         "valid_batch_size": 5000,
         "test_batch_size": 5000,
@@ -230,6 +236,9 @@ def get_images_config(dataset, model, use_baseline):
 
     config = {
         **config,
+
+        "batch_norm": use_baseline,
+
         "valid_batch_size": 500,
         "test_batch_size": 500,
 

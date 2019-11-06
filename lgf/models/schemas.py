@@ -24,6 +24,11 @@ def get_schema_from_base(config):
         if layer["type"] == "affine" and config["num_u_channels"] > 0:
             assert not layer["per_channel"], "Per-channel conditional affine layers are not yet implemented"
             schema.append(get_cond_affine_layer(config))
+
+        elif layer["type"] == "batch-norm":
+            if config["batch_norm"]:
+                schema.append(layer)
+
         else:
             schema.append(layer)
 
