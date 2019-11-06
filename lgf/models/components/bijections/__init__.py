@@ -4,9 +4,12 @@ from .bijection import (
     IdentityBijection
 )
 
-from .normalization import (
+from .affine import (
     ConditionalAffineBijection,
     BatchNormBijection,
+    AffineBijection,
+    ScalarMultiplicationBijection,
+    ScalarAdditionBijection
 )
 
 from .made import MADEBijection
@@ -25,11 +28,7 @@ from .reshaping import (
     FlipBijection
 )
 
-from .preproc import (
-    LogitBijection,
-    ScalarMultiplicationBijection,
-    ScalarAdditionBijection
-)
+from .logit import LogitBijection
 
 from .invconv import (
     BruteForceInvertible1x1ConvBijection,

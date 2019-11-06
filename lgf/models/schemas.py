@@ -21,12 +21,9 @@ def get_schema_from_base(config):
 
     schema = []
     for layer in base_schema:
-        if layer["type"] == "batch-norm":
-            if config["num_u_channels"] > 0:
-                schema.append(get_cond_affine_layer(config))
-            else:
-                schema.append(layer)
-
+        if layer["type"] == "affine" and config["num_u_channels"] > 0:
+            assert not layer["per_channel"], "Per-channel conditional affine layers are not yet implemented"
+            schema.append(get_cond_affine_layer(config))
         else:
             schema.append(layer)
 
@@ -229,6 +226,10 @@ def get_multiscale_realnvp_schema(coupler_hidden_channels):
                 {
                     "type": "batch-norm",
                     "per_channel": True
+                },
+                {
+                    "type": "affine",
+                    "per_channel": True
                 }
             ]
 
@@ -255,6 +256,10 @@ def get_glow_schema(
             schema += [
                 {
                     "type": "batch-norm",
+                    "per_channel": True
+                },
+                {
+                    "type": "affine",
                     "per_channel": True
                 },
                 {
@@ -308,7 +313,11 @@ def get_flat_realnvp_schema(
             },
             {
                 "type": "batch-norm",
-                "per_channel": False # Irrelevant here since we flatten anyway
+                "per_channel": False
+            },
+            {
+                "type": "affine",
+                "per_channel": False
             }
         ]
 
@@ -333,7 +342,11 @@ def get_maf_schema(
             },
             {
                 "type": "batch-norm",
-                "per_channel": False # Irrelevant here since we flatten anyway
+                "per_channel": False
+            },
+            {
+                "type": "affine",
+                "per_channel": False
             }
         ]
 
@@ -358,6 +371,10 @@ def get_sos_schema(
         },
         {
             "type": "batch-norm",
-            "per_channel": False # Irrelevant here since we flatten anyway
+            "per_channel": False
+        },
+        {
+            "type": "affine",
+            "per_channel": False
         }
     ] * num_density_layers

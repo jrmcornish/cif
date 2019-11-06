@@ -11,6 +11,7 @@ from .components.bijections import (
     AlternatingChannelwiseAffineCouplingBijection,
     MADEBijection,
     BatchNormBijection,
+    AffineBijection,
     Squeeze2dBijection,
     LogitBijection,
     ScalarMultiplicationBijection,
@@ -125,16 +126,6 @@ def get_bijection(
     elif layer_config["type"] == "flatten":
         return ViewBijection(x_shape=x_shape, z_shape=(np.prod(x_shape),))
 
-    elif layer_config["type"] == "cond-affine":
-        return ConditionalAffineBijection(
-            x_shape=x_shape,
-            coupler=get_coupler(
-                input_shape=(layer_config["num_u_channels"], *x_shape[1:]),
-                num_channels_per_output=x_shape[0],
-                config=layer_config["st_coupler"]
-            )
-        )
-
     elif layer_config["type"] == "made":
         assert len(x_shape) == 1
         return MADEBijection(
@@ -147,6 +138,22 @@ def get_bijection(
         return BatchNormBijection(
             x_shape=x_shape,
             per_channel=layer_config["per_channel"]
+        )
+
+    elif layer_config["type"] == "affine":
+        return AffineBijection(
+            x_shape=x_shape,
+            per_channel=layer_config["per_channel"]
+        )
+
+    elif layer_config["type"] == "cond-affine":
+        return ConditionalAffineBijection(
+            x_shape=x_shape,
+            coupler=get_coupler(
+                input_shape=(layer_config["num_u_channels"], *x_shape[1:]),
+                num_channels_per_output=x_shape[0],
+                config=layer_config["st_coupler"]
+            )
         )
 
     elif layer_config["type"] == "flip":
