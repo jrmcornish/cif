@@ -10,16 +10,17 @@ sys.setrecursionlimit(3000)
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model", choices=["sos", "maf", "flat-realnvp", "multiscale-realnvp", "glow"])
+parser.add_argument("--model", choices=["sos", "maf", "flat-realnvp", "multiscale-realnvp", "glow"], required=True)
 parser.add_argument("--dataset", choices=[
-    "2uniforms", "8gaussians", "checkerboard", "2spirals",
+    "2uniforms", "8gaussians", "checkerboard", "2spirals", "rings",
     "power", "gas", "hepmass", "miniboone",
     "mnist", "fashion-mnist", "cifar10", "svhn"
-])
+], required=True)
+parser.add_argument("--baseline", action="store_true", help="Run baseline flow instead of LGF")
+parser.add_argument("--seed", type=int, help="Random seed to use. Defaults to using current time.")
 parser.add_argument("--print-density", action="store_true", help="Print the Pytorch Density and exit")
 parser.add_argument("--print-schema", action="store_true", help="Print the model schema and exit")
 parser.add_argument("--print-config", action="store_true", help="Print the full config and exit")
-parser.add_argument("--baseline", action="store_true", help="Run baseline flow instead of LGF")
 parser.add_argument("--nochkpt", action="store_true", help="Disable checkpointing")
 parser.add_argument("--checkpoints", choices=["best-valid", "latest", "both", "none"], default="both", help="Type of checkpoints to save (default: %(default)s)")
 parser.add_argument("--nosave", action="store_true", help="Don't save anything to disk")
@@ -54,12 +55,15 @@ def parse_config_arg(key_value):
 
 args_config = dict(parse_config_arg(kv) for kv in args.config)
 
+if args.seed is None:
+    seed = int(time.time() * 1e6) % 2**32
+else:
+    seed = args.seed
+
 config = {
     **config,
     **args_config,
-    "dataset": args.dataset,
-    "model": args.model,
-    "seed": int(time.time() * 1e6) % 2**32,
+    "seed": seed,
     "should_checkpoint_best_valid": args.checkpoints in ["best-valid", "both"],
     "should_checkpoint_latest": args.checkpoints in ["latest", "both"],
     "write_to_disk": not args.nosave,
