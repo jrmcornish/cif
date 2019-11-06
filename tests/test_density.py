@@ -12,7 +12,7 @@ from lgf.models.components.densities import (
     ELBODensity,
     ConcreteConditionalDensity
 )
-from lgf.models.components.couplers import SharedCoupler
+from lgf.models.components.couplers import ChunkedSharedCoupler
 from lgf.models.components.networks import get_mlp
 from lgf.models.components.bijections import ConditionalAffineBijection
 from lgf.models.factory import get_coupler
@@ -79,7 +79,7 @@ class TestDiagonalGaussianConditionalDensity(unittest.TestCase):
         self.shape = (dim,)
         self.cond_shape = (cond_dim,)
 
-        self.mean_log_std_map = SharedCoupler(
+        self.mean_log_std_map = ChunkedSharedCoupler(
             shift_log_scale_net=get_mlp(
                 num_input_channels=cond_dim,
                 hidden_channels=[10, 10, 10],
@@ -198,7 +198,7 @@ class TestELBODensity(unittest.TestCase):
 
     def _u_density(self, u_dim, x_dim):
         return DiagonalGaussianConditionalDensity(
-            coupler=SharedCoupler(
+            coupler=ChunkedSharedCoupler(
                 shift_log_scale_net=get_mlp(
                     num_input_channels=x_dim,
                     hidden_channels=[10, 10, 10],

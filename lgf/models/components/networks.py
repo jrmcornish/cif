@@ -170,27 +170,47 @@ class MaskedLinear(nn.Module):
         return F.linear(inputs, self.mask*self.linear.weight, self.linear.bias)
 
 
-def get_ar_mlp(
-        num_input_channels,
-        hidden_channels,
-        num_outputs_per_input,
-        activation
-):
-    assert num_input_channels >= 2
-    assert all([num_input_channels <= d for d in hidden_channels]), "Random initialisation not yet implemented"
+class AutoregressiveMLP(nn.Module):
+    def __init__(
+            self,
+            num_input_channels,
+            hidden_channels,
+            num_output_heads,
+            activation
+    ):
+        super().__init__()
+        self.flat_ar_mlp = self._get_flat_ar_mlp(num_input_channels, hidden_channels, num_output_heads, activation)
+        self.num_input_channels = num_input_channels
+        self.num_output_heads = num_output_heads
 
-    prev_degrees = torch.arange(1, num_input_channels + 1, dtype=torch.int64)
-    layers = []
+    def _get_flat_ar_mlp(
+            self,
+            num_input_channels,
+            hidden_channels,
+            num_output_heads,
+            activation
+    ):
+        assert num_input_channels >= 2
+        assert all([num_input_channels <= d for d in hidden_channels]), "Random initialisation not yet implemented"
 
-    for hidden_channels in hidden_channels:
-        degrees = torch.arange(hidden_channels, dtype=torch.int64) % (num_input_channels - 1) + 1
+        prev_degrees = torch.arange(1, num_input_channels + 1, dtype=torch.int64)
+        layers = []
 
+        for hidden_channels in hidden_channels:
+            degrees = torch.arange(hidden_channels, dtype=torch.int64) % (num_input_channels - 1) + 1
+
+            layers.append(MaskedLinear(prev_degrees, degrees))
+            layers.append(activation())
+
+            prev_degrees = degrees
+
+        degrees = torch.arange(num_input_channels, dtype=torch.int64).repeat(num_output_heads)
         layers.append(MaskedLinear(prev_degrees, degrees))
-        layers.append(activation())
 
-        prev_degrees = degrees
+        return nn.Sequential(*layers)
 
-    degrees = torch.arange(num_input_channels, dtype=torch.int64).repeat(num_outputs_per_input)
-    layers.append(MaskedLinear(prev_degrees, degrees))
-
-    return nn.Sequential(*layers)
+    def forward(self, inputs):
+        assert inputs.shape[1:] == (self.num_input_channels,)
+        result = self.flat_ar_mlp(inputs)
+        result = result.view(inputs.shape[0], self.num_output_heads, self.num_input_channels)
+        return result

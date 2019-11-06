@@ -5,8 +5,8 @@ import torch.nn as nn
 
 from .bijection import Bijection
 
-from ..couplers import SharedCoupler
-from ..networks import get_ar_mlp
+from ..couplers import IndexedSharedCoupler
+from ..networks import AutoregressiveMLP
 
 
 class MADEBijection(Bijection):
@@ -59,11 +59,11 @@ class MADEBijection(Bijection):
             hidden_channels,
             activation
     ):
-        return SharedCoupler(
-            shift_log_scale_net=get_ar_mlp(
+        return IndexedSharedCoupler(
+            shift_log_scale_net=AutoregressiveMLP(
                 num_input_channels=num_input_channels,
                 hidden_channels=hidden_channels,
-                num_outputs_per_input=2,
+                num_output_heads=2,
                 activation=activation
             )
         )

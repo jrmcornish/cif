@@ -8,7 +8,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from lgf.models.components.networks import get_resnet, get_glow_cnn, get_ar_mlp
+from lgf.models.components.networks import get_resnet, get_glow_cnn, AutoregressiveMLP
 
 
 class TestGetResnet(unittest.TestCase):
@@ -63,11 +63,11 @@ class TestAutoregressiveMLP(unittest.TestCase):
     def setUp(self):
         self.batch_size = 1000
         self.num_input_channels = 10
-        self.num_outputs_per_input = 4
-        self.ar_mlp = get_ar_mlp(
+        self.num_output_heads = 4
+        self.ar_mlp = AutoregressiveMLP(
             num_input_channels=self.num_input_channels,
             hidden_channels=[11, 12, 10, 14],
-            num_outputs_per_input=self.num_outputs_per_input,
+            num_output_heads=self.num_output_heads,
             activation=nn.Tanh
         )
 
@@ -75,34 +75,32 @@ class TestAutoregressiveMLP(unittest.TestCase):
         x = torch.randn(self.batch_size, self.num_input_channels)
         f_x = self.ar_mlp(x)
 
-        batch_size, dim = f_x.shape
-        self.assertEqual(batch_size, self.batch_size)
-        self.assertEqual(dim, self.num_outputs_per_input*self.num_input_channels)
+        assert f_x.shape == (self.batch_size, self.num_output_heads, self.num_input_channels)
 
     def test_first_coord_autoreg(self):
         x, f_x, y, f_y = self.perturb_inputs(0)
 
-        self.assertTrue((f_x[:, 0] == f_y[:, 0]).all())
-        self.assertFalse((f_x[:, 1:] == f_y[:, 1:]).all())
+        for i in range(self.num_output_heads):
+            assert (f_x[:, i, 0] == f_y[:, i, 0]).all()
 
     def test_middle_coords_autoreg(self):
         for coord in range(1, self.num_input_channels - 1):
             self.assert_middle_coord_autoreg(coord)
 
     def assert_middle_coord_autoreg(self, coord):
-        self.assertGreater(coord, 0)
+        assert coord > 0
 
         x, f_x, y, f_y = self.perturb_inputs(coord)
 
-        self.assertTrue((x[:, :coord] == y[:, :coord]).all())
-        self.assertTrue((f_x[:, :coord+1] == f_y[:, :coord+1]).all())
-        self.assertFalse((f_x[:, coord+1:] == f_y[:, coord+1:]).all())
+        for i in range(self.num_output_heads):
+            assert (x[:, :coord] == y[:, :coord]).all()
+            assert (f_x[:, i, :coord+1] == f_y[:, i, :coord+1]).all()
 
     def test_last_coord_autoreg(self):
         x, f_x, y, f_y = self.perturb_inputs(-1)
 
-        self.assertTrue((x[:, :-1] == y[:, :-1]).all())
-        self.assertTrue((f_x == f_y).all())
+        assert (x[:, :-1] == y[:, :-1]).all()
+        assert (f_x == f_y).all()
 
     def perturb_inputs(self, coord):
         x = torch.randn(self.batch_size, self.num_input_channels)
@@ -118,7 +116,7 @@ class TestAutoregressiveMLP(unittest.TestCase):
     def test_no_nans(self):
         inputs = torch.randn(self.batch_size, self.num_input_channels)
         result = self.ar_mlp(inputs)
-        self.assertTrue(torch.isfinite(result).all())
+        assert torch.isfinite(result).all()
 
 
 if __name__ == "__main__":

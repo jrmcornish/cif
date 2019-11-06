@@ -28,7 +28,7 @@ from .components.densities import (
     BijectionDensity,
     SplitDensity
 )
-from .components.couplers import IndependentCoupler, SharedCoupler
+from .components.couplers import IndependentCoupler, ChunkedSharedCoupler
 from .components.networks import (
     ConstantNetwork,
     get_mlp,
@@ -253,7 +253,7 @@ def get_coupler_with_shared_net(
         num_channels_per_output,
         net_config
 ):
-    return SharedCoupler(
+    return ChunkedSharedCoupler(
         shift_log_scale_net=get_coupler_net(
             input_shape=input_shape,
             num_output_channels=2*num_channels_per_output,

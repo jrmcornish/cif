@@ -15,7 +15,6 @@ class IndependentCoupler(nn.Module):
 
 
 class SharedCoupler(nn.Module):
-    _NUM_CHUNKS = 2
     _CHANNEL_DIM = 1
 
     def __init__(self, shift_log_scale_net):
@@ -24,9 +23,25 @@ class SharedCoupler(nn.Module):
 
     def forward(self, inputs):
         result = self.shift_log_scale_net(inputs)
-        num_channels = result.shape[self._CHANNEL_DIM]
-        assert num_channels % 2 == 0
+        shift, log_scale = self._split(result)
         return {
-            "shift": result[:, :num_channels//2],
-            "log-scale": result[:, num_channels//2:]
+            "shift": shift,
+            "log-scale": log_scale
         }
+
+    def _split(self, shared_outputs):
+        raise NotImplementedError
+
+
+class ChunkedSharedCoupler(SharedCoupler):
+    def _split(self, shared_outputs):
+        num_channels = shared_outputs.shape[self._CHANNEL_DIM]
+        assert num_channels % 2 == 0
+        return shared_outputs[:, :num_channels//2], shared_outputs[:, num_channels//2:]
+
+
+class IndexedSharedCoupler(SharedCoupler):
+    def _split(self, shared_outputs):
+        assert len(shared_outputs.shape) > 2
+        assert shared_outputs.shape[self._CHANNEL_DIM] == 2
+        return shared_outputs[:, 0], shared_outputs[:, 1]
