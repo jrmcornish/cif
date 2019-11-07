@@ -21,13 +21,16 @@ def get_schema_from_base(config):
 
     schema = []
     for layer in base_schema:
-        if layer["type"] == "affine" and config["num_u_channels"] > 0:
-            # NOTE: We are ignoring the value of per_channel here (for now)
-            schema.append(get_cond_affine_layer(config))
+        if layer["type"] == "batch-norm" and config["num_u_channels"] > 0:
+            assert layer["apply_affine"]
 
-        elif layer["type"] == "batch-norm":
-            if config["batch_norm"]:
-                schema.append(layer)
+            schema += [
+                {
+                    **layer,
+                    "apply_affine": False
+                },
+                get_cond_affine_layer(config)
+            ]
 
         else:
             schema.append(layer)
@@ -236,11 +239,8 @@ def get_multiscale_realnvp_schema(coupler_hidden_channels):
                 },
                 {
                     "type": "batch-norm",
-                    "per_channel": True
-                },
-                {
-                    "type": "affine",
-                    "per_channel": True
+                    "per_channel": True,
+                    "apply_affine": True
                 }
             ]
 
@@ -267,11 +267,8 @@ def get_glow_schema(
             schema += [
                 {
                     "type": "batch-norm",
-                    "per_channel": True
-                },
-                {
-                    "type": "affine",
-                    "per_channel": True
+                    "per_channel": True,
+                    "apply_affine": True
                 },
                 {
                     "type": "invconv",
@@ -324,11 +321,8 @@ def get_flat_realnvp_schema(
             },
             {
                 "type": "batch-norm",
-                "per_channel": False
-            },
-            {
-                "type": "affine",
-                "per_channel": False
+                "per_channel": False,
+                "apply_affine": True
             }
         ]
 
@@ -353,11 +347,8 @@ def get_maf_schema(
             },
             {
                 "type": "batch-norm",
-                "per_channel": False
-            },
-            {
-                "type": "affine",
-                "per_channel": False
+                "per_channel": False,
+                "apply_affine": True
             }
         ]
 
@@ -388,11 +379,8 @@ def get_sos_schema(
             },
             {
                 "type": "batch-norm",
-                "per_channel": False
-            },
-            {
-                "type": "affine",
-                "per_channel": False
+                "per_channel": False,
+                "apply_affine": True
             }
        ]
 

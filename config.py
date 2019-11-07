@@ -78,7 +78,6 @@ def get_2d_config(dataset, model, use_baseline):
     config = {
         **config,
 
-        "batch_norm": use_baseline,
         "dequantize": False,
 
         "train_batch_size": 1000,
@@ -90,9 +89,9 @@ def get_2d_config(dataset, model, use_baseline):
         "weight_decay": 0.,
         "epochs_per_test": 5,
 
-        "num_train_elbo_samples": 10,
-        "num_valid_elbo_samples": 10,
-        "num_test_elbo_samples": 100
+        "num_train_elbo_samples": 10 if not use_baseline else 1,
+        "num_valid_elbo_samples": 10 if not use_baseline else 1,
+        "num_test_elbo_samples": 100 if not use_baseline else 1
     }
 
     if model == "sos":
@@ -100,8 +99,6 @@ def get_2d_config(dataset, model, use_baseline):
         config["num_density_layers"] = 3 if use_baseline else 2
         config["num_polynomials_per_layer"] = 2
         config["polynomial_degree"] = 4
-
-        config["batch_norm"] = True
 
         config["st_nets"] = [40] * 2
         config["p_nets"] = [40] * 4
@@ -152,7 +149,6 @@ def get_uci_config(dataset, model, use_baseline):
     config = {
         **config,
 
-        "batch_norm": use_baseline,
         "dequantize": False,
 
         "train_batch_size": 1000,
@@ -166,9 +162,9 @@ def get_uci_config(dataset, model, use_baseline):
         "max_epochs": 1000,
         "epochs_per_test": 5,
 
-        "num_train_elbo_samples": 1,
-        "num_valid_elbo_samples": 5,
-        "num_test_elbo_samples": 10
+        "num_train_elbo_samples": 1 if not use_baseline else 1,
+        "num_valid_elbo_samples": 5 if not use_baseline else 1,
+        "num_test_elbo_samples": 10 if not use_baseline else 1
     }
 
     return config
@@ -215,7 +211,7 @@ def get_images_config(dataset, model, use_baseline):
 
         else:
             config = {
-                "num_scales": 3,
+                "num_scales": 2,
                 "num_steps_per_scale": 32,
                 "g_num_hidden_channels": 256,
                 "num_u_channels": 1,
@@ -241,7 +237,6 @@ def get_images_config(dataset, model, use_baseline):
     config = {
         **config,
 
-        "batch_norm": use_baseline,
         "dequantize": True,
 
         "valid_batch_size": 500,
@@ -251,9 +246,9 @@ def get_images_config(dataset, model, use_baseline):
         "max_epochs": 1000,
         "epochs_per_test": 1,
 
-        "num_train_elbo_samples": 1,
-        "num_valid_elbo_samples": 5,
-        "num_test_elbo_samples": 10
+        "num_train_elbo_samples": 1 if not use_baseline else 1,
+        "num_valid_elbo_samples": 5 if not use_baseline else 1,
+        "num_test_elbo_samples": 10 if not use_baseline else 1
     }
 
     return config

@@ -156,7 +156,8 @@ def get_bijection(
     elif layer_config["type"] == "batch-norm":
         return BatchNormBijection(
             x_shape=x_shape,
-            per_channel=layer_config["per_channel"]
+            per_channel=layer_config["per_channel"],
+            apply_affine=layer_config["apply_affine"]
         )
 
     elif layer_config["type"] == "affine":

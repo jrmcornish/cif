@@ -7,7 +7,7 @@ from .bijection import Bijection
 
 
 class BatchNormBijection(Bijection):
-    def __init__(self, x_shape, per_channel, momentum=0.1, eps=1e-5):
+    def __init__(self, x_shape, per_channel, apply_affine, momentum=0.1, eps=1e-5):
         super().__init__(x_shape=x_shape, z_shape=x_shape)
 
         self.momentum = momentum
@@ -25,6 +25,12 @@ class BatchNormBijection(Bijection):
         self.register_buffer("running_mean", torch.zeros(param_shape))
         self.register_buffer("running_var", torch.ones(param_shape))
 
+        self.apply_affine = apply_affine
+
+        if apply_affine:
+            self.shift = nn.Parameter(torch.zeros(param_shape))
+            self.log_scale = nn.Parameter(torch.zeros(param_shape))
+
     def _x_to_z(self, x, **kwargs):
         if self.training:
             mean = self._average(x)
@@ -37,15 +43,26 @@ class BatchNormBijection(Bijection):
             mean = self.running_mean
             var = self.running_var
 
+        z = (x - mean) / torch.sqrt(var + self.eps)
+
+        if self.apply_affine:
+            z = z * torch.exp(self.log_scale) + self.shift
+
         return {
-            "z": (x - mean) / torch.sqrt(var + self.eps),
+            "z": z,
             "log-jac": self._log_jac_x_to_z(var, x.shape[0])
         }
 
     def _z_to_x(self, z, **kwargs):
         assert not self.training
+
+        if self.apply_affine:
+            z = (z - self.shift) * torch.exp(-self.log_scale)
+
+        x = z * torch.sqrt(self.running_var + self.eps) + self.running_mean
+
         return {
-            "x": z * torch.sqrt(self.running_var + self.eps) + self.running_mean,
+            "x": x,
             "log-jac": -self._log_jac_x_to_z(self.running_var, z.shape[0])
         }
 
@@ -54,7 +71,13 @@ class BatchNormBijection(Bijection):
         return torch.mean(data, dim=self.average_dims, keepdim=True).squeeze(0)
 
     def _log_jac_x_to_z(self, var, batch_size):
-        log_jac_single = self.log_jac_factor * torch.sum(-0.5*torch.log(var + self.eps))
+        summands = -0.5 * torch.log(var + self.eps)
+
+        if self.apply_affine:
+            summands = self.log_scale + summands
+
+        log_jac_single = self.log_jac_factor * torch.sum(summands)
+
         return log_jac_single.view(1, 1).expand(batch_size, 1)
 
 
