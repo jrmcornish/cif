@@ -22,7 +22,10 @@ class Density(nn.Module):
         x_samples = x.repeat_interleave(num_elbo_samples, dim=0)
         result = self.elbo(x_samples)
 
-        elbo_samples = result["elbo"].view(x.shape[0], num_elbo_samples, 1)
+        try:
+            elbo_samples = result["elbo"].view(x.shape[0], num_elbo_samples, 1)
+        except RuntimeError:
+            import ipdb; ipdb.set_trace()
         elbo = elbo_samples.mean(dim=1)
 
         log_prob = elbo_samples.logsumexp(dim=1) - np.log(num_elbo_samples)

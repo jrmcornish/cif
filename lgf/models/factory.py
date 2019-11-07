@@ -21,7 +21,9 @@ from .components.bijections import (
     ConditionalAffineBijection,
     BruteForceInvertible1x1ConvBijection,
     LUInvertible1x1ConvBijection,
-    SumOfSquaresPolynomialBijection
+    SumOfSquaresPolynomialBijection,
+    CoupledRationalQuadraticSplineBijection,
+    AutoregressiveRationalQuadraticSplineBijection
 )
 from .components.densities import (
     DiagonalGaussianDensity,
@@ -172,7 +174,7 @@ def get_bijection(
         return ScalarAdditionBijection(x_shape=x_shape, value=layer_config["value"])
 
     elif layer_config["type"] == "flatten":
-        return ViewBijection(x_shape=x_shape, z_shape=(np.prod(x_shape),))
+        return ViewBijection(x_shape=x_shape, z_shape=(int(np.prod(x_shape)),))
 
     elif layer_config["type"] == "made":
         assert len(x_shape) == 1
@@ -224,6 +226,31 @@ def get_bijection(
             num_polynomials=layer_config["num_polynomials"],
             polynomial_degree=layer_config["polynomial_degree"],
         )
+
+    elif layer_config["type"] == "nsf":
+        assert len(x_shape) == 1
+        if layer_config["use_autoregressive"]:
+            return AutoregressiveRationalQuadraticSplineBijection(
+                num_input_channels=x_shape[0],
+                hidden_channels=layer_config["hidden_channels"],
+                num_resnet_blocks=layer_config["num_resnet_blocks"],
+                dropout_probability=layer_config["dropout_probability"],
+                use_batchnorm_in_nets=layer_config["use_batchnorm_in_resnet"],
+                tail_bound=layer_config["tail_bound"],
+                num_bins=layer_config["num_bins"]
+            )
+        else:
+            return CoupledRationalQuadraticSplineBijection(
+                num_input_channels=x_shape[0],
+                hidden_channels=layer_config["hidden_channels"],
+                num_resnet_blocks=layer_config["num_resnet_blocks"],
+                dropout_probability=layer_config["dropout_probability"],
+                num_bins=layer_config["num_bins"],
+                evens_masked=layer_config["evens_masked"],
+                use_batchnorm_in_nets=layer_config["use_batchnorm_in_resnet"],
+                apply_unconditional_transform=layer_config["apply_unconditional_transform"],
+                tail_bound=layer_config["tail_bound"]
+            )
 
     else:
         assert False, f"Invalid layer type {layer_config['type']}"

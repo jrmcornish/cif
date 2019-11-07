@@ -40,3 +40,8 @@ from .invconv import (
 )
 
 from .sos import SumOfSquaresPolynomialBijection
+
+from .nsf import (
+    CoupledRationalQuadraticSplineBijection,
+    AutoregressiveRationalQuadraticSplineBijection
+)

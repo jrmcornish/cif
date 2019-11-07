@@ -1,6 +1,6 @@
 def get_schema(config):
     model = config["model"] 
-    if model in ["glow", "multiscale-realnvp", "flat-realnvp", "maf", "sos"]:
+    if model in ["glow", "multiscale-realnvp", "flat-realnvp", "maf", "sos", "nsf"]:
         return get_schema_from_base(config)
 
     elif model == "pure-cond-affine-mlp":
@@ -125,6 +125,21 @@ def get_base_schema(config):
             polynomial_degree=config["polynomial_degree"],
         )
 
+    elif model == "nsf":
+        return get_nsf_schema(
+            num_density_layers=config["num_density_layers"],
+            hidden_channels=config["resnet_hidden_channels"],
+            num_resnet_blocks=config["num_resnet_blocks"],
+            dropout_probability=config["dropout_probability"],
+            num_bins=config["num_bins"],
+            tail_bound=config["tail_bound"],
+            use_batchnorm_in_resnet=config["use_batchnorm_in_resnet"],
+            use_autoregressive=config["use_autoregressive"],
+            apply_unconditional_transform=config["apply_unconditional_transform"],
+            use_invconv=config["use_invconv"],
+            add_invconv_to_end=config["add_invconv_to_end"]
+        )
+
     elif model == "glow":
         return get_glow_schema(
             num_scales=config["num_scales"],
@@ -203,7 +218,7 @@ def get_coupler_net_config(net_spec, model):
                 "hidden_channels": net_spec
             }
 
-        elif model in ["pure-cond-affine-mlp", "maf", "flat-realnvp", "sos"]:
+        elif model in ["pure-cond-affine-mlp", "maf", "flat-realnvp", "sos", "nsf"]:
             return {
                 "type": "mlp",
                 "activation": "tanh",
@@ -398,5 +413,59 @@ def get_sos_schema(
                 "per_channel": False
             }
         ]
+
+    return result
+    
+
+# TODO: Include batchnorm between layers? Not visible in repo
+def get_nsf_schema(
+        num_density_layers,
+        hidden_channels,
+        num_resnet_blocks,
+        dropout_probability,
+        num_bins,
+        tail_bound,
+        use_batchnorm_in_resnet,
+        apply_unconditional_transform,
+        use_invconv,
+        use_autoregressive,
+        add_invconv_to_end
+):
+    result = [{"type": "flatten"}]
+
+    for i in range(num_density_layers):
+        if use_invconv:
+            result.append({
+                "type": "invconv",
+                "lu": True
+            })
+        
+        result.append(
+            {
+                "type": "nsf",
+                "hidden_channels": hidden_channels,
+                "num_resnet_blocks": num_resnet_blocks,
+                "dropout_probability": dropout_probability,
+                "num_bins": num_bins,
+                "use_autoregressive": use_autoregressive,
+                "tail_bound": tail_bound,
+                "use_batchnorm_in_resnet": use_batchnorm_in_resnet,
+                "apply_unconditional_transform": apply_unconditional_transform,
+                "evens_masked": (i % 2 == 0)
+            }
+        )
+        result.append(
+            {
+                "type": "batch-norm",
+                "per_channel": False,
+                "apply_affine": True
+            }
+        )
+    
+    if add_invconv_to_end:
+        result.append({
+            "type": "invconv",
+            "lu": True
+        })
 
     return result

@@ -25,7 +25,7 @@ def get_config_base(dataset, model, use_baseline):
 
 
 def get_2d_config(dataset, model, use_baseline):
-    assert model in ["flat-realnvp", "maf", "sos"], f"Invalid model {model} for dataset {dataset}"
+    assert model in ["flat-realnvp", "maf", "sos", "nsf"], f"Invalid model {model} for dataset {dataset}"
 
     if dataset == "2uniforms":
         if use_baseline:
@@ -83,6 +83,7 @@ def get_2d_config(dataset, model, use_baseline):
         "batch_norm": True,
         "batch_norm_apply_affine": True,
         "batch_norm_use_running_averages": False,
+        "batch_norm_momentum": 0.1,
 
         "early_stopping": True,
         "train_batch_size": 1000,
@@ -109,11 +110,29 @@ def get_2d_config(dataset, model, use_baseline):
         config["p_nets"] = [40] * 4
         config["q_nets"] =  [40] * 4
 
+    elif model == "nsf":
+        warnings.warn("Overriding `num_density_layers`")
+        config["num_density_layers"] = 2
+        config["num_bins"] = 64 if use_baseline else 24 
+        config["resnet_hidden_channels"] = 32
+        config["num_resnet_blocks"] = 2
+        config["use_batchnorm_in_resnet"] = True
+        config["apply_unconditional_transform"] = False
+        config["tail_bound"] = 5
+        config["use_autoregressive"] = False
+        config["dropout_probability"] = 0.0
+        config["use_invconv"] = False
+        config["add_invconv_to_end"] = False
+
+        config["st_nets"] = [24] * 2
+        config["p_nets"] = [24] * 3
+        config["q_nets"] =  [24] * 3
+
     return config
 
 
 def get_uci_config(dataset, model, use_baseline):
-    assert model in ["flat-realnvp", "maf", "sos"], f"Invalid model {model} for dataset {dataset}"
+    assert model in ["flat-realnvp", "maf", "sos", "nsf"], f"Invalid model {model} for dataset {dataset}"
 
     if dataset in ["gas", "power"]:
         if use_baseline:
@@ -187,6 +206,49 @@ def get_uci_config(dataset, model, use_baseline):
             "lr": 1e-3,
             "opt": "sgd"
         }
+
+    elif model == "nsf":
+        warnings.warn("Overriding `num_density_layers`")
+
+        config["use_batchnorm_in_resnet"] = False
+        config["apply_unconditional_transform"] = True
+        config["tail_bound"] = 3
+        config["use_autoregressive"] = False
+        config["use_invconv"] = True
+        config["add_invconv_to_end"] = True
+
+        if not config["use_autoregressive"]:
+
+            if dataset == "power":
+                config["num_density_layers"] = 10
+                config["num_resnet_blocks"] = 2
+                config["resnet_hidden_channels"] = 256
+                config["num_bins"] = 8 
+                config["dropout_probability"] = 0.0
+
+            if dataset == "gas":
+                config["num_density_layers"] = 10
+                config["num_resnet_blocks"] = 2
+                config["resnet_hidden_channels"] = 256
+                config["num_bins"] = 8 
+                config["dropout_probability"] = 0.1
+                
+            if dataset == "hepmass":
+                config["num_density_layers"] = 20
+                config["num_resnet_blocks"] = 1
+                config["resnet_hidden_channels"] = 128
+                config["num_bins"] = 8 
+                config["dropout_probability"] = 0.2
+                
+            if dataset == "miniboone":
+                config["num_density_layers"] = 10
+                config["num_resnet_blocks"] = 1
+                config["resnet_hidden_channels"] = 32
+                config["num_bins"] = 4 
+                config["dropout_probability"] = 0.2
+
+        else:
+            raise NotImplementedError            
 
     return config
 

@@ -1,0 +1,3 @@
+[submodule "gitmodules/nsf"]
+	path = gitmodules/nsf
+	url = https://github.com/bayesiains/nsf.git
