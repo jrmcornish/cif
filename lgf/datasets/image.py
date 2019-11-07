@@ -104,14 +104,13 @@ def image_tensors_to_supervised_dataset(dataset_name, dataset_role, images, labe
     return SupervisedDataset(dataset_name, dataset_role, images, labels)
 
 
-def get_train_valid_image_datasets(dataset_name, data_root, add_train_hflips):
+def get_train_valid_image_datasets(dataset_name, data_root, valid_fraction, add_train_hflips):
     images, labels = get_raw_image_tensors(dataset_name, train=True, data_root=data_root)
 
     perm = torch.randperm(images.shape[0])
     shuffled_images = images[perm]
     shuffled_labels = labels[perm]
 
-    valid_fraction = 0.1
     valid_size = int(valid_fraction * images.shape[0])
     valid_images = shuffled_images[:valid_size]
     valid_labels = shuffled_labels[:valid_size]
@@ -133,7 +132,11 @@ def get_test_image_dataset(dataset_name, data_root):
     return image_tensors_to_supervised_dataset(dataset_name, "test", images, labels)
 
 
-def get_image_datasets(dataset_name, data_root, add_train_hflips=False):
-    train_dset, valid_dset = get_train_valid_image_datasets(dataset_name, data_root, add_train_hflips)
+def get_image_datasets(dataset_name, data_root, make_valid_dset):
+    # Currently hardcoded; could make configurable
+    valid_fraction = 0.1 if make_valid_dset else 0
+    add_train_hflips = False
+
+    train_dset, valid_dset = get_train_valid_image_datasets(dataset_name, data_root, valid_fraction, add_train_hflips)
     test_dset = get_test_image_dataset(dataset_name, data_root)
     return train_dset, valid_dset, test_dset

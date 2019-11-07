@@ -41,61 +41,60 @@ class Trainer:
 
     def __init__(
             self,
+
             module,
+            device,
+
             train_loss,
-            valid_loss,
-            test_metrics,
             train_loader,
-            valid_loader,
-            test_loader,
             opt,
-            max_bad_valid_epochs,
-            visualizer,
-            writer,
             max_epochs,
+
+            test_metrics,
+            test_loader,
             epochs_per_test,
+
+            early_stopping,
+            valid_loss,
+            valid_loader,
+            max_bad_valid_epochs,
+
+            visualizer,
+
+            writer,
             should_checkpoint_latest,
-            should_checkpoint_best_valid,
-            device
+            should_checkpoint_best_valid
     ):
         self._module = module
         self._module.to(device)
+        self._device = device
 
         self._train_loss = train_loss
-        self._valid_loss = valid_loss
-        self._test_metrics = test_metrics
-
         self._train_loader = train_loader
-        self._valid_loader = valid_loader
-        self._test_loader = test_loader
-
         self._opt = opt
-
         self._max_epochs = max_epochs
+
+        self._test_metrics = test_metrics
+        self._test_loader = test_loader
+        self._epochs_per_test = epochs_per_test
+
+        self._valid_loss = valid_loss
+        self._valid_loader = valid_loader
         self._max_bad_valid_epochs = max_bad_valid_epochs
         self._best_valid_loss = float("inf")
         self._num_bad_valid_epochs = 0
-        self._epochs_per_test = epochs_per_test
-
-        self._should_checkpoint_best_valid = should_checkpoint_best_valid
 
         self._visualizer = visualizer
 
         self._writer = writer
+        self._should_checkpoint_best_valid = should_checkpoint_best_valid
 
-        self._device = device
+        ### Training
 
         self._trainer = Engine(self._train_batch)
-        self._evaluator = Engine(self._validate_batch)
-        self._tester = Engine(self._test_batch)
 
         AverageMetric().attach(self._trainer)
-        AverageMetric().attach(self._evaluator)
-        AverageMetric().attach(self._tester)
-
         ProgressBar(persist=True).attach(self._trainer, ["loss"])
-        ProgressBar(persist=False, desc="Validating").attach(self._evaluator)
-        ProgressBar(persist=False, desc="Testing").attach(self._tester)
 
         self._trainer.add_event_handler(Events.EPOCH_STARTED, lambda _: self._module.train())
         self._trainer.add_event_handler(Events.ITERATION_COMPLETED, TerminateOnNan())
@@ -104,8 +103,23 @@ class Trainer:
         if should_checkpoint_latest:
             self._trainer.add_event_handler(Events.EPOCH_COMPLETED, lambda _: self._save_checkpoint("latest"))
 
-        self._trainer.add_event_handler(Events.EPOCH_COMPLETED, self._validate)
-        self._evaluator.add_event_handler(Events.EPOCH_STARTED, lambda _: self._module.eval())
+        ### Validation
+
+        if early_stopping:
+            self._validator = Engine(self._validate_batch)
+
+            AverageMetric().attach(self._validator)
+            ProgressBar(persist=False, desc="Validating").attach(self._validator)
+
+            self._trainer.add_event_handler(Events.EPOCH_COMPLETED, self._validate)
+            self._validator.add_event_handler(Events.EPOCH_STARTED, lambda _: self._module.eval())
+
+        ### Testing
+
+        self._tester = Engine(self._test_batch)
+
+        AverageMetric().attach(self._tester)
+        ProgressBar(persist=False, desc="Testing").attach(self._tester)
 
         self._trainer.add_event_handler(Events.EPOCH_COMPLETED, self._test)
         self._tester.add_event_handler(Events.EPOCH_STARTED, lambda _: self._module.eval())
@@ -142,7 +156,7 @@ class Trainer:
 
     @torch.no_grad()
     def _validate(self, engine):
-        state = self._evaluator.run(data=self._valid_loader)
+        state = self._validator.run(data=self._valid_loader)
         valid_loss = state.metrics["loss"]
 
         if valid_loss < self._best_valid_loss:

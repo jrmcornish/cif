@@ -80,6 +80,7 @@ def get_2d_config(dataset, model, use_baseline):
 
         "dequantize": False,
 
+        "early_stopping": True,
         "train_batch_size": 1000,
         "valid_batch_size": 1000,
         "test_batch_size": 10000,
@@ -151,6 +152,7 @@ def get_uci_config(dataset, model, use_baseline):
 
         "dequantize": False,
 
+        "early_stopping": True,
         "train_batch_size": 1000,
         "valid_batch_size": 5000,
         "test_batch_size": 5000,
@@ -187,6 +189,7 @@ def get_images_config(dataset, model, use_baseline):
                 "q_nets": [64] * 2
             }
 
+        config["early_stopping"] = True
         config["train_batch_size"] = 100
         config["opt"] = "adam"
         config["lr"] = 1e-4
@@ -220,12 +223,13 @@ def get_images_config(dataset, model, use_baseline):
                 "q_nets": 128
             }
 
+        config["early_stopping"] = False
         config["train_batch_size"] = 64
         config["opt"] = "adamax"
         config["lr"] = 5e-4
 
         if dataset in ["cifar10"]:
-            config["weight_decay"] = 0.15
+            config["weight_decay"] = 0.1
         else:
             config["weight_decay"] = 0.
 

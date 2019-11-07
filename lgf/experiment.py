@@ -56,6 +56,7 @@ def setup_experiment(config):
         dataset=config["dataset"],
         device=device,
         data_root=config["data_root"],
+        make_valid_loader=config["early_stopping"],
         train_batch_size=config["train_batch_size"],
         valid_batch_size=config["valid_batch_size"],
         test_batch_size=config["test_batch_size"]
@@ -109,6 +110,7 @@ def setup_experiment(config):
         valid_loader=valid_loader,
         test_loader=test_loader,
         opt=opt,
+        early_stopping=config["early_stopping"],
         max_bad_valid_epochs=config["max_bad_valid_epochs"],
         visualizer=visualizer,
         writer=writer,
