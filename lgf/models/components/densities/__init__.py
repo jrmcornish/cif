@@ -1,4 +1,4 @@
-from .density import MapDataBeforeEvalDensity
+from .wrapper import DequantizationDensity
 from .split import SplitDensity
 from .gaussian import DiagonalGaussianDensity, DiagonalGaussianConditionalDensity
 from .exact import BijectionDensity

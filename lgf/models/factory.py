@@ -27,7 +27,8 @@ from .components.densities import (
     DiagonalGaussianConditionalDensity,
     ELBODensity,
     BijectionDensity,
-    SplitDensity
+    SplitDensity,
+    DequantizationDensity
 )
 from .components.couplers import IndependentCoupler, ChunkedSharedCoupler
 from .components.networks import (
@@ -42,13 +43,22 @@ def get_density(
         schema,
         x_shape
 ):
+    # TODO: We could specify this explicitly to allow different prior distributions
     if not schema:
         return get_standard_gaussian_density(x_shape=x_shape)
 
     layer_config = schema[0]
     schema_tail = schema[1:]
 
-    if layer_config["type"] == "split":
+    if layer_config["type"] == "dequantization":
+        return DequantizationDensity(
+            density=get_density(
+                schema=schema_tail,
+                x_shape=x_shape
+            )
+        )
+
+    elif layer_config["type"] == "split":
         split_x_shape = (x_shape[0] // 2, *x_shape[1:])
         return SplitDensity(
             density_1=get_density(
@@ -59,6 +69,15 @@ def get_density(
             dim=1
         )
 
+    else:
+        return get_bijection_density(
+            layer_config=layer_config,
+            schema_tail=schema_tail,
+            x_shape=x_shape
+        )
+
+
+def get_bijection_density(layer_config, schema_tail, x_shape):
     bijection = get_bijection(layer_config=layer_config, x_shape=x_shape)
 
     prior = get_density(

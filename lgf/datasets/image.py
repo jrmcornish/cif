@@ -100,10 +100,7 @@ def get_raw_image_tensors(dataset_name, train, data_root):
 
 def image_tensors_to_supervised_dataset(dataset_name, dataset_role, images, labels):
     images = images.to(dtype=torch.get_default_dtype())
-    images += torch.rand_like(images)
-
     labels = labels.long()
-
     return SupervisedDataset(dataset_name, dataset_role, images, labels)
 
 

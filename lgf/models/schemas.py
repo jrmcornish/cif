@@ -22,7 +22,7 @@ def get_schema_from_base(config):
     schema = []
     for layer in base_schema:
         if layer["type"] == "affine" and config["num_u_channels"] > 0:
-            assert not layer["per_channel"], "Per-channel conditional affine layers are not yet implemented"
+            # NOTE: We are ignoring the value of per_channel here (for now)
             schema.append(get_cond_affine_layer(config))
 
         elif layer["type"] == "batch-norm":
@@ -36,9 +36,14 @@ def get_schema_from_base(config):
 
 
 def get_preproc_schema(config):
+    if config["dequantize"]:
+        schema = [{"type": "dequantization"}]
+    else:
+        schema = []
+
     if "logit_tf_lambda" in config and "logit_tf_scale" in config:
         assert "rescale_tf_scale" not in config
-        return get_logit_tf_schema(
+        schema += get_logit_tf_schema(
             lam=config["logit_tf_lambda"],
             scale=config["logit_tf_scale"]
         )
@@ -46,10 +51,11 @@ def get_preproc_schema(config):
     elif "centering_tf_scale" in config:
         assert "logit_tf_lambda" not in config
         assert "logit_tf_scale" not in config
-        return get_centering_tf_schema(scale=config["centering_tf_scale"])
+        schema += get_centering_tf_schema(
+            scale=config["centering_tf_scale"]
+        )
 
-    else:
-        return []
+    return schema
 
 
 def get_logit_tf_schema(lam, scale):

@@ -79,6 +79,7 @@ def get_2d_config(dataset, model, use_baseline):
         **config,
 
         "batch_norm": use_baseline,
+        "dequantize": False,
 
         "train_batch_size": 1000,
         "valid_batch_size": 1000,
@@ -152,6 +153,7 @@ def get_uci_config(dataset, model, use_baseline):
         **config,
 
         "batch_norm": use_baseline,
+        "dequantize": False,
 
         "train_batch_size": 1000,
         "valid_batch_size": 5000,
@@ -240,6 +242,7 @@ def get_images_config(dataset, model, use_baseline):
         **config,
 
         "batch_norm": use_baseline,
+        "dequantize": True,
 
         "valid_batch_size": 500,
         "test_batch_size": 500,
