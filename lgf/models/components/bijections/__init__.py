@@ -7,9 +7,7 @@ from .bijection import (
 from .affine import (
     ConditionalAffineBijection,
     BatchNormBijection,
-    AffineBijection,
-    ScalarMultiplicationBijection,
-    ScalarAdditionBijection
+    AffineBijection
 )
 
 from .made import MADEBijection
@@ -28,7 +26,12 @@ from .reshaping import (
     FlipBijection
 )
 
-from .logit import LogitBijection
+from .math import (
+    LogitBijection,
+    TanhBijection,
+    ScalarMultiplicationBijection,
+    ScalarAdditionBijection
+)
 
 from .invconv import (
     BruteForceInvertible1x1ConvBijection,

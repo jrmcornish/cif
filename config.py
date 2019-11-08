@@ -109,7 +109,7 @@ def get_2d_config(dataset, model, use_baseline):
 
 
 def get_uci_config(dataset, model, use_baseline):
-    assert model in ["flat-realnvp", "maf"], f"Invalid model {model} for dataset {dataset}"
+    assert model in ["flat-realnvp", "maf", "sos"], f"Invalid model {model} for dataset {dataset}"
 
     if dataset in ["gas", "power"]:
         if use_baseline:
@@ -160,14 +160,25 @@ def get_uci_config(dataset, model, use_baseline):
         "opt": "adam",
         "lr": 1e-3,
         "weight_decay": 0.,
-        "max_bad_valid_epochs": 30,
-        "max_epochs": 1000,
+        "max_bad_valid_epochs": 5000,
+        "max_epochs": 5000,
         "epochs_per_test": 5,
 
         "num_train_elbo_samples": 1 if not use_baseline else 1,
         "num_valid_elbo_samples": 5 if not use_baseline else 1,
         "num_test_elbo_samples": 10 if not use_baseline else 1
     }
+
+    if model == "sos":
+        assert use_baseline
+        config = {
+            **config,
+            "num_density_layers": 8,
+            "num_polynomials_per_layer": 5,
+            "polynomial_degree": 4,
+            "lr": 1e-3,
+            "opt": "sgd"
+        }
 
     return config
 

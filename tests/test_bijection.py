@@ -24,6 +24,7 @@ from lgf.models.components.bijections import (
     AlternatingChannelwiseAffineCouplingBijection,
     MaskedChannelwiseAffineCouplingBijection,
     Squeeze2dBijection,
+    TanhBijection
 )
 from lgf.models.factory import get_coupler
 
@@ -189,7 +190,11 @@ class TestBatchNormBijection(_TestBijection, unittest.TestCase):
         self.batch_size = 100
         self.eps = 1e-5
 
-        self.bijection = BatchNormBijection(x_shape=(10, 2), per_channel=True)
+        self.bijection = BatchNormBijection(
+            x_shape=(10, 2),
+            per_channel=True,
+            apply_affine=True
+        )
         self.u_shape = None
 
         # XXX: We have to do this because otherwise composing z_to_x with x_to_z won't be invertible 
@@ -462,7 +467,31 @@ class TestUnconditionalInvertible1x1ConvBijectionEquality(_TestBijection, unitte
 
         diffs_jac = (log_jac_LU - log_jac_non_LU).norm(dim=-1)
         self.assertLess(diffs_jac.max().item(), self.jac_eps)
-    
+
+
+class TestScalarMultiplicationBijection(_TestBijection, unittest.TestCase):
+    def setUp(self):
+        x_shape = (50, 4)
+        self.batch_size = 1000
+        self.u_shape = None
+        self.eps = 1e-6
+        self.bijection = ScalarMultiplicationBijection(
+            x_shape=x_shape,
+            value=5.3
+        )
+
+
+class TestScalarAdditionBijection(_TestBijection, unittest.TestCase):
+    def setUp(self):
+        x_shape = (50, 4)
+        self.batch_size = 1000
+        self.u_shape = None
+        self.eps = 1e-6
+        self.bijection = ScalarAdditionBijection(
+            x_shape=x_shape,
+            value=5.3
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

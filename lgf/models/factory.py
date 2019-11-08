@@ -14,6 +14,7 @@ from .components.bijections import (
     AffineBijection,
     Squeeze2dBijection,
     LogitBijection,
+    TanhBijection,
     ScalarMultiplicationBijection,
     ScalarAdditionBijection,
     ViewBijection,
@@ -132,6 +133,12 @@ def get_bijection(
 
     elif layer_config["type"] == "logit":
         return LogitBijection(x_shape=x_shape)
+
+    elif layer_config["type"] == "sigmoid":
+        return LogitBijection(x_shape=x_shape).inverse()
+
+    elif layer_config["type"] == "tanh":
+        return TanhBijection(x_shape=x_shape)
 
     elif layer_config["type"] == "scalar-mult":
         return ScalarMultiplicationBijection(

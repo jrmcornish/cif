@@ -382,6 +382,6 @@ def get_sos_schema(
                 "per_channel": False,
                 "apply_affine": True
             }
-       ]
+        ]
 
     return result

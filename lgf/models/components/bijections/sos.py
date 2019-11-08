@@ -23,7 +23,8 @@ class SumOfSquaresPolynomialBijection(Bijection):
         arn = AutoRegressiveNN(
             input_dim=int(num_input_channels),
             hidden_dims=hidden_channels,
-            param_dims=[(polynomial_degree + 1)*num_polynomials]
+            param_dims=[(polynomial_degree + 1)*num_polynomials],
+            nonlinearity=activation()
         )
 
         self.flow = PolynomialFlow(

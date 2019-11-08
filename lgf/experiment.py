@@ -32,7 +32,7 @@ def train(config):
 
 
 def print_model(config):
-    _, density, _, _ = setup_experiment({**config, "enable_logging": False})
+    density = setup_density(config, device=torch.device("cpu"))
     print(density)
     print(f"Number of parameters: {num_params(density):,}")
 
@@ -42,16 +42,7 @@ def print_schema(config):
     print(json.dumps(schema, indent=4))
 
 
-def setup_experiment(config):
-    torch.manual_seed(config["seed"])
-    np.random.seed(config["seed"]+1)
-    random.seed(config["seed"]+2)
-
-    if torch.cuda.is_available():
-        device = torch.device("cuda")
-    else:
-        device = torch.device("cpu")
-
+def setup_loaders(config, device):
     train_loader, valid_loader, test_loader = get_loaders(
         dataset=config["dataset"],
         device=device,
@@ -61,13 +52,34 @@ def setup_experiment(config):
         valid_batch_size=config["valid_batch_size"],
         test_batch_size=config["test_batch_size"]
     )
+    return train_loader, valid_loader, test_loader
+
+
+def setup_density(config, device):
+    train_loader, valid_loader, test_loader = setup_loaders(config, device)
+    return get_density(
+        schema=get_schema(config=config),
+        x_shape=train_loader.dataset.x.shape[1:]
+    ).to(device)
+
+
+def setup_experiment(config):
+    torch.manual_seed(config["seed"])
+    np.random.seed(config["seed"]+1)
+    random.seed(config["seed"]+2)
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    train_loader, valid_loader, test_loader = setup_loaders(config, device)
 
     x_shape = train_loader.dataset.x.shape[1:]
 
     schema = get_schema(config=config)
     density = get_density(schema=schema, x_shape=x_shape)
 
-    if config["opt"] == "adam":
+    if config["opt"] == "sgd":
+        opt_class = optim.SGD
+    elif config["opt"] == "adam":
         opt_class = optim.Adam
     elif config["opt"] == "adamax":
         opt_class = optim.Adamax
