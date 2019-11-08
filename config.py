@@ -191,6 +191,8 @@ def get_images_config(dataset, model, use_baseline):
 
         config["early_stopping"] = True
         config["train_batch_size"] = 100
+        config["valid_batch_size"] = 500
+        config["test_batch_size"] = 500
         config["opt"] = "adam"
         config["lr"] = 1e-4
         config["weight_decay"] = 0.
@@ -209,7 +211,9 @@ def get_images_config(dataset, model, use_baseline):
                 "num_scales": 3,
                 "num_steps_per_scale": 32,
                 "g_num_hidden_channels": 512,
-                "num_u_channels": 0
+                "num_u_channels": 0,
+                "valid_batch_size": 500,
+                "test_batch_size": 500
             }
 
         else:
@@ -220,7 +224,9 @@ def get_images_config(dataset, model, use_baseline):
                 "num_u_channels": 1,
                 "st_nets": 64,
                 "p_nets": 128,
-                "q_nets": 128
+                "q_nets": 128,
+                "valid_batch_size": 100,
+                "test_batch_size": 100
             }
 
         config["early_stopping"] = False
@@ -242,9 +248,6 @@ def get_images_config(dataset, model, use_baseline):
         **config,
 
         "dequantize": True,
-
-        "valid_batch_size": 500,
-        "test_batch_size": 500,
 
         "max_bad_valid_epochs": 50,
         "max_epochs": 1000,
