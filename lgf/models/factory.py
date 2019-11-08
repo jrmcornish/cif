@@ -29,7 +29,8 @@ from .components.densities import (
     ELBODensity,
     BijectionDensity,
     SplitDensity,
-    DequantizationDensity
+    DequantizationDensity,
+    PassthroughBeforeEvalDensity
 )
 from .components.couplers import IndependentCoupler, ChunkedSharedCoupler
 from .components.networks import (
@@ -42,6 +43,22 @@ from .components.networks import (
 
 def get_density(
         schema,
+        x_train
+):
+    x_shape = x_train.shape[1:]
+
+    if schema[0]["type"] == "passthrough-before-eval":
+        return PassthroughBeforeEvalDensity(
+            density=get_density_recursive(schema[1:], x_shape),
+            x=x_train
+        )
+
+    else:
+        return get_density_recursive(schema, x_shape)
+
+
+def get_density_recursive(
+        schema,
         x_shape
 ):
     # TODO: We could specify this explicitly to allow different prior distributions
@@ -53,7 +70,7 @@ def get_density(
 
     if layer_config["type"] == "dequantization":
         return DequantizationDensity(
-            density=get_density(
+            density=get_density_recursive(
                 schema=schema_tail,
                 x_shape=x_shape
             )
@@ -62,13 +79,16 @@ def get_density(
     elif layer_config["type"] == "split":
         split_x_shape = (x_shape[0] // 2, *x_shape[1:])
         return SplitDensity(
-            density_1=get_density(
+            density_1=get_density_recursive(
                 schema=schema_tail,
                 x_shape=split_x_shape
             ),
             density_2=get_standard_gaussian_density(x_shape=split_x_shape),
             dim=1
         )
+
+    elif layer_config["type"] == "passthrough-before-eval":
+        assert False, "`passthrough-before-eval` must occur as the first item in a schema"
 
     else:
         return get_bijection_density(
@@ -81,7 +101,7 @@ def get_density(
 def get_bijection_density(layer_config, schema_tail, x_shape):
     bijection = get_bijection(layer_config=layer_config, x_shape=x_shape)
 
-    prior = get_density(
+    prior = get_density_recursive(
         schema=schema_tail,
         x_shape=bijection.z_shape
     )
@@ -164,7 +184,8 @@ def get_bijection(
         return BatchNormBijection(
             x_shape=x_shape,
             per_channel=layer_config["per_channel"],
-            apply_affine=layer_config["apply_affine"]
+            apply_affine=layer_config["apply_affine"],
+            momentum=layer_config["momentum"]
         )
 
     elif layer_config["type"] == "affine":

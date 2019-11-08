@@ -80,6 +80,10 @@ def get_2d_config(dataset, model, use_baseline):
 
         "dequantize": False,
 
+        "batch_norm": True,
+        "batch_norm_apply_affine": True,
+        "batch_norm_use_running_averages": False,
+
         "early_stopping": True,
         "train_batch_size": 1000,
         "valid_batch_size": 1000,
@@ -151,6 +155,10 @@ def get_uci_config(dataset, model, use_baseline):
         **config,
 
         "dequantize": False,
+
+        "batch_norm": True,
+        "batch_norm_apply_affine": True,
+        "batch_norm_use_running_averages": False,
 
         "early_stopping": True,
         "train_batch_size": 1000,
@@ -259,6 +267,11 @@ def get_images_config(dataset, model, use_baseline):
         **config,
 
         "dequantize": True,
+
+        "batch_norm": True,
+        "batch_norm_apply_affine": True,
+        "batch_norm_use_running_averages": True,
+        "batch_norm_momentum": 0.1,
 
         "max_bad_valid_epochs": 50,
         "max_epochs": 1000,

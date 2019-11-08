@@ -18,24 +18,38 @@ def get_pure_cond_affine_schema(config):
 
 def get_schema_from_base(config):
     base_schema = get_preproc_schema(config) + get_base_schema(config)
+    return process_batch_norm_layers(base_schema, config)
 
-    schema = []
-    for layer in base_schema:
-        if layer["type"] == "batch-norm" and config["num_u_channels"] > 0:
-            assert layer["apply_affine"]
 
-            schema += [
-                {
+def process_batch_norm_layers(schema, config):
+    if config["batch_norm"]:
+        if config["batch_norm_use_running_averages"]:
+            new_schema = []
+            momentum = config["batch_norm_momentum"]
+        else:
+            new_schema = [{"type": "passthrough-before-eval"}]
+            momentum = 0.
+
+        apply_affine = config["batch_norm_apply_affine"]
+    else:
+        new_schema = []
+
+    for layer in schema:
+        if layer["type"] == "batch-norm":
+            if config["batch_norm"]:
+                new_schema.append({
                     **layer,
-                    "apply_affine": False
-                },
-                get_cond_affine_layer(config)
-            ]
+                    "momentum": momentum,
+                    "apply_affine": apply_affine
+                })
+
+            if config["num_u_channels"] > 0:
+                new_schema.append(get_cond_affine_layer(config))
 
         else:
-            schema.append(layer)
+            new_schema.append(layer)
 
-    return schema
+    return new_schema
 
 
 def get_preproc_schema(config):
@@ -239,8 +253,7 @@ def get_multiscale_realnvp_schema(coupler_hidden_channels):
                 },
                 {
                     "type": "batch-norm",
-                    "per_channel": True,
-                    "apply_affine": True
+                    "per_channel": True
                 }
             ]
 
@@ -267,8 +280,7 @@ def get_glow_schema(
             schema += [
                 {
                     "type": "batch-norm",
-                    "per_channel": True,
-                    "apply_affine": True
+                    "per_channel": True
                 },
                 {
                     "type": "invconv",
@@ -321,8 +333,7 @@ def get_flat_realnvp_schema(
             },
             {
                 "type": "batch-norm",
-                "per_channel": False,
-                "apply_affine": True
+                "per_channel": False
             }
         ]
 
@@ -347,16 +358,13 @@ def get_maf_schema(
             },
             {
                 "type": "batch-norm",
-                "per_channel": False,
-                "apply_affine": True
+                "per_channel": False
             }
         ]
 
     return result
 
 
-# TODO: Batch norm?
-# TODO: Flip after each layer?
 def get_sos_schema(
         num_density_layers,
         hidden_channels,
@@ -367,6 +375,7 @@ def get_sos_schema(
 
     for i in range(num_density_layers):
         if i > 0:
+            # TODO: Try replacing with invconv
             result.append({"type": "flip"})
 
         result += [
@@ -379,8 +388,7 @@ def get_sos_schema(
             },
             {
                 "type": "batch-norm",
-                "per_channel": False,
-                "apply_affine": True
+                "per_channel": False
             }
         ]
 

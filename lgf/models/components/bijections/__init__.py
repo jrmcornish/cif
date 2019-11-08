@@ -6,9 +6,10 @@ from .bijection import (
 
 from .affine import (
     ConditionalAffineBijection,
-    BatchNormBijection,
     AffineBijection
 )
+
+from .batchnorm import BatchNormBijection
 
 from .made import MADEBijection
 

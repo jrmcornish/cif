@@ -193,7 +193,8 @@ class TestBatchNormBijection(_TestBijection, unittest.TestCase):
         self.bijection = BatchNormBijection(
             x_shape=(10, 2),
             per_channel=True,
-            apply_affine=True
+            apply_affine=True,
+            momentum=0.1
         )
         self.u_shape = None
 

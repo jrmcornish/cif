@@ -32,7 +32,7 @@ def train(config):
 
 
 def print_model(config):
-    density = setup_density(config, device=torch.device("cpu"))
+    _, density, _, _ = setup_experiment(config)
     print(density)
     print(f"Number of parameters: {num_params(density):,}")
 
@@ -55,14 +55,6 @@ def setup_loaders(config, device):
     return train_loader, valid_loader, test_loader
 
 
-def setup_density(config, device):
-    train_loader, valid_loader, test_loader = setup_loaders(config, device)
-    return get_density(
-        schema=get_schema(config=config),
-        x_shape=train_loader.dataset.x.shape[1:]
-    ).to(device)
-
-
 def setup_experiment(config):
     torch.manual_seed(config["seed"])
     np.random.seed(config["seed"]+1)
@@ -72,10 +64,10 @@ def setup_experiment(config):
 
     train_loader, valid_loader, test_loader = setup_loaders(config, device)
 
-    x_shape = train_loader.dataset.x.shape[1:]
+    x_train = train_loader.dataset.x
 
     schema = get_schema(config=config)
-    density = get_density(schema=schema, x_shape=x_shape)
+    density = get_density(schema=schema, x_train=x_train)
 
     if config["opt"] == "sgd":
         opt_class = optim.SGD
@@ -99,7 +91,7 @@ def setup_experiment(config):
 
     if config["dataset"] in ["cifar10", "svhn", "fashion-mnist", "mnist"]:
         visualizer = ImageDensityVisualizer(writer=writer)
-    elif x_shape == (2,):
+    elif x_train.shape[1:] == (2,):
         visualizer = TwoDimensionalDensityVisualizer(
             writer=writer,
             train_loader=train_loader,
