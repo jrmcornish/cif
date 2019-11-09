@@ -15,12 +15,12 @@ from .writer import Writer, DummyWriter
 
 
 def train(config):
-    schema, density, trainer, writer = setup_experiment(config)
+    density, trainer, writer = setup_experiment(config)
 
     writer.write_json("config", config)
     writer.write_json("model", {
         "num_params": num_params(density),
-        "schema": schema
+        "schema": get_schema(config)
     })
 
     print("\nConfig:")
@@ -32,7 +32,7 @@ def train(config):
 
 
 def print_model(config):
-    _, density, _, _ = setup_experiment(config)
+    density, _, _, _ = setup_density_and_loaders(config, torch.device("cpu"))
     print(density)
     print(f"Number of parameters: {num_params(density):,}")
 
@@ -42,7 +42,7 @@ def print_schema(config):
     print(json.dumps(schema, indent=4))
 
 
-def setup_loaders(config, device):
+def setup_density_and_loaders(config, device):
     train_loader, valid_loader, test_loader = get_loaders(
         dataset=config["dataset"],
         device=device,
@@ -52,7 +52,13 @@ def setup_loaders(config, device):
         valid_batch_size=config["valid_batch_size"],
         test_batch_size=config["test_batch_size"]
     )
-    return train_loader, valid_loader, test_loader
+
+    density = get_density(
+        schema=get_schema(config=config),
+        x_train=train_loader.dataset.x
+    ).to(device)
+
+    return density, train_loader, valid_loader, test_loader
 
 
 def setup_experiment(config):
@@ -62,12 +68,10 @@ def setup_experiment(config):
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    train_loader, valid_loader, test_loader = setup_loaders(config, device)
-
-    x_train = train_loader.dataset.x
-
-    schema = get_schema(config=config)
-    density = get_density(schema=schema, x_train=x_train)
+    density, train_loader, valid_loader, test_loader = setup_density_and_loaders(
+        config=config,
+        device=device
+    )
 
     if config["opt"] == "sgd":
         opt_class = optim.SGD
@@ -91,7 +95,7 @@ def setup_experiment(config):
 
     if config["dataset"] in ["cifar10", "svhn", "fashion-mnist", "mnist"]:
         visualizer = ImageDensityVisualizer(writer=writer)
-    elif x_train.shape[1:] == (2,):
+    elif train_loader.dataset.x.shape[1:] == (2,):
         visualizer = TwoDimensionalDensityVisualizer(
             writer=writer,
             train_loader=train_loader,
@@ -125,7 +129,7 @@ def setup_experiment(config):
         device=device
     )
 
-    return schema, density, trainer, writer
+    return density, trainer, writer
 
 
 def num_params(module):
