@@ -28,7 +28,7 @@ def process_batch_norm_layers(schema, config):
             momentum = config["batch_norm_momentum"]
         else:
             new_schema = [{"type": "passthrough-before-eval"}]
-            momentum = 0.
+            momentum = 1.
 
         apply_affine = config["batch_norm_apply_affine"]
     else:
