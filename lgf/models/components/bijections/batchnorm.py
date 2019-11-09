@@ -10,7 +10,10 @@ class BatchNormBijection(Bijection):
     def __init__(self, x_shape, per_channel, apply_affine, momentum, eps=1e-5):
         super().__init__(x_shape=x_shape, z_shape=x_shape)
 
+        assert 0 <= momentum <= 1
         self.momentum = momentum
+
+        assert eps > 0
         self.eps = eps
 
         if per_channel:
@@ -36,8 +39,15 @@ class BatchNormBijection(Bijection):
             mean = self._average(x)
             var = self._average((x - mean)**2)
 
-            self.running_mean.mul_(1 - self.momentum).add_(self.momentum * mean.data)
-            self.running_var.mul_(1 - self.momentum).add_(self.momentum * var.data)
+            if self.momentum == 1:
+                self.running_mean.copy_(mean)
+                self.running_var.copy_(var)
+
+            elif self.momentum > 0:
+                # TODO: Should raise an exception or do something here if we get a nan
+                # since this will propagate
+                self.running_mean.mul_(1 - self.momentum).add_(self.momentum * mean.data)
+                self.running_var.mul_(1 - self.momentum).add_(self.momentum * var.data)
 
         else:
             mean = self.running_mean

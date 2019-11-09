@@ -27,7 +27,14 @@ def process_batch_norm_layers(schema, config):
             new_schema = []
             momentum = config["batch_norm_momentum"]
         else:
-            new_schema = [{"type": "passthrough-before-eval"}]
+            new_schema = [
+                {
+                    "type": "passthrough-before-eval",
+                    # XXX: This should be sufficient for most of the non-image
+                    # datasets we have but can be made a config value if necessary
+                    "num_passthrough_data_points": 100_000
+                }
+            ]
             momentum = 1.
 
         apply_affine = config["batch_norm_apply_affine"]
@@ -36,15 +43,15 @@ def process_batch_norm_layers(schema, config):
 
     for layer in schema:
         if layer["type"] == "batch-norm":
+            if config["num_u_channels"] > 0:
+                new_schema.append(get_cond_affine_layer(config))
+
             if config["batch_norm"]:
                 new_schema.append({
                     **layer,
                     "momentum": momentum,
                     "apply_affine": apply_affine
                 })
-
-            if config["num_u_channels"] > 0:
-                new_schema.append(get_cond_affine_layer(config))
 
         else:
             new_schema.append(layer)

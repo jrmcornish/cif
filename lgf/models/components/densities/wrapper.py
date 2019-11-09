@@ -21,7 +21,10 @@ class DequantizationDensity(Density):
 class PassthroughBeforeEvalDensity(Density):
     def __init__(self, density, x):
         super().__init__()
+
         self.density = density
+
+        # XXX: It is inefficient to store the data separately, but this will work for # the (non-image) datasets we consider
         self.register_buffer("x", x)
 
     # We need to do it like this, i.e. we can't just override self.eval(), since

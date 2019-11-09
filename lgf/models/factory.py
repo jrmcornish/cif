@@ -48,9 +48,11 @@ def get_density(
     x_shape = x_train.shape[1:]
 
     if schema[0]["type"] == "passthrough-before-eval":
+        num_points = schema[0]["num_passthrough_data_points"]
+        x_idxs = torch.randperm(x_train.shape[0])[:num_points]
         return PassthroughBeforeEvalDensity(
             density=get_density_recursive(schema[1:], x_shape),
-            x=x_train
+            x=x_train[x_idxs]
         )
 
     else:
