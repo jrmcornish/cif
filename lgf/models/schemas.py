@@ -97,6 +97,7 @@ def get_centering_tf_schema(scale):
     ]
 
 
+# TODO: Could just pass the whole config to each constructor
 def get_base_schema(config):
     model = config["model"]
 
@@ -128,16 +129,12 @@ def get_base_schema(config):
     elif model == "nsf":
         return get_nsf_schema(
             num_density_layers=config["num_density_layers"],
-            hidden_channels=config["resnet_hidden_channels"],
-            num_resnet_blocks=config["num_resnet_blocks"],
-            dropout_probability=config["dropout_probability"],
+            num_hidden_layers=config["num_hidden_layers"],
+            num_hidden_channels=config["num_hidden_channels"],
             num_bins=config["num_bins"],
             tail_bound=config["tail_bound"],
-            use_batchnorm_in_resnet=config["use_batchnorm_in_resnet"],
-            use_autoregressive=config["use_autoregressive"],
-            apply_unconditional_transform=config["apply_unconditional_transform"],
-            use_invconv=config["use_invconv"],
-            add_invconv_to_end=config["add_invconv_to_end"]
+            autoregressive=config["autoregressive"],
+            dropout_probability=config["dropout_probability"]
         )
 
     elif model == "glow":
@@ -420,40 +417,38 @@ def get_sos_schema(
 # TODO: Include batchnorm between layers? Not visible in repo
 def get_nsf_schema(
         num_density_layers,
-        hidden_channels,
-        num_resnet_blocks,
-        dropout_probability,
+        num_hidden_layers, # TODO: Use a more descriptive name
+        num_hidden_channels,
         num_bins,
         tail_bound,
-        use_batchnorm_in_resnet,
-        apply_unconditional_transform,
-        use_invconv,
-        use_autoregressive,
-        add_invconv_to_end
+        autoregressive,
+        dropout_probability
 ):
     result = [{"type": "flatten"}]
 
     for i in range(num_density_layers):
-        if use_invconv:
-            result.append({
-                "type": "invconv",
-                "lu": True
-            })
-        
         result.append(
             {
-                "type": "nsf",
-                "hidden_channels": hidden_channels,
-                "num_resnet_blocks": num_resnet_blocks,
-                "dropout_probability": dropout_probability,
-                "num_bins": num_bins,
-                "use_autoregressive": use_autoregressive,
-                "tail_bound": tail_bound,
-                "use_batchnorm_in_resnet": use_batchnorm_in_resnet,
-                "apply_unconditional_transform": apply_unconditional_transform,
-                "evens_masked": (i % 2 == 0)
+                "type": "invconv",
+                "lu": True
             }
         )
+
+        layer = {
+            "type": "nsf-ar" if autoregressive else "nsf-c",
+            "num_hidden_channels": num_hidden_channels,
+            "num_hidden_layers": num_hidden_layers,
+            "num_bins": num_bins,
+            "tail_bound": tail_bound,
+            "activation": "relu",
+            "dropout_probability": dropout_probability
+        }
+
+        if not autoregressive:
+            layer["reverse_mask"] = i % 2 == 0
+
+        result.append(layer)
+
         result.append(
             {
                 "type": "batch-norm",
@@ -461,11 +456,12 @@ def get_nsf_schema(
                 "apply_affine": True
             }
         )
-    
-    if add_invconv_to_end:
-        result.append({
+
+    result.append(
+        {
             "type": "invconv",
             "lu": True
-        })
+        }
+    )
 
     return result

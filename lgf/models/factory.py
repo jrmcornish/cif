@@ -23,7 +23,7 @@ from .components.bijections import (
     LUInvertible1x1ConvBijection,
     SumOfSquaresPolynomialBijection,
     CoupledRationalQuadraticSplineBijection,
-    AutoregressiveRationalQuadraticSplineBijection
+    AutoregressiveRationalQuadraticSplineBijection,
 )
 from .components.densities import (
     DiagonalGaussianDensity,
@@ -227,30 +227,30 @@ def get_bijection(
             polynomial_degree=layer_config["polynomial_degree"],
         )
 
-    elif layer_config["type"] == "nsf":
+    elif layer_config["type"] == "nsf-ar":
         assert len(x_shape) == 1
-        if layer_config["use_autoregressive"]:
-            return AutoregressiveRationalQuadraticSplineBijection(
-                num_input_channels=x_shape[0],
-                hidden_channels=layer_config["hidden_channels"],
-                num_resnet_blocks=layer_config["num_resnet_blocks"],
-                dropout_probability=layer_config["dropout_probability"],
-                use_batchnorm_in_nets=layer_config["use_batchnorm_in_resnet"],
-                tail_bound=layer_config["tail_bound"],
-                num_bins=layer_config["num_bins"]
-            )
-        else:
-            return CoupledRationalQuadraticSplineBijection(
-                num_input_channels=x_shape[0],
-                hidden_channels=layer_config["hidden_channels"],
-                num_resnet_blocks=layer_config["num_resnet_blocks"],
-                dropout_probability=layer_config["dropout_probability"],
-                num_bins=layer_config["num_bins"],
-                evens_masked=layer_config["evens_masked"],
-                use_batchnorm_in_nets=layer_config["use_batchnorm_in_resnet"],
-                apply_unconditional_transform=layer_config["apply_unconditional_transform"],
-                tail_bound=layer_config["tail_bound"]
-            )
+        return AutoregressiveRationalQuadraticSplineBijection(
+            num_input_channels=x_shape[0],
+            num_hidden_layers=layer_config["num_hidden_layers"],
+            num_hidden_channels=layer_config["num_hidden_channels"],
+            num_bins=layer_config["num_bins"],
+            tail_bound=layer_config["tail_bound"],
+            activation=get_activation(layer_config["activation"]),
+            dropout_probability=layer_config["dropout_probability"]
+        )
+
+    elif layer_config["type"] == "nsf-c":
+        assert len(x_shape) == 1
+        return CoupledRationalQuadraticSplineBijection(
+            num_input_channels=x_shape[0],
+            num_hidden_layers=layer_config["num_hidden_layers"],
+            num_hidden_channels=layer_config["num_hidden_channels"],
+            num_bins=layer_config["num_bins"],
+            tail_bound=layer_config["tail_bound"],
+            activation=get_activation(layer_config["activation"]),
+            dropout_probability=layer_config["dropout_probability"],
+            reverse_mask=layer_config["reverse_mask"]
+        )
 
     else:
         assert False, f"Invalid layer type {layer_config['type']}"

@@ -1,90 +1,114 @@
+import sys
+from pathlib import Path
+
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 
-from .nsf_bayesiains.transforms import coupling as nsf_couplers
-from .nsf_bayesiains.transforms import autoregressive as nsf_autoreg
-from .nsf_bayesiains.resnet import ResidualNet as nsf_resnet
-from .nsf_bayesiains import utils as nsf_utils
+sys.path.insert(0, str(Path(__file__).parents[4] / "gitmodules" / "nsf"))
+try:
+    from nde.transforms.coupling import PiecewiseRationalQuadraticCouplingTransform
+    from nde.transforms.autoregressive import MaskedPiecewiseRationalQuadraticAutoregressiveTransform
+    from nn import ResidualNet
+    from utils import create_alternating_binary_mask
+finally:
+    sys.path.pop(0)
 
 from .bijection import Bijection
 
-class CoupledRationalQuadraticSplineBijection(Bijection):
+
+class RationalQuadraticSplineBijection(Bijection):
     def __init__(
             self,
             num_input_channels,
-            hidden_channels,
-            num_resnet_blocks,
-            dropout_probability,
-            num_bins,
-            use_batchnorm_in_nets,
-            apply_unconditional_transform,
-            tail_bound,
-            evens_masked,
+            flow
     ):
-        super().__init__(x_shape=(num_input_channels,), z_shape=(num_input_channels,))
+        shape = (num_input_channels,)
+        super().__init__(x_shape=shape, z_shape=shape)
 
-        def get_nn_fn(in_features, out_features):
-            net = nsf_resnet(
+        self.flow = flow
+
+    def _x_to_z(self, x):
+        z, log_jac = self.flow(x)
+        return {
+            "z": z,
+            "log-jac": log_jac.view(x.shape[0], 1)
+        }
+
+    def _z_to_x(self, z):
+        x, log_jac = self.flow.inverse(z)
+        return {
+            "x": x,
+            "log-jac": log_jac.view(z.shape[0], 1)
+        }
+
+
+class CoupledRationalQuadraticSplineBijection(RationalQuadraticSplineBijection):
+    def __init__(
+            self,
+            num_input_channels,
+            num_hidden_layers,
+            num_hidden_channels,
+            num_bins,
+            tail_bound,
+            activation,
+            dropout_probability,
+            reverse_mask
+    ):
+        def transform_net_create_fn(in_features, out_features):
+            return ResidualNet(
                 in_features=in_features,
                 out_features=out_features,
-                hidden_features=hidden_channels,
                 context_features=None,
-                num_blocks=num_resnet_blocks,
-                activation=F.relu,
+                hidden_features=num_hidden_channels,
+                num_blocks=num_hidden_layers,
+                activation=activation(),
                 dropout_probability=dropout_probability,
-                use_batch_norm=use_batchnorm_in_nets,
+                use_batch_norm=False
             )
-            return net
 
-        self.flow = nsf_couplers.PiecewiseRationalQuadraticCouplingTransform(
-            mask=nsf_utils.create_alternating_binary_mask(num_input_channels, even=evens_masked),
-            transform_net_create_fn=get_nn_fn,
-            num_bins=num_bins,
-            tails='linear',
-            tail_bound=tail_bound,
-            apply_unconditional_transform=apply_unconditional_transform,
+        super().__init__(
+            num_input_channels=num_input_channels,
+            flow=PiecewiseRationalQuadraticCouplingTransform(
+                mask=create_alternating_binary_mask(
+                    num_input_channels,
+                    even=reverse_mask
+                ),
+                transform_net_create_fn=transform_net_create_fn,
+                num_bins=num_bins,
+                tails='linear',
+                tail_bound=tail_bound,
+
+                # Setting True corresponds to equations (4), (5), (6) in the NSF paper:
+                apply_unconditional_transform=True
+            )
         )
 
-    def _x_to_z(self, x):
-        (z, log_jac) = self.flow(x)
-        return {
-            "z": z,
-            "log-jac": torch.unsqueeze(log_jac, 1)
-        }
 
-
-class AutoregressiveRationalQuadraticSplineBijection(Bijection):
+class AutoregressiveRationalQuadraticSplineBijection(RationalQuadraticSplineBijection):
     def __init__(
             self,
             num_input_channels,
-            hidden_channels,
-            num_resnet_blocks,
-            dropout_probability,
-            use_batchnorm_in_nets,
-            tail_bound,
+            num_hidden_layers,
+            num_hidden_channels,
             num_bins,
+            tail_bound,
+            activation,
+            dropout_probability
     ):
-        super().__init__(x_shape=(num_input_channels,), z_shape=(num_input_channels,))
-
-        self.flow = nsf_autoreg.MaskedPiecewiseRationalQuadraticAutoregressiveTransform(
-            features=num_input_channels,
-            hidden_features=hidden_channels,
-            context_features=None,
-            num_bins=num_bins,
-            tails='linear',
-            tail_bound=tail_bound,
-            num_blocks=num_resnet_blocks,
-            use_residual_blocks=True,
-            random_mask=False,
-            activation=F.relu,
-            dropout_probability=dropout_probability,
-            use_batch_norm=use_batchnorm_in_nets,
+        super().__init__(
+            num_input_channels=num_input_channels,
+            flow=MaskedPiecewiseRationalQuadraticAutoregressiveTransform(
+                features=num_input_channels,
+                hidden_features=num_hidden_channels,
+                context_features=None,
+                num_bins=num_bins,
+                tails='linear',
+                tail_bound=tail_bound,
+                num_blocks=num_hidden_layers,
+                use_residual_blocks=True,
+                random_mask=False,
+                activation=activation(),
+                dropout_probability=dropout_probability,
+                use_batch_norm=False,
+            )
         )
-
-    def _x_to_z(self, x):
-        (z, log_jac) = self.flow(x)
-        return {
-            "z": z,
-            "log-jac": torch.unsqueeze(log_jac, 1)
-        }
