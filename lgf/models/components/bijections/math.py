@@ -1,6 +1,7 @@
 import numpy as np
 
 import torch
+import torch.nn.functional as F
 
 from .bijection import Bijection
 
@@ -64,8 +65,7 @@ class TanhBijection(ElementwiseBijection):
         return .5 * (torch.log(1 + z_clamped)  - torch.log(1 - z_clamped))
 
     def _log_dF(self, x):
-        # TODO: Unclear whether this is the best way to stabilise
-        return torch.log((1 - torch.tanh(x)**2).clamp(min=self._EPS))
+        return y - 2*F.softplus(y) + np.log(4)
 
 
 class ScalarMultiplicationBijection(ElementwiseBijection):
