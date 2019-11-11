@@ -1,6 +1,8 @@
 def get_schema(config):
     model = config["model"] 
-    if model in ["glow", "multiscale-realnvp", "flat-realnvp", "maf", "sos", "nsf"]:
+    if model in [
+        "glow", "multiscale-realnvp", "flat-realnvp", "maf", "sos", "bnaf", "nsf"
+    ]:
         return get_schema_from_base(config)
 
     elif model == "pure-cond-affine-mlp":
@@ -137,6 +139,14 @@ def get_base_schema(config):
             dropout_probability=config["dropout_probability"]
         )
 
+    elif model == "bnaf":
+        return get_bnaf_schema(
+            num_density_layers=config["num_density_layers"],
+            num_hidden_layers=config["num_hidden_layers"],
+            activation=config["activation"],
+            hidden_channels_factor=config["hidden_channels_factor"]
+        )
+
     elif model == "glow":
         return get_glow_schema(
             num_scales=config["num_scales"],
@@ -215,7 +225,9 @@ def get_coupler_net_config(net_spec, model):
                 "hidden_channels": net_spec
             }
 
-        elif model in ["pure-cond-affine-mlp", "maf", "flat-realnvp", "sos", "nsf"]:
+        elif model in [
+            "pure-cond-affine-mlp", "maf", "flat-realnvp", "sos", "nsf", "bnaf"
+        ]:
             return {
                 "type": "mlp",
                 "activation": "tanh",
@@ -412,7 +424,7 @@ def get_sos_schema(
         ]
 
     return result
-    
+
 
 # TODO: Include batchnorm between layers? Not visible in repo
 def get_nsf_schema(
@@ -463,5 +475,33 @@ def get_nsf_schema(
             "lu": True
         }
     )
+
+    return result
+
+def get_bnaf_schema(
+        num_density_layers,
+        num_hidden_layers, # TODO: More descriptive name
+        activation,
+        hidden_channels_factor
+):
+    result = [{"type": "flatten"}]
+
+    for i in range(num_density_layers):
+        if i > 0:
+            result.append({"type": "flip"})
+
+        result += [
+            {
+                "type": "bnaf",
+                "num_hidden_layers": num_hidden_layers,
+                "hidden_channels_factor": hidden_channels_factor,
+                "activation": activation,
+                "residual": i < num_density_layers - 1
+            },
+            {
+                "type": "batch-norm",
+                "per_channel": False
+            }
+        ]
 
     return result

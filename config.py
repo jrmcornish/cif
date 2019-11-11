@@ -61,6 +61,23 @@ def get_2d_config(dataset, model, use_baseline):
             "q_nets": [24] * 3
         }
 
+    elif model == "bnaf":
+        assert use_baseline
+        config = {
+            "num_u_channels": 0,
+
+            "num_density_layers": 1,
+            "num_hidden_layers": 2,
+            "hidden_channels_factor": 50,
+            "activation": "leaky-relu",
+
+            "batch_norm": False,
+
+            "max_epochs": 10000,
+            "max_bad_valid_epochs": 10000,
+            "test_batch_size": 1000
+        }
+
     else:
         assert False, f"Invalid model `{model}' for dataset `{dataset}'"
 

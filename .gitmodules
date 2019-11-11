@@ -1,3 +1,6 @@
 [submodule "gitmodules/nsf"]
 	path = gitmodules/nsf
 	url = https://github.com/bayesiains/nsf.git
+[submodule "gitmodules/BNAF"]
+	path = gitmodules/BNAF
+	url = https://github.com/nicola-decao/BNAF.git

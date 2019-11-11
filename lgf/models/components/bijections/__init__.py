@@ -45,3 +45,5 @@ from .nsf import (
     CoupledRationalQuadraticSplineBijection,
     AutoregressiveRationalQuadraticSplineBijection
 )
+
+from .bnaf import BlockNeuralAutoregressiveBijection

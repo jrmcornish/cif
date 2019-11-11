@@ -24,6 +24,7 @@ from .components.bijections import (
     SumOfSquaresPolynomialBijection,
     CoupledRationalQuadraticSplineBijection,
     AutoregressiveRationalQuadraticSplineBijection,
+    BlockNeuralAutoregressiveBijection
 )
 from .components.densities import (
     DiagonalGaussianDensity,
@@ -250,6 +251,16 @@ def get_bijection(
             activation=get_activation(layer_config["activation"]),
             dropout_probability=layer_config["dropout_probability"],
             reverse_mask=layer_config["reverse_mask"]
+        )
+
+    elif layer_config["type"] == "bnaf":
+        assert len(x_shape) == 1
+        return BlockNeuralAutoregressiveBijection(
+            num_input_channels=x_shape[0],
+            num_hidden_layers=layer_config["num_hidden_layers"],
+            hidden_channels_factor=layer_config["hidden_channels_factor"],
+            activation=layer_config["activation"],
+            residual=layer_config["residual"]
         )
 
     else:
