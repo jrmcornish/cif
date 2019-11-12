@@ -40,6 +40,8 @@ class BlockNeuralAutoregressiveBijection(Bijection):
             act_class = Tanh
         elif activation == "leaky-relu":
             act_class = LeakyReLU
+        elif activation == "soft-leaky-relu":
+            act_class = SoftLeakyReLU
         else:
             assert False, F"Invalid activation {activation}"
 
@@ -81,12 +83,9 @@ class BlockNeuralAutoregressiveBijection(Bijection):
 
 
 # Drop-in surjective replacement for Tanh in bnaf module
-class LeakyReLU(nn.LeakyReLU):
+class Nonlinearity(nn.Module):
     def forward(self, inputs, grad=None):
-        outputs = F.leaky_relu(inputs, negative_slope=self.negative_slope)
-
-        log_jac = torch.zeros_like(inputs)
-        log_jac[inputs < 0] = np.log(self.negative_slope)
+        outputs, log_jac = self._do_forward(inputs)
 
         if grad is None:
             grad = log_jac
@@ -94,3 +93,27 @@ class LeakyReLU(nn.LeakyReLU):
             grad = log_jac.view(grad.shape) + grad
 
         return outputs, grad
+
+
+class LeakyReLU(Nonlinearity):
+    def _do_forward(self, inputs):
+        outputs = F.leaky_relu(inputs, negative_slope=self.negative_slope)
+
+        log_jac = torch.zeros_like(inputs)
+        log_jac[inputs < 0] = np.log(self.negative_slope)
+
+        return outputs, log_jac
+
+
+# LeakyReLU doesn't give any gradient signal for the Jacobian term.
+# This soft approximation does.
+class SoftLeakyReLU(Nonlinearity):
+    def __init__(self, negative_slope=0.01):
+        super().__init__()
+        self.negative_slope = negative_slope
+
+    def _do_forward(self, inputs):
+        eps = self.negative_slope
+        outputs = eps * inputs + (1 - eps) * F.softplus(inputs)
+        log_jac = torch.log(eps + (1 - eps) * torch.sigmoid(inputs))
+        return outputs, log_jac

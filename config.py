@@ -62,19 +62,18 @@ def get_2d_config(dataset, model, use_baseline):
         }
 
     elif model == "bnaf":
-        assert use_baseline
         config = {
-            "num_u_channels": 0,
-
             "num_density_layers": 1,
             "num_hidden_layers": 2,
-            "hidden_channels_factor": 50,
-            "activation": "leaky-relu",
+            "hidden_channels_factor": 50 if use_baseline else 45,
+            "activation": "soft-leaky-relu",
 
-            "batch_norm": False,
+            "st_nets": [24] * 2,
+            "p_nets": [24] * 3,
+            "q_nets": [24] * 3,
 
-            "max_epochs": 10000,
-            "max_bad_valid_epochs": 10000,
+            "max_epochs": 1000,
+            "max_bad_valid_epochs": 1000,
             "test_batch_size": 1000
         }
 
@@ -82,16 +81,11 @@ def get_2d_config(dataset, model, use_baseline):
         assert False, f"Invalid model `{model}' for dataset `{dataset}'"
 
     return {
-        **config,
-
         "num_u_channels": 0 if use_baseline else 1,
 
         "dequantize": False,
 
-        "batch_norm": True,
-        "batch_norm_apply_affine": True,
-        "batch_norm_use_running_averages": False,
-        "batch_norm_momentum": 0.1,
+        "batch_norm": False,
 
         "max_epochs": 1000,
         "early_stopping": True,
@@ -107,7 +101,9 @@ def get_2d_config(dataset, model, use_baseline):
 
         "num_train_elbo_samples": 10 if not use_baseline else 1,
         "num_valid_elbo_samples": 10 if not use_baseline else 1,
-        "num_test_elbo_samples": 100 if not use_baseline else 1
+        "num_test_elbo_samples": 100 if not use_baseline else 1,
+
+        **config,
     }
 
 
@@ -189,7 +185,8 @@ def get_uci_config(dataset, model, use_baseline):
             **config,
             "num_u_channels": 0,
             "tail_bound": 3,
-            "autoregressive": False
+            "autoregressive": False,
+            "batch_norm": False
         }
 
     else:
