@@ -24,7 +24,9 @@ from .components.bijections import (
     SumOfSquaresPolynomialBijection,
     CoupledRationalQuadraticSplineBijection,
     AutoregressiveRationalQuadraticSplineBijection,
-    BlockNeuralAutoregressiveBijection
+    BlockNeuralAutoregressiveBijection,
+    LULinearBijection,
+    RandomChannelwisePermutationBijection
 )
 from .components.densities import (
     DiagonalGaussianDensity,
@@ -217,6 +219,13 @@ def get_bijection(
             return LUInvertible1x1ConvBijection(x_shape=x_shape)
         else:
             return BruteForceInvertible1x1ConvBijection(x_shape=x_shape)
+
+    elif layer_config["type"] == "linear":
+        assert len(x_shape) == 1
+        return LULinearBijection(num_input_channels=x_shape[0])
+
+    elif layer_config["type"] == "rand-channel-perm":
+        return RandomChannelwisePermutationBijection(x_shape=x_shape)
 
     elif layer_config["type"] == "sos":
         assert len(x_shape) == 1

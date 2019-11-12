@@ -24,7 +24,8 @@ from lgf.models.components.bijections import (
     AlternatingChannelwiseAffineCouplingBijection,
     MaskedChannelwiseAffineCouplingBijection,
     Squeeze2dBijection,
-    TanhBijection
+    TanhBijection,
+    RandomChannelwisePermutationBijection
 )
 from lgf.models.factory import get_coupler
 
@@ -492,6 +493,15 @@ class TestScalarAdditionBijection(_TestBijection, unittest.TestCase):
             x_shape=x_shape,
             value=5.3
         )
+
+
+class TestRandomChannelwisePermutationBijection(_TestBijection, unittest.TestCase):
+    def setUp(self):
+        self.batch_size = 1000
+        self.u_shape = None
+        self.eps = 1e-6
+        self.bijection = RandomChannelwisePermutationBijection(x_shape=(40, 32, 1))
+
 
 
 if __name__ == "__main__":

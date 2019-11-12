@@ -26,6 +26,20 @@ class ReshapingBijection(Bijection):
         raise NotImplementedError
 
 
+class RandomChannelwisePermutationBijection(ReshapingBijection):
+    def __init__(self, x_shape):
+        super().__init__(x_shape=x_shape, z_shape=x_shape)
+
+        self.register_buffer("permutation", torch.randperm(x_shape[0]))
+        self.register_buffer("inverse_permutation", torch.argsort(self.permutation))
+
+    def _reshape_x(self, x):
+        return x[:, self.permutation]
+
+    def _reshape_z(self, z):
+        return z[:, self.inverse_permutation]
+
+
 class FlipBijection(ReshapingBijection):
     def __init__(self, x_shape, dim):
         super().__init__(x_shape=x_shape, z_shape=x_shape)

@@ -439,12 +439,7 @@ def get_nsf_schema(
     result = [{"type": "flatten"}]
 
     for i in range(num_density_layers):
-        result.append(
-            {
-                "type": "invconv",
-                "lu": True
-            }
-        )
+        result += [{"type": "rand-channel-perm"}, {"type": "linear"}]
 
         layer = {
             "type": "nsf-ar" if autoregressive else "nsf-c",
@@ -469,12 +464,7 @@ def get_nsf_schema(
             }
         )
 
-    result.append(
-        {
-            "type": "invconv",
-            "lu": True
-        }
-    )
+    result += [{"type": "rand-channel-perm"}, {"type": "linear"}]
 
     return result
 

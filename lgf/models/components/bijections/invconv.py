@@ -91,6 +91,8 @@ class LUInvertible1x1ConvBijection(Invertible1x1ConvBijection):
         self.log_s = nn.Parameter(log_s)
         self.upper = nn.Parameter(upper)
 
+        self.bias = nn.Parameter(torch.zeros(x_shape[0], *x_shape[1:]))
+
     def _get_weights(self):
         L = self.lower * self.l_mask + self.eye
         U = self.upper * self.l_mask.transpose(0, 1).contiguous()

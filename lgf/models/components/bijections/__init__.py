@@ -24,7 +24,8 @@ from .acl import (
 from .reshaping import (
     Squeeze2dBijection,
     ViewBijection,
-    FlipBijection
+    FlipBijection,
+    RandomChannelwisePermutationBijection
 )
 
 from .math import (
@@ -47,3 +48,5 @@ from .nsf import (
 )
 
 from .bnaf import BlockNeuralAutoregressiveBijection
+
+from .linear import LULinearBijection
