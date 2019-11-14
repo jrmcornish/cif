@@ -109,6 +109,19 @@ def get_2d_config(dataset, model, use_baseline):
     }
 
 
+def something(num_datapoints, batch_size, max_steps, increase_factor):
+    steps_per_epoch = num_datapoints // batch_size
+    max_epochs = max_steps // steps_per_epoch
+    return max_epochs * 10
+
+    num_datapoints = 29_556
+    original_batch_size = 128
+    original_steps_per_epoch = num_datapoints // original_batch_size
+    original_max_steps = 200_000
+    original_max_epochs = original_max_steps // original_steps_per_epoch
+    increase_factor = 10
+
+
 def get_uci_config(dataset, model, use_baseline):
     if model in ["maf", "flat-realnvp"]:
         if dataset in ["gas", "power"]:
@@ -170,14 +183,24 @@ def get_uci_config(dataset, model, use_baseline):
             }
 
         elif dataset == "hepmass":
-            assert use_baseline
             config = {
-                "num_u_channels": 0,
-                "num_density_layers": 20,
+                "num_u_channels": 0 if use_baseline else 5,
+
+                "num_density_layers": 20 if use_baseline else 10,
                 "num_hidden_layers": 1,
                 "num_hidden_channels": 128,
                 "num_bins": 8,
-                "dropout_probability": 0.2
+                "dropout_probability": 0.2,
+
+                "st_nets": [64] * 2,
+                "p_nets": [192] * 2,
+                "q_nets": [192] * 2,
+
+                # We increase the lr and batch size by a factor of 10 from the prescribed values
+                "lr": 0.0005 * 10,
+                "train_batch_size": 256 * 10,
+                # We convert the presecribed number of steps into epochs
+                "max_epochs": (400_000 * 256) // 315_123
             }
 
         elif dataset == "miniboone":
@@ -194,14 +217,17 @@ def get_uci_config(dataset, model, use_baseline):
                 "p_nets": [64] * 2,
                 "q_nets": [64] * 2,
 
-                "lr": 1e-3,
-                "train_batch_size": 1000
+                # We increase the lr and batch size by a factor of 10 from the prescribed values
+                "lr": 0.0003 * 10,
+                "train_batch_size": 128 * 10,
+                # We convert the presecribed number of steps into epochs
+                "max_epochs": (200_000 * 128) // 29_556
             }
 
         config = {
             **config,
             "tail_bound": 3,
-            "autoregressive": False,
+            "autoregressive": True,
             "batch_norm": False,
             "max_grad_norm": 5,
 
