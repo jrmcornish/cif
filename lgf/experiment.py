@@ -88,6 +88,20 @@ def setup_experiment(config):
         weight_decay=config["weight_decay"]
     )
 
+    if config["lr_schedule"] == "cosine":
+        lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer=opt,
+            T_max=config["max_epochs"]*len(train_loader),
+            eta_min=0.
+        )
+    elif config["lr_schedule"] == "none":
+        lr_scheduler = torch.optim.lr_scheduler.LambdaLR(
+            optimizer=opt,
+            lr_lambda=lambda epoch: 1.
+        )
+    else:
+        assert False, f"Invalid learning rate schedule `{config['lr_schedule']}'"
+
     if config["write_to_disk"]:
         writer = Writer(logdir_root=config["logdir_root"], tag_group=config["dataset"])
     else:
@@ -118,6 +132,7 @@ def setup_experiment(config):
         valid_loader=valid_loader,
         test_loader=test_loader,
         opt=opt,
+        lr_scheduler=lr_scheduler,
         max_epochs=config["max_epochs"],
         max_grad_norm=config["max_grad_norm"],
         early_stopping=config["early_stopping"],

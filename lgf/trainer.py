@@ -39,6 +39,7 @@ class AverageMetric(Metric):
 class Trainer:
     _STEPS_PER_LOSS_WRITE = 10
     _STEPS_PER_GRAD_WRITE = 10
+    _STEPS_PER_LR_WRITE = 10
 
     def __init__(
             self,
@@ -49,6 +50,7 @@ class Trainer:
             train_loss,
             train_loader,
             opt,
+            lr_scheduler,
             max_epochs,
             max_grad_norm,
 
@@ -74,6 +76,7 @@ class Trainer:
         self._train_loss = train_loss
         self._train_loader = train_loader
         self._opt = opt
+        self._lr_scheduler = lr_scheduler
         self._max_epochs = max_epochs
         self._max_grad_norm = max_grad_norm
 
@@ -144,6 +147,8 @@ class Trainer:
 
         self._opt.step()
 
+        self._lr_scheduler.step()
+
         return {"loss": loss}
 
     @torch.no_grad()
@@ -198,15 +203,25 @@ class Trainer:
             loss = engine.state.output["loss"]
             self._writer.write_scalar("train/loss", loss, global_step=i)
 
+        # TODO: Inefficient to recompute this if we are doing gradient clipping
         if i % self._STEPS_PER_GRAD_WRITE == 0:
-            self._writer.write_scalar("train/grad-norm", self._grad_norm(), global_step=i)
+            self._writer.write_scalar("train/grad-norm", self._get_grad_norm(), global_step=i)
 
-    def _grad_norm(self):
+        # TODO: We should do this _before_ calling self._lr_scheduler.step(), since
+        # we will not correspond to the learning rate used at iteration i otherwise
+        if i % self._STEPS_PER_LR_WRITE == 0:
+            self._writer.write_scalar("train/lr", self._get_lr(), global_step=i)
+
+    def _get_grad_norm(self):
         norm = 0
         for param in self._module.parameters():
             if param.grad is not None:
                 norm += param.grad.norm().item()**2
         return np.sqrt(norm)
+
+    def _get_lr(self):
+        param_group, = self._opt.param_groups
+        return param_group["lr"]
 
     def _save_checkpoint(self, tag):
         # We do this manually (i.e. don't use Ignite's checkpointing) because

@@ -97,6 +97,7 @@ def get_2d_config(dataset, model, use_baseline):
 
         "opt": "adam",
         "lr": 1e-2,
+        "lr_schedule": "none",
         "weight_decay": 0.,
         "epochs_per_test": 5,
 
@@ -202,7 +203,9 @@ def get_uci_config(dataset, model, use_baseline):
             "tail_bound": 3,
             "autoregressive": False,
             "batch_norm": False,
-            "max_grad_norm": 5
+            "max_grad_norm": 5,
+
+            "lr_schedule": "cosine"
         }
 
     else:
@@ -222,6 +225,7 @@ def get_uci_config(dataset, model, use_baseline):
 
         "opt": "adam",
         "lr": 1e-3,
+        "lr_schedule": "none",
         "weight_decay": 0.,
         "max_bad_valid_epochs": 5000,
         "max_epochs": 5000,
@@ -320,6 +324,7 @@ def get_images_config(dataset, model, use_baseline):
         "batch_norm_use_running_averages": True,
         "batch_norm_momentum": 0.1,
 
+        "lr_schedule": "none",
         "max_bad_valid_epochs": 50,
         "max_grad_norm": None,
         "max_epochs": 1000,
