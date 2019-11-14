@@ -152,15 +152,25 @@ def get_uci_config(dataset, model, use_baseline):
     elif model == "nsf":
         if dataset in ["power", "gas"]:
             config = {
-                "num_density_layers": 10,
+                "num_u_channels": 0 if use_baseline else 2,
+                "num_density_layers": 10 if use_baseline else 7,
                 "num_hidden_layers": 2,
                 "num_hidden_channels": 256,
                 "num_bins": 8,
-                "dropout_probability": 0. if dataset == "power" else 0.1
+                "dropout_probability": 0. if dataset == "power" else 0.1,
+
+                "st_nets": [128] * 2,
+                "p_nets": [200] * 2,
+                "q_nets": [200] * 2,
+
+                "lr": 1e-3,
+                "train_batch_size": 5000
             }
 
         elif dataset == "hepmass":
+            assert use_baseline
             config = {
+                "num_u_channels": 0,
                 "num_density_layers": 20,
                 "num_hidden_layers": 1,
                 "num_hidden_channels": 128,
@@ -170,20 +180,24 @@ def get_uci_config(dataset, model, use_baseline):
 
         elif dataset == "miniboone":
             config = {
-                "num_density_layers": 10,
+                "num_u_channels": 0 if use_baseline else 10,
+
+                "num_density_layers": 10 if use_baseline else 4,
                 "num_hidden_layers": 1,
                 "num_hidden_channels": 32,
                 "num_bins": 4,
                 "dropout_probability": 0.2,
 
-                "lr": 3e-4,
-                "train_batch_size": 128
+                "st_nets": [32] * 2,
+                "p_nets": [64] * 2,
+                "q_nets": [64] * 2,
+
+                "lr": 1e-3,
+                "train_batch_size": 1000
             }
 
-        assert use_baseline
         config = {
             **config,
-            "num_u_channels": 0,
             "tail_bound": 3,
             "autoregressive": False,
             "batch_norm": False
