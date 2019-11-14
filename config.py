@@ -156,7 +156,10 @@ def get_uci_config(dataset, model, use_baseline):
     elif model == "sos":
         assert use_baseline
         config = {
+            "num_u_channels": 0,
+
             "num_density_layers": 8,
+            "g_hidden_channels": [200] * 2,
             "num_polynomials_per_layer": 5,
             "polynomial_degree": 4,
 
@@ -174,13 +177,22 @@ def get_uci_config(dataset, model, use_baseline):
                 "num_bins": 8,
                 "dropout_probability": 0. if dataset == "power" else 0.1,
 
-                "st_nets": [128] * 2,
-                "p_nets": [200] * 2,
-                "q_nets": [200] * 2,
+                "st_nets": [120] * 2,
+                "p_nets": [240] * 2,
+                "q_nets": [240] * 2,
 
-                "lr": 1e-3,
-                "train_batch_size": 5000
+                "lr": 0.0005,
+                "train_batch_size": 5120
             }
+
+            # We convert the presecribed number of steps into epochs
+            if dataset == "gas":
+                config["max_epochs"] = (400_000 * 512) // 852_174
+            elif dataset == "power":
+                config["max_epochs"] = (400_000 * 512) // 1_615_917
+
+            # We run for a bit longer to ensure convergence
+            config["max_epochs"] += 100
 
         elif dataset == "hepmass":
             config = {
@@ -199,8 +211,10 @@ def get_uci_config(dataset, model, use_baseline):
                 # We increase the lr and batch size by a factor of 10 from the prescribed values
                 "lr": 0.0005 * 10,
                 "train_batch_size": 256 * 10,
-                # We convert the presecribed number of steps into epochs
-                "max_epochs": (400_000 * 256) // 315_123
+
+                # We convert the presecribed number of steps into epochs, and run for 400
+                # epochs extra because we don't quite converge otherwise.
+                "max_epochs": (400_000 * 256) // 315_123 + 400
             }
 
         elif dataset == "miniboone":
@@ -220,6 +234,7 @@ def get_uci_config(dataset, model, use_baseline):
                 # We increase the lr and batch size by a factor of 10 from the prescribed values
                 "lr": 0.0003 * 10,
                 "train_batch_size": 128 * 10,
+
                 # We convert the presecribed number of steps into epochs
                 "max_epochs": (200_000 * 128) // 29_556
             }
@@ -346,7 +361,7 @@ def get_images_config(dataset, model, use_baseline):
         "dequantize": True,
 
         "batch_norm": True,
-        "batch_norm_apply_affine": True,
+        "batch_norm_apply_affine": use_baseline,
         "batch_norm_use_running_averages": True,
         "batch_norm_momentum": 0.1,
 
