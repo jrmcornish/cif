@@ -4,6 +4,7 @@ from collections import Counter
 import numpy as np
 
 import torch
+import torch.nn.utils
 
 from ignite.engine import Events, Engine
 from ignite.exceptions import NotComputableError
@@ -49,6 +50,7 @@ class Trainer:
             train_loader,
             opt,
             max_epochs,
+            max_grad_norm,
 
             test_metrics,
             test_loader,
@@ -73,6 +75,7 @@ class Trainer:
         self._train_loader = train_loader
         self._opt = opt
         self._max_epochs = max_epochs
+        self._max_grad_norm = max_grad_norm
 
         self._test_metrics = test_metrics
         self._test_loader = test_loader
@@ -132,8 +135,13 @@ class Trainer:
         x = x.to(self._device)
 
         self._opt.zero_grad()
+
         loss = self._train_loss(self._module, x).mean()
         loss.backward()
+
+        if self._max_grad_norm is not None:
+            torch.nn.utils.clip_grad_norm_(self._module.parameters(), self._max_grad_norm)
+
         self._opt.step()
 
         return {"loss": loss}

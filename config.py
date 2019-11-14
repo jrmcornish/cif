@@ -88,6 +88,7 @@ def get_2d_config(dataset, model, use_baseline):
         "batch_norm": False,
 
         "max_epochs": 1000,
+        "max_grad_norm": None,
         "early_stopping": True,
         "max_bad_valid_epochs": 1000,
         "train_batch_size": 1000,
@@ -200,7 +201,8 @@ def get_uci_config(dataset, model, use_baseline):
             **config,
             "tail_bound": 3,
             "autoregressive": False,
-            "batch_norm": False
+            "batch_norm": False,
+            "max_grad_norm": 5
         }
 
     else:
@@ -223,6 +225,7 @@ def get_uci_config(dataset, model, use_baseline):
         "weight_decay": 0.,
         "max_bad_valid_epochs": 5000,
         "max_epochs": 5000,
+        "max_grad_norm": None,
         "epochs_per_test": 5,
 
         "num_train_elbo_samples": 1 if not use_baseline else 1,
@@ -318,6 +321,7 @@ def get_images_config(dataset, model, use_baseline):
         "batch_norm_momentum": 0.1,
 
         "max_bad_valid_epochs": 50,
+        "max_grad_norm": None,
         "max_epochs": 1000,
         "epochs_per_test": 1,
 
