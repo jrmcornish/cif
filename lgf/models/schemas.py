@@ -1,7 +1,7 @@
 def get_schema(config):
     model = config["model"] 
     if model in [
-        "glow", "multiscale-realnvp", "flat-realnvp", "maf", "sos", "bnaf", "nsf"
+        "glow", "multiscale-realnvp", "flat-realnvp", "maf", "sos", "bnaf", "nsf", "ffjord"
     ]:
         return get_schema_from_base(config)
 
@@ -153,6 +153,13 @@ def get_base_schema(config):
             num_steps_per_scale=config["num_steps_per_scale"],
             coupler_num_hidden_channels=config["g_num_hidden_channels"],
             lu_decomposition=True
+        )
+
+    elif model == "ffjord":
+        return get_ffjord_schema(
+            num_density_layers=config["num_density_layers"],
+            velocity_hidden_channels=config["hidden_channels"],
+            numerical_tolerance=config["numerical_tolerance"]
         )
 
     else:
@@ -494,4 +501,22 @@ def get_bnaf_schema(
             }
         ]
 
+    return result
+
+def get_ffjord_schema(
+        num_density_layers,
+        velocity_hidden_channels,
+        numerical_tolerance
+):
+    result = [{"type": "flatten"}]
+
+    for i in range(num_density_layers):
+        result += [
+            {
+                "type": "ode",
+                "hidden_channels": velocity_hidden_channels,
+                "numerical_tolerance": numerical_tolerance 
+            }
+        ]
+    
     return result

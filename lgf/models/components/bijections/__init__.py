@@ -50,3 +50,5 @@ from .nsf import (
 from .bnaf import BlockNeuralAutoregressiveBijection
 
 from .linear import LULinearBijection
+
+from .ode import FFJORDBijection

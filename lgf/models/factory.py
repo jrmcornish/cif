@@ -26,7 +26,8 @@ from .components.bijections import (
     AutoregressiveRationalQuadraticSplineBijection,
     BlockNeuralAutoregressiveBijection,
     LULinearBijection,
-    RandomChannelwisePermutationBijection
+    RandomChannelwisePermutationBijection,
+    FFJORDBijection
 )
 from .components.densities import (
     DiagonalGaussianDensity,
@@ -270,6 +271,15 @@ def get_bijection(
             hidden_channels_factor=layer_config["hidden_channels_factor"],
             activation=layer_config["activation"],
             residual=layer_config["residual"]
+        )
+
+    elif layer_config["type"] == "ode":
+        assert len(x_shape) == 1 # TODO: Make possible for images
+        return FFJORDBijection(
+            x_shape=x_shape,
+            velocity_hidden_channels=layer_config["hidden_channels"],
+            relative_tolerance=layer_config["numerical_tolerance"],
+            absolute_tolerance=layer_config["numerical_tolerance"]
         )
 
     else:

@@ -77,6 +77,17 @@ def get_2d_config(dataset, model, use_baseline):
             "test_batch_size": 1000
         }
 
+    elif model == "ffjord":
+        config = {
+            "num_density_layers": 1,
+            "hidden_channels": [64] * 3,
+            "numerical_tolerance": 1e-5,
+            
+            "st_nets": [24] * 2,
+            "p_nets": [24] * 3,
+            "q_nets": [24] * 3
+        }
+
     else:
         assert False, f"Invalid model `{model}' for dataset `{dataset}'"
 

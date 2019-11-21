@@ -4,3 +4,6 @@
 [submodule "gitmodules/BNAF"]
 	path = gitmodules/BNAF
 	url = https://github.com/nicola-decao/BNAF.git
+[submodule "gitmodules/ffjord"]
+	path = gitmodules/ffjord
+	url = https://github.com/rtqichen/ffjord
