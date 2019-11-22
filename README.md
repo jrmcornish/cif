@@ -6,8 +6,22 @@ Code release for [Localised Generative Flows](https://arxiv.org/abs/1909.13833) 
 
 ### Setup
 
-1. Make sure you have `pipenv` installed. Run e.g. `pip install pipenv` if not.
-2. From the same directory as `Pipfile`, run `pipenv install`
+First, install submodules:
+
+    $ git submodule init
+    $ git submodule update
+
+Next, install dependencies. If you use `conda`, the following will create an environment called `lgf`:
+
+    conda env create -f environment.yml
+
+Activate this with
+
+    conda activate lgf
+
+before running any code or tests.
+
+If you don't use `conda`, then please see `environment.yml` for a list of required packages, which will need to be installed manually via `pip` etc.
 
 ### Datasets
 
