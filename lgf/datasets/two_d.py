@@ -118,6 +118,15 @@ def get_2d_data(data, size):
         x2 = 2 * (np.random.rand(size) - 0.5)
         data = np.stack((x1, x2), 1)
 
+    elif data == "2lines":
+        x1 = np.empty(size)
+        x1[:size//2] = -1.
+        x1[size//2:] = 1.
+        x1 += 0.01 * (np.random.rand(size) - .5)
+        x2 = 2 * (np.random.rand(size) - 0.5)
+        data = np.stack((x1, x2), 1)
+        data = util_shuffle(data)
+
     elif data == "sawtooth":
         u = np.random.rand(size)
         branch = u < .5

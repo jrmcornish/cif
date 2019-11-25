@@ -15,7 +15,7 @@ parser.add_argument("--model", choices=[
     "multiscale-realnvp", "glow"
 ], required=True)
 parser.add_argument("--dataset", choices=[
-    "2uniforms", "8gaussians", "checkerboard", "2spirals", "rings",
+    "2uniforms", "2lines", "8gaussians", "checkerboard", "2spirals", "rings",
     "power", "gas", "hepmass", "miniboone",
     "mnist", "fashion-mnist", "cifar10", "svhn"
 ], required=True)

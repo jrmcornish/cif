@@ -10,7 +10,7 @@ def get_config(dataset, model, use_baseline):
 
 
 def get_config_base(dataset, model, use_baseline):
-    if dataset in ["2uniforms", "8gaussians", "checkerboard", "2spirals", "rings"]:
+    if dataset in ["2uniforms", "2lines", "8gaussians", "checkerboard", "2spirals", "rings"]:
         return get_2d_config(dataset, model, use_baseline)
 
     elif dataset in ["power", "gas", "hepmass", "miniboone"]:
@@ -85,7 +85,9 @@ def get_2d_config(dataset, model, use_baseline):
 
         "dequantize": False,
 
-        "batch_norm": False,
+        "batch_norm": True,
+        "batch_norm_apply_affine": True,
+        "batch_norm_use_running_averages": False,
 
         "max_epochs": 1000,
         "max_grad_norm": None,
@@ -96,7 +98,7 @@ def get_2d_config(dataset, model, use_baseline):
         "test_batch_size": 10000,
 
         "opt": "adam",
-        "lr": 1e-2,
+        "lr": 1e-3,
         "lr_schedule": "none",
         "weight_decay": 0.,
         "epochs_per_test": 5,
@@ -256,7 +258,7 @@ def get_uci_config(dataset, model, use_baseline):
         "dequantize": False,
 
         "batch_norm": True,
-        "batch_norm_apply_affine": True,
+        "batch_norm_apply_affine": not use_baseline,
         "batch_norm_use_running_averages": False,
 
         "early_stopping": True,
