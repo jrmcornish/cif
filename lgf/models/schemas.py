@@ -109,10 +109,7 @@ def get_base_schema(config):
         )
 
     elif model == "planar":
-        return get_planar_schema(
-            num_density_layers=config["num_density_layers"],
-            num_u_channels=config["num_u_channels"]
-        )
+        return get_planar_schema(config=config)
 
     else:
         assert False, f"Invalid model `{model}'"
@@ -556,13 +553,21 @@ def get_ffjord_schema(
     return result
 
 
-def get_planar_schema(
-        num_density_layers,
-        num_u_channels
-):
+def get_planar_schema(config):
+    if config["num_u_channels"] == 0:
+        layer = {"type": "planar"}
+
+    else:
+        layer = {
+            "type": "cond-planar",
+            "num_u_channels": config["num_u_channels"],
+            "cond_hidden_channels": config["cond_hidden_channels"],
+            "cond_activation": "tanh"
+        }
+
     result = [
-        {"type": "planar", "num_u_channels": num_u_channels},
+        layer,
         {"type": "batch-norm", "per_channel": False}
-    ] * num_density_layers
+    ] * config["num_density_layers"]
 
     return [{"type": "flatten"}] + result

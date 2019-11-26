@@ -27,7 +27,9 @@ from .components.bijections import (
     BlockNeuralAutoregressiveBijection,
     LULinearBijection,
     RandomChannelwisePermutationBijection,
-    FFJORDBijection
+    FFJORDBijection,
+    PlanarBijection,
+    ConditionalPlanarBijection,
 )
 from .components.densities import (
     DiagonalGaussianDensity,
@@ -281,6 +283,21 @@ def get_bijection(
             relative_tolerance=layer_config["numerical_tolerance"],
             absolute_tolerance=layer_config["numerical_tolerance"],
             num_u_channels=layer_config["num_u_channels"]
+        )
+
+    elif layer_config["type"] == "planar":
+        assert len(x_shape) == 1
+        return PlanarBijection(
+            num_input_channels=x_shape[0],
+        )
+
+    elif layer_config["type"] == "cond-planar":
+        assert len(x_shape) == 1
+        return ConditionalPlanarBijection(
+            num_input_channels=x_shape[0],
+            num_u_channels=layer_config["num_u_channels"],
+            cond_hidden_channels=layer_config["cond_hidden_channels"],
+            cond_activation=get_activation(layer_config["cond_activation"])
         )
 
     else:

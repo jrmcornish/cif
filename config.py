@@ -45,6 +45,17 @@ def get_2d_config(dataset, model, use_baseline):
             "q_nets":  [40] * 4
         }
 
+    elif model == "planar":
+        config = {
+            "num_density_layers": 20,
+
+            "cond_hidden_channels": [10] * 2,
+            "st_nets": [10] * 2,
+
+            "p_nets": [10] * 2,
+            "q_nets": [10] * 2
+        }
+
     elif model == "nsf":
         config = {
             "num_density_layers": 2,
@@ -82,7 +93,7 @@ def get_2d_config(dataset, model, use_baseline):
             "num_density_layers": 1,
             "hidden_channels": [64] * 3,
             "numerical_tolerance": 1e-5,
-            
+
             "st_nets": [24] * 2,
             "p_nets": [24] * 3,
             "q_nets": [24] * 3

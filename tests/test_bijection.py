@@ -26,7 +26,8 @@ from lgf.models.components.bijections import (
     Squeeze2dBijection,
     TanhBijection,
     RandomChannelwisePermutationBijection,
-    FFJORDBijection
+    FFJORDBijection,
+    PlanarBijection
 )
 from lgf.models.factory import get_coupler
 
