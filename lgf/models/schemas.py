@@ -1,64 +1,24 @@
 def get_schema(config):
-    model = config["model"] 
-    if model in [
-        "glow", "multiscale-realnvp", "flat-realnvp", "maf", "sos", "bnaf", "nsf", "ffjord"
-    ]:
-        return get_schema_from_base(config)
+    schema = get_base_schema(config=config)
 
-    elif model == "pure-cond-affine-mlp":
-        return get_pure_cond_affine_schema(config)
+    if config["pure_cond_affine"]:
+        assert config["use_cond_affine"]
+        schema = remove_non_batch_norm_layers(schema=schema)
 
-    else:
-        assert False, f"Invalid model {model}"
+    if config["use_cond_affine"]:
+        assert config["num_u_channels"] > 0
+        schema = add_cond_affine_before_each_batch_norm(schema=schema, config=config)
 
+    schema = apply_pq_coupler_config_settings(schema=schema, config=config)
 
-def get_pure_cond_affine_schema(config):
-    return [
-        get_cond_affine_layer(config) for _ in range(config["num_density_layers"])
-    ]
+    schema = get_preproc_schema(config=config) + schema
 
-
-def get_schema_from_base(config):
-    base_schema = get_preproc_schema(config) + get_base_schema(config)
-    return process_batch_norm_layers(base_schema, config)
-
-
-def process_batch_norm_layers(schema, config):
     if config["batch_norm"]:
-        if config["batch_norm_use_running_averages"]:
-            new_schema = []
-            momentum = config["batch_norm_momentum"]
-        else:
-            new_schema = [
-                {
-                    "type": "passthrough-before-eval",
-                    # XXX: This should be sufficient for most of the non-image
-                    # datasets we have but can be made a config value if necessary
-                    "num_passthrough_data_points": 100_000
-                }
-            ]
-            momentum = 1.
-
-        apply_affine = config["batch_norm_apply_affine"]
+        schema = apply_batch_norm_config_settings(schema=schema, config=config)
     else:
-        new_schema = []
+        schema = remove_batch_norm_layers(schema=schema)
 
-    for layer in schema:
-        if layer["type"] == "batch-norm":
-            if config["num_u_channels"] > 0:
-                new_schema.append(get_cond_affine_layer(config))
-
-            if config["batch_norm"]:
-                new_schema.append({
-                    **layer,
-                    "momentum": momentum,
-                    "apply_affine": apply_affine
-                })
-
-        else:
-            new_schema.append(layer)
-
-    return new_schema
+    return schema
 
 
 def get_preproc_schema(config):
@@ -82,21 +42,6 @@ def get_preproc_schema(config):
         )
 
     return schema
-
-
-def get_logit_tf_schema(lam, scale):
-    return [
-        {"type": "scalar-mult", "value": (1 - 2*lam) / scale},
-        {"type": "scalar-add", "value": lam},
-        {"type": "logit", "lambda": 0., "scale": 1.}
-    ]
-
-
-def get_centering_tf_schema(scale):
-    return [
-        {"type": "scalar-mult", "value": 1 / scale},
-        {"type": "scalar-add", "value": -.5}
-    ]
 
 
 # TODO: Could just pass the whole config to each constructor
@@ -162,8 +107,95 @@ def get_base_schema(config):
             numerical_tolerance=config["numerical_tolerance"]
         )
 
+    elif model == "planar":
+        return get_planar_schema(
+            num_density_layers=config["num_density_layers"],
+            num_u_channels=config["num_u_channels"]
+        )
+
     else:
         assert False, f"Invalid model `{model}'"
+
+
+def remove_non_batch_norm_layers(schema):
+    return [layer for layer in schema if layer["type"] == "batch-norm"]
+
+
+def remove_batch_norm_layers(schema):
+    return [layer for layer in schema if layer["type"] != "batch-norm"]
+
+
+def apply_batch_norm_config_settings(schema, config):
+    if config["batch_norm_use_running_averages"]:
+        new_schema = []
+        momentum = config["batch_norm_momentum"]
+
+    else:
+        new_schema = [
+            {
+                "type": "passthrough-before-eval",
+                # XXX: This should be sufficient for most of the non-image
+                # datasets we have but can be made a config value if necessary
+                "num_passthrough_data_points": 100_000
+            }
+        ]
+        momentum = 1.
+
+    apply_affine = config["batch_norm_apply_affine"]
+
+    for layer in schema:
+        if layer["type"] == "batch-norm":
+            new_schema.append({
+                **layer,
+                "momentum": momentum,
+                "apply_affine": config["batch_norm_apply_affine"]
+            })
+
+        else:
+            new_schema.append(layer)
+
+    return new_schema
+
+
+def add_cond_affine_before_each_batch_norm(schema, config):
+    new_schema = []
+    for layer in schema:
+        if layer["type"] == "batch-norm":
+            new_schema.append(get_cond_affine_layer(config))
+
+        new_schema.append(layer)
+
+    return new_schema
+
+
+def apply_pq_coupler_config_settings(schema, config):
+    new_schema = []
+    for layer in schema:
+        if layer.get("num_u_channels", 0) > 0:
+            layer = {
+                **layer,
+                "p_coupler": get_p_coupler_config(config),
+                "q_coupler": get_q_coupler_config(config)
+            }
+
+        new_schema.append(layer)
+
+    return new_schema
+
+
+def get_logit_tf_schema(lam, scale):
+    return [
+        {"type": "scalar-mult", "value": (1 - 2*lam) / scale},
+        {"type": "scalar-add", "value": lam},
+        {"type": "logit", "lambda": 0., "scale": 1.}
+    ]
+
+
+def get_centering_tf_schema(scale):
+    return [
+        {"type": "scalar-mult", "value": 1 / scale},
+        {"type": "scalar-add", "value": -.5}
+    ]
 
 
 def get_cond_affine_layer(config):
@@ -171,8 +203,6 @@ def get_cond_affine_layer(config):
         "type": "cond-affine",
         "num_u_channels": config["num_u_channels"],
         "st_coupler": get_st_coupler_config(config),
-        "p_coupler": get_p_coupler_config(config),
-        "q_coupler": get_q_coupler_config(config)
     }
 
 
@@ -226,14 +256,14 @@ def get_coupler_net_config(net_spec, model):
         }
 
     elif isinstance(net_spec, list):
-        if model in ["multiscale-realnvp", "pure-cond-affine-resnet"]:
+        if model == "multiscale-realnvp":
             return {
                 "type": "resnet",
                 "hidden_channels": net_spec
             }
 
         elif model in [
-            "pure-cond-affine-mlp", "maf", "flat-realnvp", "sos", "nsf", "bnaf"
+            "maf", "flat-realnvp", "sos", "nsf", "bnaf", "planar"
         ]:
             return {
                 "type": "mlp",
@@ -433,7 +463,6 @@ def get_sos_schema(
     return result
 
 
-# TODO: Include batchnorm between layers? Not visible in repo
 def get_nsf_schema(
         num_density_layers,
         num_hidden_layers, # TODO: Use a more descriptive name
@@ -475,6 +504,7 @@ def get_nsf_schema(
 
     return result
 
+
 def get_bnaf_schema(
         num_density_layers,
         num_hidden_layers, # TODO: More descriptive name
@@ -503,6 +533,7 @@ def get_bnaf_schema(
 
     return result
 
+
 def get_ffjord_schema(
         num_density_layers,
         velocity_hidden_channels,
@@ -520,3 +551,15 @@ def get_ffjord_schema(
         ]
     
     return result
+
+
+def get_planar_schema(
+        num_density_layers,
+        num_u_channels
+):
+    result = [
+        {"type": "planar", "num_u_channels": num_u_channels},
+        {"type": "batch-norm", "per_channel": False}
+    ] * num_density_layers
+
+    return [{"type": "flatten"}] + result

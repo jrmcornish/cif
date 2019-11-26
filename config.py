@@ -93,6 +93,7 @@ def get_2d_config(dataset, model, use_baseline):
 
     return {
         "num_u_channels": 0 if use_baseline else 1,
+        "use_cond_affine": not use_baseline and model != "planar",
 
         "dequantize": False,
 

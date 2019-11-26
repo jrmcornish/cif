@@ -20,6 +20,7 @@ parser.add_argument("--dataset", choices=[
     "mnist", "fashion-mnist", "cifar10", "svhn"
 ], required=True)
 parser.add_argument("--baseline", action="store_true", help="Run baseline flow instead of LGF")
+parser.add_argument("--pure-cond-affine", action="store_true", help="Only use the conditional affine layers in the model. (Requires not using the baseline.)")
 parser.add_argument("--seed", type=int, help="Random seed to use. Defaults to using current time.")
 parser.add_argument("--print-model", action="store_true", help="Print the model and exit")
 parser.add_argument("--print-schema", action="store_true", help="Print the model schema and exit")
@@ -40,6 +41,11 @@ config = get_config(
     dataset=args.dataset,
     use_baseline=args.baseline
 )
+
+if args.baseline:
+    assert not args.pure_cond_affine
+else:
+    assert config["num_u_channels"] > 0
 
 def parse_config_arg(key_value):
     assert "=" in key_value, "Must specify config items with format `key=value`"
@@ -66,6 +72,7 @@ else:
 config = {
     **config,
     **args_config,
+    "pure_cond_affine": args.pure_cond_affine,
     "seed": seed,
     "should_checkpoint_best_valid": args.checkpoints in ["best-valid", "both"],
     "should_checkpoint_latest": args.checkpoints in ["latest", "both"],
@@ -86,8 +93,8 @@ if args.print_model:
     should_train = False
 
 if args.print_schema:
-    from lgf.experiment import print_schema
-    print_schema(config)
+    from lgf.models.schemas import get_schema
+    print(json.dumps(get_schema(config), indent=4))
     should_train = False
 
 if should_train:

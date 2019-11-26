@@ -37,11 +37,6 @@ def print_model(config):
     print(f"Number of parameters: {num_params(density):,}")
 
 
-def print_schema(config):
-    schema = get_schema(config=config)
-    print(json.dumps(schema, indent=4))
-
-
 def setup_density_and_loaders(config, device):
     train_loader, valid_loader, test_loader = get_loaders(
         dataset=config["dataset"],
