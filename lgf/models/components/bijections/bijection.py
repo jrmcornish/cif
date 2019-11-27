@@ -48,12 +48,12 @@ class InverseBijection(Bijection):
         self.bijection = bijection
 
     def _x_to_z(self, x, **kwargs):
-        result = self.bijection.z_to_x(x)
+        result = self.bijection.z_to_x(x, **kwargs)
         z = result.pop("x")
         return {"z": z, **result}
 
     def _z_to_x(self, z, **kwargs):
-        result = self.bijection.x_to_z(z)
+        result = self.bijection.x_to_z(z, **kwargs)
         x = result.pop("z")
         return {"x": x, **result}
 
