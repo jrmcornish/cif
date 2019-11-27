@@ -27,7 +27,7 @@ If you don't use `conda`, then please see `environment.yml` for a list of requir
 
 Our code runs on several types of datasets, including synthetic 2-D data, UCI data, and image data. For a full list run
 
-    pipenv run ./main.py --help
+    ./main.py --help
 
 The 2-D datasets are automatically generated, and the image datasets are downloaded automatically. However the UCI datasets will need to be manually downloaded from [this location](https://zenodo.org/record/1161203). The following should do the trick:
 
@@ -39,7 +39,7 @@ Replace `DATA_ROOT` with the desired path to the data files. This path then need
 
 To train our model on a simple 2D dataset, run:
 
-    pipenv run ./main.py --dataset 2uniforms
+    ./main.py --dataset 2uniforms
 
 By default, this will create a directory `runs/`, which will contain Tensorboard logs giving various information about the training run, including 2-D density plots in this case. To inspect this, ensure you have `tensorboard` installed (e.g. `pip install tensorboard`), and run in a new terminal:
 
