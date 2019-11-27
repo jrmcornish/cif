@@ -42,11 +42,6 @@ config = get_config(
     use_baseline=args.baseline
 )
 
-if args.baseline:
-    assert not args.pure_cond_affine
-else:
-    assert config["num_u_channels"] > 0
-
 def parse_config_arg(key_value):
     assert "=" in key_value, "Must specify config items with format `key=value`"
 
@@ -62,18 +57,19 @@ def parse_config_arg(key_value):
 
     return k, v
 
-args_config = dict(parse_config_arg(kv) for kv in args.config)
+config = {**config, **dict(parse_config_arg(kv) for kv in args.config)}
 
-if args.seed is None:
-    seed = int(time.time() * 1e6) % 2**32
+assert args.baseline == (config["num_u_channels"] == 0)
+
+if args.pure_cond_affine:
+    assert not args.baseline
+    config = {**config, "use_cond_affine": True, "pure_cond_affine": True}
 else:
-    seed = args.seed
+    config = {**config, "pure_cond_affine": False}
 
 config = {
     **config,
-    **args_config,
-    "pure_cond_affine": args.pure_cond_affine,
-    "seed": seed,
+    "seed": args.seed or int(time.time() * 1e6) % 2**32,
     "should_checkpoint_best_valid": args.checkpoints in ["best-valid", "both"],
     "should_checkpoint_latest": args.checkpoints in ["latest", "both"],
     "write_to_disk": not args.nosave,
