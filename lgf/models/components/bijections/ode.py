@@ -56,45 +56,47 @@ class ODEVelocityFunction(ODEnet):
 
 
 class FFJORDBijection(Bijection):
+    _VELOCITY_NONLINEARITY = "tanh"
+    _DIVERGENCE_METHOD = "brute_force" # TODO: Incorporate approximate
+    _SOLVER = "dopri5"
+    _INTEGRATION_TIME = 0.5 # TODO: Learn this?
+
     def __init__(
             self, 
             x_shape,
             velocity_hidden_channels,
-            velocity_nonlinearity="tanh",
-            num_u_channels=0,
-            divergence_method="brute_force",
-            relative_tolerance=1e-8,
-            absolute_tolerance=1e-8,
-            solver="dopri5",
-            integration_time=0.5
+            num_u_channels,
+            relative_tolerance,
+            absolute_tolerance,
     ):
-        assert divergence_method in ("brute_force", "approximate")
-
         super().__init__(x_shape=x_shape, z_shape=x_shape)
 
         self.diffeq = ODEVelocityFunction(
             hidden_dims=tuple(velocity_hidden_channels),
             x_input_shape=x_shape,
-            nonlinearity=velocity_nonlinearity,
+            nonlinearity=self._VELOCITY_NONLINEARITY,
             num_u_channels=num_u_channels
         )
 
         odefunc = ODEfunc(
             diffeq=self.diffeq,
-            divergence_fn=divergence_method,
+            divergence_fn=self._DIVERGENCE_METHOD,
             residual=False,
             rademacher=False
         )
 
         self.cnf = CNF(
             odefunc=odefunc,
-            T=integration_time,
+            T=self._INTEGRATION_TIME,
             train_T=False,
             regularization_fns=None,
-            solver=solver,
+            solver=self._SOLVER,
             atol=absolute_tolerance,
             rtol=relative_tolerance
         )
+
+    def _get_nfes(self):
+        return torch.tensor(self.cnf.odefunc.num_evals())
 
     def _evolve_ODE(self, input_state, reverse, **kwargs):
         if "u" in kwargs:
@@ -115,7 +117,7 @@ class FFJORDBijection(Bijection):
             reverse=False,
             **kwargs
         )
-        return {"z": z, "log-jac": log_jac}
+        return {"z": z, "log-jac": log_jac, "nfes": self._get_nfes()}
 
     def _z_to_x(self, z, **kwargs):
         x, log_jac = self._evolve_ODE(

@@ -279,7 +279,8 @@ def get_bijection(
             x_shape=x_shape,
             velocity_hidden_channels=layer_config["hidden_channels"],
             relative_tolerance=layer_config["numerical_tolerance"],
-            absolute_tolerance=layer_config["numerical_tolerance"]
+            absolute_tolerance=layer_config["numerical_tolerance"],
+            num_u_channels=layer_config["num_u_channels"]
         )
 
     else:

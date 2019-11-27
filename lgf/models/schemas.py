@@ -104,7 +104,8 @@ def get_base_schema(config):
         return get_ffjord_schema(
             num_density_layers=config["num_density_layers"],
             velocity_hidden_channels=config["hidden_channels"],
-            numerical_tolerance=config["numerical_tolerance"]
+            numerical_tolerance=config["numerical_tolerance"],
+            num_u_channels=config["num_u_channels"]
         )
 
     elif model == "planar":
@@ -263,7 +264,7 @@ def get_coupler_net_config(net_spec, model):
             }
 
         elif model in [
-            "maf", "flat-realnvp", "sos", "nsf", "bnaf", "planar"
+            "maf", "flat-realnvp", "sos", "nsf", "bnaf", "planar", "ffjord"
         ]:
             return {
                 "type": "mlp",
@@ -537,7 +538,8 @@ def get_bnaf_schema(
 def get_ffjord_schema(
         num_density_layers,
         velocity_hidden_channels,
-        numerical_tolerance
+        numerical_tolerance,
+        num_u_channels
 ):
     result = [{"type": "flatten"}]
 
@@ -546,7 +548,8 @@ def get_ffjord_schema(
             {
                 "type": "ode",
                 "hidden_channels": velocity_hidden_channels,
-                "numerical_tolerance": numerical_tolerance 
+                "numerical_tolerance": numerical_tolerance,
+                "num_u_channels": num_u_channels
             }
         ]
     
