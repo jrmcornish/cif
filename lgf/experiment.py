@@ -116,7 +116,7 @@ def setup_experiment(config):
 
     if config["model"] == "ffjord":
         def train_metrics(density, x):
-            train_info = density("elbo", x)
+            train_info = density.elbo(x)
             loss = -train_info["elbo"].mean()
 
             nfes = torch.tensor(0.)
@@ -127,7 +127,7 @@ def setup_experiment(config):
             return {"loss": loss, "nfes": nfes}
 
     else:
-        train_metrics = lambda density, x: {"loss": -density("elbo", x).mean()}
+        train_metrics = lambda density, x: {"loss": -density.elbo(x)["elbo"].mean()}
 
     valid_loss = lambda density, x: -density.metrics(x, config["num_valid_elbo_samples"])["log-prob"]
     test_metrics = lambda density, x: density.metrics(x, config["num_test_elbo_samples"])
