@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from pyro.distributions.transforms.polynomial import PolynomialFlow
+from pyro.distributions.transforms.polynomial import Polynomial
 from pyro.nn import AutoRegressiveNN
 
 from .bijection import Bijection
@@ -27,7 +27,7 @@ class SumOfSquaresPolynomialBijection(Bijection):
             nonlinearity=activation()
         )
 
-        self.flow = PolynomialFlow(
+        self.flow = Polynomial(
             autoregressive_nn=arn,
             input_dim=int(num_input_channels),
             count_degree=polynomial_degree,
