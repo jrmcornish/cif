@@ -47,7 +47,7 @@ class Trainer:
             module,
             device,
 
-            train_loss,
+            train_metrics,
             train_loader,
             opt,
             lr_scheduler,
@@ -73,7 +73,7 @@ class Trainer:
         self._module.to(device)
         self._device = device
 
-        self._train_loss = train_loss
+        self._train_metrics = train_metrics
         self._train_loader = train_loader
         self._opt = opt
         self._lr_scheduler = lr_scheduler
@@ -139,7 +139,8 @@ class Trainer:
 
         self._opt.zero_grad()
 
-        loss = self._train_loss(self._module, x).mean()
+        train_metrics = self._train_metrics(self._module, x)
+        loss = train_metrics["loss"]
         loss.backward()
 
         if self._max_grad_norm is not None:
@@ -149,7 +150,7 @@ class Trainer:
 
         self._lr_scheduler.step()
 
-        return {"loss": loss}
+        return train_metrics
 
     @torch.no_grad()
     def _test(self, engine):
@@ -200,8 +201,8 @@ class Trainer:
         i = engine.state.iteration
 
         if i % self._STEPS_PER_LOSS_WRITE == 0:
-            loss = engine.state.output["loss"]
-            self._writer.write_scalar("train/loss", loss, global_step=i)
+            for k, v in engine.state.output.items():
+                self._writer.write_scalar("train/" + k, v, global_step=i)
 
         # TODO: Inefficient to recompute this if we are doing gradient clipping
         if i % self._STEPS_PER_GRAD_WRITE == 0:

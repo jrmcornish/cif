@@ -13,8 +13,12 @@ class BijectionDensity(Density):
 
     def _elbo(self, x):
         result = self.bijection.x_to_z(x)
-        prior_term = self.prior.elbo(result["z"])["elbo"]
-        return {"elbo": prior_term + result["log-jac"]}
+        prior_dict = self.prior.elbo(result["z"])
+        return {
+            "elbo": prior_dict["elbo"] + result["log-jac"],
+            "bijection-info": result,
+            "prior-dict": prior_dict
+        }
 
     def _sample(self, num_samples):
         z = self.prior.sample(num_samples)

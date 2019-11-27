@@ -114,13 +114,27 @@ def setup_experiment(config):
     else:
         visualizer = DummyDensityVisualizer(writer=writer)
 
-    train_loss = lambda density, x: -density.metrics(x, config["num_train_elbo_samples"])["elbo"]
+    if config["model"] == "ffjord":
+        def train_metrics(density, x):
+            train_info = density("elbo", x)
+            loss = -train_info["elbo"].mean()
+
+            nfes = torch.tensor(0.)
+            while "prior-dict" in train_info:
+                nfes += train_info["bijection-info"].get("nfes", torch.tensor(0.))
+                train_info = train_info["prior-dict"]
+
+            return {"loss": loss, "nfes": nfes}
+
+    else:
+        train_metrics = lambda density, x: {"loss": -density("elbo", x).mean()}
+
     valid_loss = lambda density, x: -density.metrics(x, config["num_valid_elbo_samples"])["log-prob"]
     test_metrics = lambda density, x: density.metrics(x, config["num_test_elbo_samples"])
 
     trainer = Trainer(
         module=density,
-        train_loss=train_loss,
+        train_metrics=train_metrics,
         valid_loss=valid_loss,
         test_metrics=test_metrics,
         train_loader=train_loader,

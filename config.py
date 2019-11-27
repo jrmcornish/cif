@@ -123,19 +123,6 @@ def get_2d_config(dataset, model, use_baseline):
     }
 
 
-def something(num_datapoints, batch_size, max_steps, increase_factor):
-    steps_per_epoch = num_datapoints // batch_size
-    max_epochs = max_steps // steps_per_epoch
-    return max_epochs * 10
-
-    num_datapoints = 29_556
-    original_batch_size = 128
-    original_steps_per_epoch = num_datapoints // original_batch_size
-    original_max_steps = 200_000
-    original_max_epochs = original_max_steps // original_steps_per_epoch
-    increase_factor = 10
-
-
 def get_uci_config(dataset, model, use_baseline):
     if model in ["maf", "flat-realnvp"]:
         if dataset in ["gas", "power"]:
