@@ -24,7 +24,7 @@ def get_config_base(dataset, model, use_baseline):
 
 
 def get_2d_config(dataset, model, use_baseline):
-    if model in ["maf", "flat-realnvp"]:
+    if model == "maf":
         config = {
             "num_density_layers": 20 if use_baseline else 5,
             "g_hidden_channels": [50] * 4,
@@ -32,6 +32,20 @@ def get_2d_config(dataset, model, use_baseline):
             "st_nets": [10] * 2,
             "p_nets": [50] * 4,
             "q_nets": [50] * 4,
+        }
+
+    elif model == "flat-realnvp":
+        config = {
+            "num_density_layers": 20 if use_baseline else 10,
+            "coupler_shared_nets": True,
+            "coupler_hidden_channels": [10] * 2,
+
+            "use_cond_affine": False,
+            "batch_norm_apply_affine": True,
+            "num_u_channels": 1 if not use_baseline else 0,
+
+            "p_nets": [50] * 4,
+            "q_nets": [10] * 2, # [50] * 4 also works well
         }
 
     elif model == "sos":
@@ -49,10 +63,13 @@ def get_2d_config(dataset, model, use_baseline):
         config = {
             "num_density_layers": 20,
 
+            "use_cond_affine": False,
+            "batch_norm_apply_affine": True,
+            "num_u_channels": 2 if not use_baseline else 0,
             "cond_hidden_channels": [10] * 2,
-            "st_nets": [10] * 2,
 
-            "p_nets": [10] * 2,
+            "p_nets": [50] * 4,
+            # TODO: Make [50] * 4
             "q_nets": [10] * 2
         }
 
@@ -104,15 +121,15 @@ def get_2d_config(dataset, model, use_baseline):
 
     return {
         "num_u_channels": 0 if use_baseline else 1,
-        "use_cond_affine": not use_baseline and model != "planar",
+        "use_cond_affine": not use_baseline,
 
         "dequantize": False,
 
         "batch_norm": True,
-        "batch_norm_apply_affine": True,
+        "batch_norm_apply_affine": use_baseline,
         "batch_norm_use_running_averages": False,
 
-        "max_epochs": 1000,
+        "max_epochs": 5000,
         "max_grad_norm": None,
         "early_stopping": True,
         "max_bad_valid_epochs": 1000,
@@ -268,7 +285,7 @@ def get_uci_config(dataset, model, use_baseline):
         "dequantize": False,
 
         "batch_norm": True,
-        "batch_norm_apply_affine": not use_baseline,
+        "batch_norm_apply_affine": use_baseline,
         "batch_norm_use_running_averages": False,
 
         "early_stopping": True,

@@ -54,10 +54,7 @@ def get_base_schema(config):
         )
 
     elif model == "flat-realnvp":
-        return get_flat_realnvp_schema(
-            num_density_layers=config["num_density_layers"],
-            coupler_hidden_channels=config["g_hidden_channels"]
-        )
+        return get_flat_realnvp_schema(config=config)
 
     elif model == "maf":
         return get_maf_schema(
@@ -370,32 +367,42 @@ def get_glow_schema(
     return schema
 
 
-def get_flat_realnvp_schema(
-        num_density_layers,
-        coupler_hidden_channels
-):
+def get_flat_realnvp_schema(config):
     result = [{"type": "flatten"}]
 
-    for i in range(num_density_layers):
+    if config["coupler_shared_nets"]:
+        coupler_config = {
+            "independent_nets": False,
+            "shift_log_scale_net": {
+                "type": "mlp",
+                "hidden_channels": config["coupler_hidden_channels"],
+                "activation": "tanh"
+            }
+        }
+
+    else:
+        coupler_config = {
+            "independent_nets": True,
+            "shift_net": {
+                "type": "mlp",
+                "hidden_channels": config["coupler_hidden_channels"],
+                "activation": "relu"
+            },
+            "log_scale_net": {
+                "type": "mlp",
+                "hidden_channels": config["coupler_hidden_channels"],
+                "activation": "tanh"
+            }
+        }
+
+    for i in range(config["num_density_layers"]):
         result += [
             {
                 "type": "acl",
                 "mask_type": "alternating-channel",
                 "reverse_mask": i % 2 == 0,
-                "coupler": {
-                    "independent_nets": True,
-                    "shift_net": {
-                        "type": "mlp",
-                        "hidden_channels": coupler_hidden_channels,
-                        "activation": "relu"
-                    },
-                    "log_scale_net": {
-                        "type": "mlp",
-                        "hidden_channels": coupler_hidden_channels,
-                        "activation": "tanh"
-                    }
-                },
-                "num_u_channels": 0
+                "coupler": coupler_config,
+                "num_u_channels": config["num_u_channels"]
             },
             {
                 "type": "batch-norm",
