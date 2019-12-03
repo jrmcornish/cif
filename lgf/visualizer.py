@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import tqdm
 
 
+# TODO: Make return a matplotlib figure instead. Writing can be done outside.
 class DensityVisualizer:
     def __init__(self, writer):
         self._writer = writer
@@ -46,10 +47,10 @@ class TwoDimensionalDensityVisualizer(DensityVisualizer):
     _PADDING = .2
     _BATCH_SIZE = 1000
 
-    def __init__(self, writer, train_loader, num_elbo_samples, device):
+    def __init__(self, writer, x_train, num_elbo_samples, device):
         super().__init__(writer=writer)
 
-        self._x = train_loader.dataset.x
+        self._x = x_train
 
         self._x1_lims = self._lims(self._x[:, 0])
         self._x2_lims = self._lims(self._x[:, 1])
@@ -83,7 +84,8 @@ class TwoDimensionalDensityVisualizer(DensityVisualizer):
 
         probs = []
         for x1_x2_batch, in tqdm.tqdm(loader, leave=False, desc="Plotting"):
-            log_prob = density.metrics(x1_x2_batch, self._num_elbo_samples)["log-prob"]
+            with torch.no_grad():
+                log_prob = density.metrics(x1_x2_batch, self._num_elbo_samples)["log-prob"]
             probs.append(torch.exp(log_prob))
 
         probs = torch.cat(probs, dim=0).view(*grid_x1.shape).cpu()

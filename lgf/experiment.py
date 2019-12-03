@@ -107,7 +107,7 @@ def setup_experiment(config):
     elif train_loader.dataset.x.shape[1:] == (2,):
         visualizer = TwoDimensionalDensityVisualizer(
             writer=writer,
-            train_loader=train_loader,
+            x_train=train_loader.dataset.x,
             num_elbo_samples=config["num_test_elbo_samples"],
             device=device
         )
