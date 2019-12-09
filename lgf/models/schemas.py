@@ -108,6 +108,9 @@ def get_base_schema(config):
     elif model == "planar":
         return get_planar_schema(config=config)
 
+    elif model == "dlgm":
+        return get_dlgm_schema(config=config)
+
     else:
         assert False, f"Invalid model `{model}'"
 
@@ -258,7 +261,7 @@ def get_coupler_net_config(net_spec, model):
             }
 
         elif model in [
-            "maf", "flat-realnvp", "sos", "nsf", "bnaf", "planar", "ffjord"
+            "maf", "flat-realnvp", "sos", "nsf", "bnaf", "planar", "ffjord", "dlgm"
         ]:
             return {
                 "type": "mlp",
@@ -578,3 +581,10 @@ def get_planar_schema(config):
     ] * config["num_density_layers"]
 
     return [{"type": "flatten"}] + result
+
+
+def get_dlgm_schema(config):
+    return (
+        [{"type": "flatten"}] +
+        [{"type": "batch-norm", "per_channel": False}] * config["num_density_layers"]
+    )

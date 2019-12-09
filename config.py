@@ -24,7 +24,22 @@ def get_config_base(dataset, model, use_baseline):
 
 
 def get_2d_config(dataset, model, use_baseline):
-    if model == "maf":
+    if model == "dlgm":
+        config = {
+            "num_density_layers": 1,
+
+            "num_u_channels": 2,
+            "use_cond_affine": True,
+
+            # "s_nets": "fixed-constant",
+            "st_nets": [10] * 2,
+            "p_nets": [50] * 4,
+            "q_nets": [50] * 4,
+
+            "batch_norm_apply_affine": True
+        }
+
+    elif model == "maf":
         config = {
             "num_density_layers": 20 if use_baseline else 5,
             "g_hidden_channels": [50] * 4,
@@ -36,16 +51,17 @@ def get_2d_config(dataset, model, use_baseline):
 
     elif model == "flat-realnvp":
         config = {
-            "num_density_layers": 20 if use_baseline else 10,
+            "num_density_layers": 10,
             "coupler_shared_nets": True,
-            "coupler_hidden_channels": [10] * 2,
+            "coupler_hidden_channels": [50] * 4,
 
+            "num_u_channels": 2 if not use_baseline else 0,
             "use_cond_affine": False,
-            "batch_norm_apply_affine": True,
-            "num_u_channels": 1 if not use_baseline else 0,
 
             "p_nets": [50] * 4,
-            "q_nets": [10] * 2, # [50] * 4 also works well
+            "q_nets": [50] * 4,
+
+            "batch_norm_apply_affine": True,
         }
 
     elif model == "sos":
@@ -61,16 +77,17 @@ def get_2d_config(dataset, model, use_baseline):
 
     elif model == "planar":
         config = {
-            "num_density_layers": 20,
+            "num_density_layers": 10,
 
             "use_cond_affine": False,
-            "batch_norm_apply_affine": True,
             "num_u_channels": 2 if not use_baseline else 0,
             "cond_hidden_channels": [10] * 2,
 
             "p_nets": [50] * 4,
             # TODO: Make [50] * 4
-            "q_nets": [10] * 2
+            "q_nets": [10] * 2,
+
+            "batch_norm_apply_affine": True,
         }
 
     elif model == "nsf":
