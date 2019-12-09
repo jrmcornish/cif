@@ -90,7 +90,7 @@ class TwoDimensionalDensityVisualizer(DensityVisualizer):
 
         probs = torch.cat(probs, dim=0).view(*grid_x1.shape).cpu()
 
-        fig = plt.figure()
+        plt.figure()
 
         contours = plt.contourf(grid_x1, grid_x2, probs, levels=self._CONTOUR_LEVELS, cmap="coolwarm")
         for c in contours.collections:
@@ -102,4 +102,4 @@ class TwoDimensionalDensityVisualizer(DensityVisualizer):
         x = x[torch.randint(high=x.shape[0], size=(self._NUM_TRAIN_POINTS_TO_SHOW,))]
         plt.scatter(x[:, 0], x[:, 1], c="k", marker=".", s=7, linewidth=0.5, alpha=0.5)
 
-        self._writer.write_figure("density", fig, epoch)
+        self._writer.write_figure("density", plt.gcf(), epoch)
