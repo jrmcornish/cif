@@ -1,6 +1,8 @@
 import contextlib
 import json
 import random
+from pathlib import Path
+import sys
 
 import numpy as np
 
@@ -54,6 +56,26 @@ def setup_density_and_loaders(config, device):
     ).to(device)
 
     return density, train_loader, valid_loader, test_loader
+
+
+def load_run(run_dir, device):
+    run_dir = Path(run_dir)
+
+    with open(run_dir / "config.json", "r") as f:
+        config = json.load(f)
+
+    density, train_loader, valid_loader, test_loader = setup_density_and_loaders(config, device)
+
+    checkpoint = torch.load(run_dir / "checkpoints" / "best_valid.pt", map_location=device)
+    print("Loaded checkpoint after epoch", checkpoint["epoch"])
+
+    density.load_state_dict(checkpoint["module_state_dict"])
+
+    x_train = train_loader.dataset.x
+    x_valid = valid_loader.dataset.x
+    x_test = test_loader.dataset.x
+
+    return density, x_train, x_valid, x_test, config
 
 
 def setup_experiment(config):
