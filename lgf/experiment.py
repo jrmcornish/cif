@@ -12,8 +12,10 @@ import torch.optim as optim
 from .trainer import Trainer
 from .datasets import get_loaders
 from .visualizer import DummyDensityVisualizer, ImageDensityVisualizer, TwoDimensionalDensityVisualizer
-from .models import get_schema, get_density
+from .models import get_density
 from .writer import Writer, DummyWriter
+
+from config import get_schema
 
 
 def train(config):
@@ -136,7 +138,7 @@ def setup_experiment(config):
     else:
         visualizer = DummyDensityVisualizer(writer=writer)
 
-    if config["model"] == "ffjord":
+    if config["schema_type"] == "ffjord":
         def train_metrics(density, x):
             train_info = density.elbo(x)
             loss = -train_info["elbo"].mean()

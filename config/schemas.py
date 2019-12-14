@@ -46,23 +46,23 @@ def get_preproc_schema(config):
 
 # TODO: Could just pass the whole config to each constructor
 def get_base_schema(config):
-    model = config["model"]
+    ty = config["schema_type"]
 
-    if model == "multiscale-realnvp":
+    if ty == "multiscale-realnvp":
         return get_multiscale_realnvp_schema(
             coupler_hidden_channels=config["g_hidden_channels"]
         )
 
-    elif model == "flat-realnvp":
+    elif ty == "flat-realnvp":
         return get_flat_realnvp_schema(config=config)
 
-    elif model == "maf":
+    elif ty == "maf":
         return get_maf_schema(
             num_density_layers=config["num_density_layers"],
             hidden_channels=config["g_hidden_channels"]
         )
 
-    elif model == "sos":
+    elif ty == "sos":
         return get_sos_schema(
             num_density_layers=config["num_density_layers"],
             hidden_channels=config["g_hidden_channels"],
@@ -70,7 +70,7 @@ def get_base_schema(config):
             polynomial_degree=config["polynomial_degree"],
         )
 
-    elif model == "nsf":
+    elif ty == "nsf":
         return get_nsf_schema(
             num_density_layers=config["num_density_layers"],
             num_hidden_layers=config["num_hidden_layers"],
@@ -81,7 +81,7 @@ def get_base_schema(config):
             dropout_probability=config["dropout_probability"]
         )
 
-    elif model == "bnaf":
+    elif ty == "bnaf":
         return get_bnaf_schema(
             num_density_layers=config["num_density_layers"],
             num_hidden_layers=config["num_hidden_layers"],
@@ -89,7 +89,7 @@ def get_base_schema(config):
             hidden_channels_factor=config["hidden_channels_factor"]
         )
 
-    elif model == "glow":
+    elif ty == "glow":
         return get_glow_schema(
             num_scales=config["num_scales"],
             num_steps_per_scale=config["num_steps_per_scale"],
@@ -97,7 +97,7 @@ def get_base_schema(config):
             lu_decomposition=True
         )
 
-    elif model == "ffjord":
+    elif ty == "ffjord":
         return get_ffjord_schema(
             num_density_layers=config["num_density_layers"],
             velocity_hidden_channels=config["hidden_channels"],
@@ -105,14 +105,17 @@ def get_base_schema(config):
             num_u_channels=config["num_u_channels"]
         )
 
-    elif model == "planar":
+    elif ty == "planar":
         return get_planar_schema(config=config)
 
-    elif model == "dlgm":
-        return get_dlgm_schema(config=config)
+    elif ty == "cond-affine":
+        return get_cond_affine_schema(config=config)
+
+    elif ty == "affine":
+        return get_affine_schema(config=config)
 
     else:
-        assert False, f"Invalid model `{model}'"
+        assert False, f"Invalid schema type `{ty}'"
 
 
 def remove_non_batch_norm_layers(schema):
@@ -217,7 +220,7 @@ def get_q_coupler_config(config):
 
 
 def get_coupler_config(shift_prefix, log_scale_prefix, shift_log_scale_prefix, config):
-    model = config["model"]
+    schema_type = config["schema_type"]
 
     shift_key = f"{shift_prefix}_nets"
     log_scale_key = f"{log_scale_prefix}_nets"
@@ -226,21 +229,21 @@ def get_coupler_config(shift_prefix, log_scale_prefix, shift_log_scale_prefix, c
     if shift_key in config and log_scale_key in config:
         return {
             "independent_nets": True,
-            "shift_net": get_coupler_net_config(config[shift_key], model),
-            "log_scale_net": get_coupler_net_config(config[log_scale_key], model)
+            "shift_net": get_coupler_net_config(config[shift_key], schema_type),
+            "log_scale_net": get_coupler_net_config(config[log_scale_key], schema_type)
         }
 
     elif shift_log_scale_key in config:
         return {
             "independent_nets": False,
-            "shift_log_scale_net": get_coupler_net_config(config[shift_log_scale_key], model)
+            "shift_log_scale_net": get_coupler_net_config(config[shift_log_scale_key], schema_type)
         }
 
     else:
         assert False, f"Must specify either `{shift_log_scale_key}', or both `{shift_key}' and `{log_scale_key}'"
 
 
-def get_coupler_net_config(net_spec, model):
+def get_coupler_net_config(net_spec, schema_type):
     if net_spec in ["fixed-constant", "learned-constant"]:
         return {
             "type": "constant",
@@ -254,14 +257,14 @@ def get_coupler_net_config(net_spec, model):
         }
 
     elif isinstance(net_spec, list):
-        if model == "multiscale-realnvp":
+        if schema_type == "multiscale-realnvp":
             return {
                 "type": "resnet",
                 "hidden_channels": net_spec
             }
 
-        elif model in [
-            "maf", "flat-realnvp", "sos", "nsf", "bnaf", "planar", "ffjord", "dlgm"
+        elif schema_type in [
+            "maf", "flat-realnvp", "sos", "nsf", "bnaf", "planar", "ffjord", "cond-affine"
         ]:
             return {
                 "type": "mlp",
@@ -270,17 +273,17 @@ def get_coupler_net_config(net_spec, model):
             }
 
         else:
-            assert False, f"Invalid model {model} for net specification {net_spec}"
+            assert False, f"Invalid schema type {schema_type} for net specification {net_spec}"
 
     elif isinstance(net_spec, int):
-        if model == "glow":
+        if schema_type == "glow":
             return {
                 "type": "glow-cnn",
                 "num_hidden_channels": net_spec
             }
 
         else:
-            assert False, f"Invalid model {model} for net specification {net_spec}"
+            assert False, f"Invalid schema type {schema_type} for net specification {net_spec}"
 
     else:
         assert False, f"Invalid net specifier {net_spec}"
@@ -405,7 +408,7 @@ def get_flat_realnvp_schema(config):
                 "mask_type": "alternating-channel",
                 "reverse_mask": i % 2 == 0,
                 "coupler": coupler_config,
-                "num_u_channels": config["num_u_channels"]
+                "num_u_channels": 0
             },
             {
                 "type": "batch-norm",
@@ -583,8 +586,16 @@ def get_planar_schema(config):
     return [{"type": "flatten"}] + result
 
 
-def get_dlgm_schema(config):
+def get_cond_affine_schema(config):
     return (
         [{"type": "flatten"}] +
         [{"type": "batch-norm", "per_channel": False}] * config["num_density_layers"]
+    )
+
+
+# TODO: Try using just cond-affines with constant u
+def get_affine_schema(config):
+    return (
+        [{"type": "flatten"}] +
+        [{"type": "affine", "per_channel": False}] * config["num_density_layers"]
     )

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import pprint
 import argparse
 import json
 import time
@@ -8,24 +9,17 @@ import ast
 import sys
 sys.setrecursionlimit(3000)
 
+from config import get_datasets, get_models, get_config, get_schema, expand_grid
+
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model", choices=[
-    "maf", "flat-realnvp", "sos", "bnaf", "nsf", "planar", "dlgm",
-    "multiscale-realnvp", "glow", "ffjord"
-], required=True)
-parser.add_argument("--dataset", choices=[
-    "2uniforms", "2lines", "8gaussians", "checkerboard", "2spirals", "rings",
-    "power", "gas", "hepmass", "miniboone",
-    "mnist", "fashion-mnist", "cifar10", "svhn"
-], required=True)
+parser.add_argument("--model", choices=get_models(), required=True)
+parser.add_argument("--dataset", choices=get_datasets(), required=True)
 parser.add_argument("--baseline", action="store_true", help="Run baseline flow instead of LGF")
-parser.add_argument("--pure-cond-affine", action="store_true", help="Only use the conditional affine layers in the model. (Requires not using the baseline.)")
 parser.add_argument("--seed", type=int, help="Random seed to use. Defaults to using current time.")
 parser.add_argument("--print-model", action="store_true", help="Print the model and exit")
 parser.add_argument("--print-schema", action="store_true", help="Print the model schema and exit")
 parser.add_argument("--print-config", action="store_true", help="Print the full config and exit")
-parser.add_argument("--nochkpt", action="store_true", help="Disable checkpointing")
 parser.add_argument("--checkpoints", choices=["best-valid", "latest", "both", "none"], default="both", help="Type of checkpoints to save (default: %(default)s)")
 parser.add_argument("--nosave", action="store_true", help="Don't save anything to disk")
 parser.add_argument("--data-root", default="data/", help="Location of training data (default: %(default)s)")
@@ -33,8 +27,6 @@ parser.add_argument("--logdir-root", default="runs/", help="Location of log file
 parser.add_argument("--config", default=[], action="append", help="Override config entries. Specify as `key=value`.")
 
 args = parser.parse_args()
-
-from config import get_config
 
 config = get_config(
     model=args.model,
@@ -59,17 +51,18 @@ def parse_config_arg(key_value):
 
 config = {**config, **dict(parse_config_arg(kv) for kv in args.config)}
 
-assert args.baseline == (config["num_u_channels"] == 0)
-
-if args.pure_cond_affine:
-    assert not args.baseline
-    config = {**config, "use_cond_affine": True, "pure_cond_affine": True}
+if args.baseline:
+    assert config["num_u_channels"] == 0
 else:
-    config = {**config, "pure_cond_affine": False}
+    assert config["num_u_channels"] > 0
+
+assert "model" not in config, "Should not specify model in config"
+assert "datatset" not in config, "Should not specify dataset in config"
 
 config = {
+    "model": args.model,
+    "dataset": args.dataset,
     **config,
-    "seed": args.seed or int(time.time() * 1e6) % 2**32,
     "should_checkpoint_best_valid": args.checkpoints in ["best-valid", "both"],
     "should_checkpoint_latest": args.checkpoints in ["latest", "both"],
     "write_to_disk": not args.nosave,
@@ -80,19 +73,28 @@ config = {
 should_train = True
 
 if args.print_config:
-    print(json.dumps(config, indent=4))
+    pprint.sorted = lambda x, key=None: x
+    pp = pprint.PrettyPrinter(indent=4)
+    pp.pprint(config)
     should_train = False
+
+grid = expand_grid(config)
 
 if args.print_model:
     from lgf.experiment import print_model
-    print_model({**config, "write_to_disk": False})
+    for c in grid:
+        print_model({**config, "write_to_disk": False})
     should_train = False
 
 if args.print_schema:
-    from lgf.models.schemas import get_schema
-    print(json.dumps(get_schema(config), indent=4))
+    for c in grid:
+        print(json.dumps(get_schema(c), indent=4))
     should_train = False
 
 if should_train:
     from lgf.experiment import train
-    train(config)
+    for c in grid:
+        train({
+            **c,
+            "seed": args.seed or int(time.time() * 1e6) % 2**32,
+        })
