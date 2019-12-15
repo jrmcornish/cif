@@ -27,7 +27,7 @@ def config(dataset, use_baseline):
         "max_epochs": 2000,
         "max_grad_norm": None,
         "early_stopping": True,
-        "max_bad_valid_epochs": 100,
+        "max_bad_valid_epochs": 250,
         "train_batch_size": 1000,
         "valid_batch_size": 1000,
         "test_batch_size": 10000,
@@ -41,101 +41,6 @@ def config(dataset, use_baseline):
         "num_train_elbo_samples": 10,
         "num_valid_elbo_samples": 10,
         "num_test_elbo_samples": 100
-    }
-
-
-@provides(
-    "dlgm-deep",
-    "dlgm-deep-nvp",
-    "dlgm-shallow",
-    "dlgm-shallow-nvp"
-)
-def dlgm(dataset, model, use_baseline):
-    assert not use_baseline
-
-    modifiers = model.split("-")[1:]
-
-    depth = 8
-
-    if "deep" in modifiers:
-        layers = 4
-    elif "shallow" in modifiers:
-        layers = 1
-
-    if "nvp" in modifiers:
-        st = {
-            "s_nets": "identity",
-            "t_nets": "fixed-constant"
-        }
-
-    else:
-        st = {
-            "s_nets": "fixed-constant",
-            "t_nets": "identity"
-        }
-
-    net_spec = [10] * (depth // layers)
-
-    return {
-        "schema_type": "cond-affine",
-
-        "num_u_channels": 2,
-
-        **st,
-
-        "num_density_layers": layers,
-        "p_nets": net_spec,
-        "q_nets": net_spec
-    }
-
-
-@provides(
-    "cond-affine-deep-s",
-    "cond-affine-deep-t",
-    "cond-affine-deep-st",
-    "cond-affine-shallow-s",
-    "cond-affine-shallow-t",
-    "cond-affine-shallow-st"
-)
-def cond_affine(dataset, model, use_baseline):
-    assert not use_baseline
-
-    modifiers = model.split("-")[2:]
-
-    depth = 8
-
-    if "deep" in modifiers:
-        layers = 2
-    elif "shallow" in modifiers:
-        layers = 1
-
-    net_spec = [10] * (depth // (layers*2))
-
-    if "s" in modifiers:
-        st = {
-            "s_nets": net_spec,
-            "t_nets": "fixed-constant"
-        }
-    elif "t" in modifiers:
-        st = {
-            "s_nets": "fixed-constant",
-            "t_nets": net_spec
-        }
-    elif "st" in modifiers:
-        st = {
-            "st_nets": net_spec
-        }
-
-    return {
-        "schema_type": "cond-affine",
-
-        "num_u_channels": 2,
-
-        **st,
-
-        "num_density_layers": layers,
-        "p_nets": net_spec,
-        "q_nets": net_spec
     }
 
 
@@ -155,11 +60,93 @@ def maf(dataset, model, use_baseline):
         "schema_type": "maf",
 
         "num_density_layers": 20 if use_baseline else 5,
-        "g_hidden_channels": [50] * 4,
+        "ar_map_hidden_channels": [50] * 4,
 
         "st_nets": [10] * 2,
         "p_nets": [50] * 4,
         "q_nets": [50] * 4,
+    }
+
+
+@provides("maf-grid")
+def maf_grid(dataset, model, use_baseline):
+    return {
+        "schema_type": "maf",
+
+        "num_density_layers": 20 if use_baseline else 5,
+        "ar_map_hidden_channels": GridParams([10] * 2, [50] * 4),
+
+        "num_u_channels": 2,
+
+        "st_nets": GridParams([10] * 2, [50] * 4),
+        "p_nets": [50] * 4,
+        "q_nets": [50] * 4,
+    }
+
+
+@provides("cond-affine-shallow-grid")
+def cond_affine_shallow_grid(dataset, model, use_baseline):
+    assert not use_baseline
+    return {
+        "schema_type": "cond-affine",
+
+        "num_density_layers": 1,
+
+        "num_u_channels": 2,
+
+        "st_nets": GridParams([10] * 2 * 5, [50] * 4 * 5),
+        "p_nets": [50] * 4,
+        "q_nets": [50] * 4
+    }
+
+
+@provides("cond-affine-deep-grid")
+def cond_affine_deep_grid(dataset, model, use_baseline):
+    assert not use_baseline
+    return {
+        "schema_type": "cond-affine",
+
+        "num_density_layers": 5,
+
+        "st_nets": GridParams([10] * 2, [50] * 4),
+        "p_nets": [50] * 4,
+        "q_nets": [50] * 4
+    }
+
+
+@provides("dlgm-deep")
+def dlgm_deep(dataset, model, use_baseline):
+    assert not use_baseline
+    return {
+        "schema_type": "cond-affine",
+
+        "num_density_layers": 5,
+
+        "num_u_channels": 2,
+
+        "s_nets": "fixed-constant",
+        "t_nets": "identity",
+
+        "p_nets": [50] * 4,
+        "q_nets": [50] * 4
+    }
+
+
+@provides("dlgm-shallow")
+def dlgm_shallow(dataset, model, use_baseline):
+    assert not use_baseline
+    return {
+        "schema_type": "cond-affine",
+
+        "num_density_layers": 1,
+
+        "num_u_channels": 2,
+
+        "s_nets": "fixed-constant",
+        "t_nets": "identity",
+
+        "p_nets": [50] * 4 * 5,
+        "q_nets": [50] * 4 * 5
     }
 
 

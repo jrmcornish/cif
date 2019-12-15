@@ -59,7 +59,7 @@ def get_base_schema(config):
     elif ty == "maf":
         return get_maf_schema(
             num_density_layers=config["num_density_layers"],
-            hidden_channels=config["g_hidden_channels"]
+            hidden_channels=config["ar_map_hidden_channels"]
         )
 
     elif ty == "sos":
