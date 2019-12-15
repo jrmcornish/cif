@@ -1,10 +1,30 @@
 import os
 import datetime
 import json
+import sys
 
 import torch
 
 from tensorboardX import SummaryWriter
+
+
+class Tee:
+    def __init__(self, primary_file, secondary_file):
+        self.primary_file = primary_file
+        self.secondary_file = secondary_file
+
+        self.encoding = self.primary_file.encoding
+
+    def fileno(self):
+        return self.primary_file.fileno()
+
+    def write(self, data):
+        self.primary_file.write(data)
+        self.secondary_file.write(data)
+
+    def flush(self):
+        self.primary_file.flush()
+        self.secondary_file.flush()
 
 
 class Writer:
@@ -17,6 +37,11 @@ class Writer:
         self._writer = SummaryWriter(logdir=logdir)
 
         self._tag_group = tag_group
+
+        self._stdout = open(os.path.join(self._logdir, "stdout"), "w")
+        self._stderr = open(os.path.join(self._logdir, "stderr"), "w")
+        sys.stdout = Tee(primary_file=sys.stdout, secondary_file=self._stdout)
+        sys.stderr = Tee(primary_file=sys.stderr, secondary_file=self._stderr)
 
     def write_scalar(self, tag, scalar_value, global_step=None):
         self._writer.add_scalar(self._tag(tag), scalar_value, global_step=global_step)
@@ -41,6 +66,11 @@ class Writer:
         json_path = os.path.join(self._logdir, f"{tag}.json")
 
         with open(json_path, "w") as f:
+            f.write(text)
+
+    def write_textfile(self, tag, text):
+        path = os.path.join(self._logdir, f"{tag}.txt")
+        with open(path, "w") as f:
             f.write(text)
 
     def write_checkpoint(self, tag, data):
@@ -85,4 +115,7 @@ class DummyWriter:
         pass
 
     def write_checkpoint(self, tag, data):
+        pass
+
+    def write_textfile(self, tag, text):
         pass

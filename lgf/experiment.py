@@ -3,6 +3,7 @@ import json
 import random
 from pathlib import Path
 import sys
+import subprocess
 
 import numpy as np
 
@@ -22,10 +23,14 @@ def train(config):
     density, trainer, writer = setup_experiment(config)
 
     writer.write_json("config", config)
+
     writer.write_json("model", {
         "num_params": num_params(density),
         "schema": get_schema(config)
     })
+
+    writer.write_textfile("git-head", subprocess.check_output(["git", "rev-parse", "HEAD"]).decode("ascii"))
+    writer.write_textfile("git-diff", subprocess.check_output(["git", "diff"]).decode("ascii"))
 
     print("\nConfig:")
     print(json.dumps(config, indent=4))
