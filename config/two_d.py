@@ -84,70 +84,46 @@ def maf_grid(dataset, model, use_baseline):
     }
 
 
-@provides("cond-affine-shallow-grid")
+@provides("cond-affine-shallow-grid", "cond-affine-deep-grid")
 def cond_affine_shallow_grid(dataset, model, use_baseline):
     assert not use_baseline
+
+    if "deep" in model:
+        num_layers = 5
+        net_factor = 1
+    else:
+        num_layers = 1
+        net_factor = 5
+
     return {
         "schema_type": "cond-affine",
 
-        "num_density_layers": 1,
+        "num_density_layers": num_layers,
 
         "num_u_channels": 2,
 
-        "st_nets": GridParams([10] * 2 * 5, [50] * 4 * 5),
-        "p_nets": [50] * 4,
-        "q_nets": [50] * 4
+        "st_nets": GridParams([10] * 2 * net_factor, [50] * 4 * net_factor),
+        "p_nets": [50] * 4 * net_factor,
+        "q_nets": [50] * 4 * net_factor
     }
 
 
-@provides("cond-affine-deep-grid")
-def cond_affine_deep_grid(dataset, model, use_baseline):
-    assert not use_baseline
-    return {
-        "schema_type": "cond-affine",
-
-        "num_density_layers": 5,
-
-        "st_nets": GridParams([10] * 2, [50] * 4),
-        "p_nets": [50] * 4,
-        "q_nets": [50] * 4
-    }
-
-
-@provides("dlgm-deep")
+@provides("dlgm-deep", "dlgm-shallow")
 def dlgm_deep(dataset, model, use_baseline):
     assert not use_baseline
-    return {
-        "schema_type": "cond-affine",
 
-        "num_density_layers": 5,
+    if "deep" in model:
+        cond_affine_model = "cond-affine-deep-grid"
+    else:
+        cond_affine_model = "cond-affine-shallow-grid"
 
-        "num_u_channels": 2,
+    config = cond_affine_shallow_grid(dataset=dataset, model=cond_affine_model, use_baseline=False)
 
-        "s_nets": "fixed-constant",
-        "t_nets": "identity",
+    del config["st_nets"]
+    config["s_nets"] = "fixed-constant"
+    config["t_nets"] = "identity"
 
-        "p_nets": [50] * 4,
-        "q_nets": [50] * 4
-    }
-
-
-@provides("dlgm-shallow")
-def dlgm_shallow(dataset, model, use_baseline):
-    assert not use_baseline
-    return {
-        "schema_type": "cond-affine",
-
-        "num_density_layers": 1,
-
-        "num_u_channels": 2,
-
-        "s_nets": "fixed-constant",
-        "t_nets": "identity",
-
-        "p_nets": [50] * 4 * 5,
-        "q_nets": [50] * 4 * 5
-    }
+    return config
 
 
 @provides("realnvp")
