@@ -28,6 +28,9 @@ class Tee:
 
 
 class Writer:
+    _STDOUT = sys.stdout
+    _STDERR = sys.stderr
+
     def __init__(self, logdir_root, tag_group):
         os.makedirs(logdir_root, exist_ok=True)
 
@@ -38,10 +41,15 @@ class Writer:
 
         self._tag_group = tag_group
 
-        self._stdout = open(os.path.join(self._logdir, "stdout"), "w")
-        self._stderr = open(os.path.join(self._logdir, "stderr"), "w")
-        sys.stdout = Tee(primary_file=sys.stdout, secondary_file=self._stdout)
-        sys.stderr = Tee(primary_file=sys.stderr, secondary_file=self._stderr)
+        sys.stdout = Tee(
+            primary_file=self._STDOUT,
+            secondary_file=open(os.path.join(self._logdir, "stdout"), "w")
+        )
+
+        sys.stderr = Tee(
+            primary_file=self._STDERR,
+            secondary_file=open(os.path.join(self._logdir, "stderr"), "w")
+        )
 
     def write_scalar(self, tag, scalar_value, global_step=None):
         self._writer.add_scalar(self._tag(tag), scalar_value, global_step=global_step)
