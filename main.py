@@ -16,7 +16,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--model", choices=get_models(), required=True)
 parser.add_argument("--dataset", choices=get_datasets(), required=True)
 parser.add_argument("--baseline", action="store_true", help="Run baseline flow instead of LGF")
-parser.add_argument("--seed", type=int, help="Random seed to use. Defaults to using current time.")
+parser.add_argument("--num-seeds", type=int, default=1, help="Number of random seeds to use.")
 parser.add_argument("--print-model", action="store_true", help="Print the model and exit")
 parser.add_argument("--print-schema", action="store_true", help="Print the model schema and exit")
 parser.add_argument("--print-config", action="store_true", help="Print the full config and exit")
@@ -83,18 +83,26 @@ grid = expand_grid(config)
 if args.print_model:
     from lgf.experiment import print_model
     for c in grid:
-        print_model({**config, "write_to_disk": False})
+        print_model({**c, "write_to_disk": False})
     should_train = False
 
 if args.print_schema:
-    for c in grid:
-        print(json.dumps(get_schema(c), indent=4))
+    if len(grid) == 1:
+        print(json.dumps(get_schema(grid[0]), indent=4))
+    else:
+        for i, c in enumerate(grid):
+            if i > 0:
+                print()
+            sep_width = 10
+            print(("=" * sep_width) + f" Schema {i} " + ("=" * sep_width) + "\n")
+            print(json.dumps(get_schema(c), indent=4))
     should_train = False
 
 if should_train:
     from lgf.experiment import train
     for c in grid:
-        train({
-            **c,
-            "seed": args.seed or int(time.time() * 1e6) % 2**32,
-        })
+        for _ in range(args.num_seeds):
+            train({
+                **c,
+                "seed": int(time.time() * 1e6) % 2**32
+            })

@@ -38,12 +38,11 @@ def get_model_config(dataset, model, use_baseline):
 
 def get_config(dataset, model, use_baseline):
     config = {
+        "use_cond_affine": not use_baseline,
+        "pure_cond_affine": False,
         **get_base_config(dataset, use_baseline),
         **get_model_config(dataset, model, use_baseline)
     }
-
-    config["use_cond_affine"] = not use_baseline
-    config["pure_cond_affine"] = False
 
     if use_baseline:
         for prefix in ["s", "t", "st"]:
