@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import pprint
+import contextlib
 import argparse
 import json
 import time
@@ -100,9 +101,10 @@ if args.print_schema:
 
 if should_train:
     from lgf.experiment import train
-    for c in grid:
-        for _ in range(args.num_seeds):
-            train({
-                **c,
-                "seed": int(time.time() * 1e6) % 2**32
-            })
+    with contextlib.suppress(KeyboardInterrupt):
+        for c in grid:
+            for _ in range(args.num_seeds):
+                train({
+                    **c,
+                    "seed": int(time.time() * 1e6) % 2**32
+                })

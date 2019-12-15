@@ -1,4 +1,3 @@
-import contextlib
 import json
 import random
 from pathlib import Path
@@ -36,8 +35,7 @@ def train(config):
     print(json.dumps(config, indent=4))
     print(f"\nNumber of parameters: {num_params(density):,}\n")
 
-    with contextlib.suppress(KeyboardInterrupt):
-        trainer.train()
+    trainer.train()
 
 
 def print_model(config):
