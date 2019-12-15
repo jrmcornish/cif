@@ -80,7 +80,7 @@ def load_run(run_dir, device):
     x_valid = valid_loader.dataset.x
     x_test = test_loader.dataset.x
 
-    return density, x_train, x_valid, x_test, config
+    return density, x_train, x_valid, x_test, config, checkpoint
 
 
 def setup_experiment(config):

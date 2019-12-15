@@ -8,6 +8,8 @@ import torch
 
 from tensorboardX import SummaryWriter
 
+import tqdm
+
 from lgf.experiment import load_run
 
 def paths(root):
@@ -87,18 +89,18 @@ root = sys.argv[1]
 
 keys = differing_keys(root)
 
-for path in paths(root):
+for path in tqdm.tqdm(paths(root)):
     vals = get_config_values(keys, path)
 
     density, x_train, x_valid, x_test, config, checkpoint = load_run(
         run_dir=path,
-        device=torch.device("cpu")
+        device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
     )
 
     density.eval()
     with torch.no_grad():
         all_metrics = density.metrics(x_test, num_elbo_samples=100)
-    
+
     metrics = {
         "log-prob": all_metrics["log-prob"].mean().item(),
         "elbo-gap": all_metrics["elbo-gap"].mean().item(),
