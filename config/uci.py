@@ -24,6 +24,7 @@ def config(dataset, use_baseline):
     return {
         "num_u_channels": num_u_channels,
         "use_cond_affine": True,
+        "pure_cond_affine": False,
 
         "dequantize": False,
 
@@ -95,8 +96,76 @@ def sos(dataset, model, use_baseline):
     }
 
 
-@provides("nsf")
+@provides("nsf-ar")
 def nsf(dataset, model, use_baseline):
+    assert use_baseline
+
+    common = {
+        "schema_type": "nsf",
+
+        "autoregressive": True,
+
+        "batch_norm": False,
+        "tail_bound": 3,
+
+        "opt": "adam",
+        "lr_schedule": "cosine",
+        "weight_decay": 0.,
+        "early_stopping": False,
+        "max_grad_norm": 5,
+
+        "valid_batch_size": 5000,
+        "test_batch_size": 5000,
+
+        "epochs_per_test": 5
+    }
+
+    if dataset in ["power", "gas", "hepmass"]:
+        dropout = {"power": 0., "gas": 0.1, "hepmass": 0.2}[dataset]
+
+        dset_size = {"power": 1_615_917, "gas": 852_174, "hepmass": 315_123}[dataset]
+        batch_size = 512
+        train_steps = 400_000
+
+        config = {
+            "lr": 0.0005,
+            "num_density_layers": 10,
+            "num_hidden_layers": 2,
+            "num_hidden_channels": 256,
+            "num_bins": 8,
+            "dropout_probability": dropout
+        }
+
+    elif dataset == "miniboone":
+        dset_size = 29_556
+        batch_size = 64
+        train_steps = 250_000
+
+        config = {
+            "lr": 0.0003,
+            "num_density_layers": 10,
+            "num_hidden_layers": 1,
+            "num_hidden_channels": 64,
+            "num_bins": 4,
+            "dropout_probability": 0.2
+        }
+
+    else:
+        assert False, "Not yet implemented"
+
+    steps_per_epoch = dset_size // batch_size
+    epochs = int(train_steps/steps_per_epoch + .5) # Round up
+
+    return {
+        **common,
+        **config,
+        "max_epochs": epochs,
+        "train_batch_size": batch_size
+    }
+
+
+@provides("nsf-old")
+def nsf_old(dataset, model, use_baseline):
     if dataset in ["power", "gas"]:
         config = {
             "num_density_layers": 10 if use_baseline else 7,

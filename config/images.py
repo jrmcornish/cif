@@ -17,6 +17,7 @@ def config(dataset, use_baseline):
     return {
         "num_u_channels": 1,
         "use_cond_affine": True,
+        "pure_cond_affine": False,
 
         "dequantize": True,
 
