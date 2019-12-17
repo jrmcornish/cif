@@ -98,8 +98,6 @@ def sos(dataset, model, use_baseline):
 
 @provides("nsf-ar")
 def nsf(dataset, model, use_baseline):
-    assert use_baseline
-
     common = {
         "schema_type": "nsf",
 
@@ -129,11 +127,16 @@ def nsf(dataset, model, use_baseline):
 
         config = {
             "lr": 0.0005,
-            "num_density_layers": 10,
+            "num_density_layers": 10 if use_baseline else 5,
             "num_hidden_layers": 2,
             "num_hidden_channels": 256,
             "num_bins": 8,
-            "dropout_probability": dropout
+            "dropout_probability": dropout,
+
+            "num_u_channels": 2 if dataset in ["power", "gas"] else 5,
+            "st_nets": 2 * [180],
+            "p_nets": 2 * [360],
+            "q_nets": 2 * [360]
         }
 
     elif dataset == "miniboone":
@@ -143,15 +146,20 @@ def nsf(dataset, model, use_baseline):
 
         config = {
             "lr": 0.0003,
-            "num_density_layers": 10,
+            "num_density_layers": 10 if use_baseline else 4,
             "num_hidden_layers": 1,
             "num_hidden_channels": 64,
             "num_bins": 4,
-            "dropout_probability": 0.2
+            "dropout_probability": 0.2,
+
+            "num_u_channels": 10,
+            "st_nets": 2 * [64],
+            "p_nets": 2 * [128],
+            "q_nets": 2 * [128]
         }
 
     else:
-        assert False, "Not yet implemented"
+        assert False, f"Invalid dataset {dataset}"
 
     steps_per_epoch = dset_size // batch_size
     epochs = int(train_steps/steps_per_epoch + .5) # Round up
