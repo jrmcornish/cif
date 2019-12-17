@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
+import os
 import sys
 import json
 import glob
+import shutil
 
 import torch
 
@@ -10,10 +12,7 @@ from tensorboardX import SummaryWriter
 
 import tqdm
 
-from lgf.experiment import load_run
-
-def paths(root):
-    return glob.glob(f"{root}/*")
+from lgf.experiment import load_run, num_params
 
 
 def get_config(path):
@@ -22,7 +21,7 @@ def get_config(path):
 
 
 def get_configs(root):
-    return [get_config(p) for p in paths(root)]
+    return [get_config(p) for p in glob.glob(f"{root}/*")]
 
 
 def all_keys(configs):
@@ -85,11 +84,23 @@ def simplify_value(val):
         return val
 
 
+def group_runs(root):
+    keys = differing_keys(model_dir)
+
+    groups = {}
+    for run in glob.glob(f"{root}/*"):
+        differing_config_dict = get_config_values(keys, run)
+        vals = tuple([differing_config_dict[k] for k in keys])
+        groups.setdefault(vals, []).append(run)
+
+    return list(groups.values())
+
+
 root = sys.argv[1]
 
 keys = differing_keys(root)
 
-for path in tqdm.tqdm(paths(root)):
+for path in tqdm.tqdm(glob.glob(f"{root}/*")):
     vals = get_config_values(keys, path)
 
     density, x_train, x_valid, x_test, config, checkpoint = load_run(
@@ -104,8 +115,33 @@ for path in tqdm.tqdm(paths(root)):
     metrics = {
         "log-prob": all_metrics["log-prob"].mean().item(),
         "elbo-gap": all_metrics["elbo-gap"].mean().item(),
-        "epoch": checkpoint["epoch"]
+        "epoch": checkpoint["epoch"],
+        "num-params": num_params(density)
     }
 
     writer = SummaryWriter(logdir=path)
     writer.add_hparams(hparam_dict=vals, metric_dict=metrics)
+
+
+for path in glob.glob(f"{root}/*"):
+    dataset = get_config(path)["dataset"]
+    dataset_dir = f"{os.path.dirname(path)}/{dataset}"
+    os.makedirs(dataset_dir, exist_ok=True)
+    shutil.move(path, dataset_dir)
+
+
+for path in glob.glob(f"{root}/*/*"):
+    model = get_config(path)["model"]
+    model_dir = f"{os.path.dirname(path)}/{model}"
+    os.makedirs(model_dir, exist_ok=True)
+    shutil.move(path, model_dir)
+
+
+for model_dir in glob.glob(f"{root}/*/*"):
+    groups = group_runs(model_dir)
+
+    for i, group in enumerate(groups):
+        group_dir = f"{model_dir}/{i}"
+        os.makedirs(group_dir)
+        for run in group:
+            shutil.move(run, group_dir)
