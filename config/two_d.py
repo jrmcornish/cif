@@ -80,13 +80,13 @@ def maf_grid(dataset, model, use_baseline):
         "num_u_channels": 2,
 
         "st_nets": GridParams([10] * 2, [50] * 4),
-        "p_nets": [50] * 4,
+        "p_nets": [10] * 2,
         "q_nets": [50] * 4,
     }
 
 
 @provides("cond-affine-shallow-grid", "cond-affine-deep-grid")
-def cond_affine_shallow_grid(dataset, model, use_baseline):
+def cond_affine_grid(dataset, model, use_baseline):
     assert not use_baseline
 
     if "deep" in model:
@@ -104,7 +104,7 @@ def cond_affine_shallow_grid(dataset, model, use_baseline):
         "num_u_channels": 2,
 
         "st_nets": GridParams([10] * 2 * net_factor, [50] * 4 * net_factor),
-        "p_nets": [50] * 4 * net_factor,
+        "p_nets": [10] * 2 * net_factor,
         "q_nets": [50] * 4 * net_factor
     }
 
