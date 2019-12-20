@@ -127,6 +127,30 @@ def get_2d_data(data, size):
         data = np.stack((x1, x2), 1)
         data = util_shuffle(data)
 
+    elif data == "2marginals":
+        x1 = np.empty(size)
+        x1[:size//2] = -1.
+        x1[size//2:] = 1.
+        x1 += .5 * (np.random.rand(size) - .5)
+        x2 = np.random.normal(size=size)
+        data = np.stack((x1, x2), 1)
+        data = util_shuffle(data)
+
+    elif data == "1uniform":
+        x1 = np.random.rand(size) - .5
+        x2 = np.random.rand(size) - .5
+        data = np.stack((x1, x2), 1)
+        data = util_shuffle(data)
+
+    elif data == "annulus":
+        rad1 = 2
+        rad2 = 1
+        theta = 2 * np.pi * np.random.random(size)
+        r = np.sqrt(np.random.random(size) * (rad1**2 - rad2**2) + rad2**2)
+        x1 = r * np.cos(theta)
+        x2 = r * np.sin(theta)
+        data = np.stack((x1, x2), 1)
+
     elif data == "sawtooth":
         u = np.random.rand(size)
         branch = u < .5

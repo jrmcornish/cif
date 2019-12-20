@@ -9,7 +9,10 @@ group(
         "8gaussians",
         "checkerboard",
         "2spirals",
-        "rings"
+        "rings",
+        "2marginals",
+        "1uniform",
+        "annulus"
     ]
 )
 
