@@ -7,3 +7,6 @@
 [submodule "gitmodules/ffjord"]
 	path = gitmodules/ffjord
 	url = https://github.com/rtqichen/ffjord
+[submodule "gitmodules/residual-flows"]
+	path = gitmodules/residual-flows
+	url = https://github.com/rtqichen/residual-flows.git
