@@ -5,10 +5,10 @@ import warnings
 import torch
 import torch.nn as nn
 
-sys.path.insert(0, str(Path(__file__).parents[4] / "gitmodules" / "ffjord"))
+sys.path.insert(0, str(Path(__file__).parents[4] / "gitmodules"))
 try:
-    from lib.layers.odefunc import ODEnet, ODEfunc
-    from lib.layers.cnf import CNF 
+    from ffjord.lib.layers.odefunc import ODEnet, ODEfunc
+    from ffjord.lib.layers.cnf import CNF
 finally:
     sys.path.pop(0)
 

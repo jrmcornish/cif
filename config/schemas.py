@@ -114,6 +114,9 @@ def get_base_schema(config):
     elif ty == "affine":
         return get_affine_schema(config=config)
 
+    elif ty == "resflow":
+        return get_resflow_schema(config=config)
+
     else:
         assert False, f"Invalid schema type `{ty}'"
 
@@ -599,3 +602,13 @@ def get_affine_schema(config):
         [{"type": "flatten"}] +
         [{"type": "affine", "per_channel": False}] * config["num_density_layers"]
     )
+
+
+def get_resflow_schema(config):
+    result = [{"type": "flatten"}]
+    for _ in range(config["num_density_layers"]):
+        result += [
+            {"type": "resflow", "hidden_channels": config["hidden_channels"]},
+            {"type": "batch-norm", "per_channel": False}
+        ]
+    return result

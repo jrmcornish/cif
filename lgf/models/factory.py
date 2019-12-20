@@ -30,6 +30,7 @@ from .components.bijections import (
     FFJORDBijection,
     PlanarBijection,
     ConditionalPlanarBijection,
+    ResidualFlowBijection
 )
 from .components.densities import (
     DiagonalGaussianDensity,
@@ -298,6 +299,13 @@ def get_bijection(
             num_u_channels=layer_config["num_u_channels"],
             cond_hidden_channels=layer_config["cond_hidden_channels"],
             cond_activation=get_activation(layer_config["cond_activation"])
+        )
+
+    elif layer_config["type"] == "resflow":
+        assert len(x_shape) == 1
+        return ResidualFlowBijection(
+            num_input_channels=x_shape[0],
+            hidden_channels=layer_config["hidden_channels"]
         )
 
     else:

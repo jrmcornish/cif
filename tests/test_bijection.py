@@ -27,7 +27,8 @@ from lgf.models.components.bijections import (
     TanhBijection,
     RandomChannelwisePermutationBijection,
     FFJORDBijection,
-    PlanarBijection
+    PlanarBijection,
+    ResidualFlowBijection
 )
 from lgf.models.factory import get_coupler
 
@@ -505,6 +506,17 @@ class TestRandomChannelwisePermutationBijection(_TestBijection, unittest.TestCas
         self.bijection = RandomChannelwisePermutationBijection(x_shape=(40, 32, 1))
 
 
+class TestResidualFlowBijection(_TestBijection, unittest.TestCase):
+    def setUp(self):
+        self.batch_size = 1000
+        self.u_shape = None
+        self.eps = 1e-4
+        self.bijection = ResidualFlowBijection(
+            num_input_channels=4,
+            hidden_channels=[20, 30]
+        )
+
+
 class TestFFJORDBijection(_TestBijection, unittest.TestCase):
     def setUp(self):
         self.batch_size = 1000
@@ -512,7 +524,10 @@ class TestFFJORDBijection(_TestBijection, unittest.TestCase):
         self.eps = 1e-4
         self.bijection = FFJORDBijection(
             x_shape=(10,),
-            velocity_hidden_channels=[20]*4
+            velocity_hidden_channels=[20]*2,
+            num_u_channels=0,
+            relative_tolerance=1e-5,
+            absolute_tolerance=1e-5
         )
 
 
@@ -524,7 +539,9 @@ class TestFFJORDConditionalBijection(_TestBijection, unittest.TestCase):
         self.bijection = FFJORDBijection(
             x_shape=(10,),
             velocity_hidden_channels=[20]*4,
-            num_u_channels=self.u_shape[0]
+            num_u_channels=self.u_shape[0],
+            relative_tolerance=1e-5,
+            absolute_tolerance=1e-5
         )
 
 

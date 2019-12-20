@@ -40,11 +40,21 @@ def config(dataset, use_baseline):
         "lr": 1e-3,
         "lr_schedule": "none",
         "weight_decay": 0.,
-        "epochs_per_test": 25,
+        "epochs_per_test": 5,
 
         "num_train_elbo_samples": 10,
         "num_valid_elbo_samples": 10,
         "num_test_elbo_samples": 100
+    }
+
+
+@provides("resflow")
+def resflow(dataset, model, use_baseline):
+    assert use_baseline
+    return {
+        "schema_type": "resflow",
+        "num_density_layers": 10,
+        "hidden_channels": [128] * 4
     }
 
 

@@ -8,5 +8,5 @@
 	path = gitmodules/ffjord
 	url = https://github.com/rtqichen/ffjord
 [submodule "gitmodules/residual-flows"]
-	path = gitmodules/residual-flows
+	path = gitmodules/residual_flows
 	url = https://github.com/rtqichen/residual-flows.git

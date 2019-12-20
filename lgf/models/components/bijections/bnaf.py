@@ -9,9 +9,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-sys.path.insert(0, str(Path(__file__).parents[4] / "gitmodules" / "BNAF"))
+sys.path.insert(0, str(Path(__file__).parents[4] / "gitmodules"))
 try:
-    from bnaf import BNAF, MaskedWeight, Tanh
+    from BNAF.bnaf import BNAF, MaskedWeight, Tanh
 finally:
     sys.path.pop(0)
 

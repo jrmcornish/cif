@@ -57,3 +57,5 @@ from .planar import (
     PlanarBijection,
     ConditionalPlanarBijection
 )
+
+from .resflow import ResidualFlowBijection
