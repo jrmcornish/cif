@@ -267,7 +267,8 @@ def get_coupler_net_config(net_spec, schema_type):
             }
 
         elif schema_type in [
-            "maf", "flat-realnvp", "sos", "nsf", "bnaf", "planar", "ffjord", "cond-affine"
+            "maf", "flat-realnvp", "sos", "nsf", "bnaf",
+            "planar", "ffjord", "cond-affine", "resflow"
         ]:
             return {
                 "type": "mlp",

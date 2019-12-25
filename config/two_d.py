@@ -50,12 +50,23 @@ def config(dataset, use_baseline):
 
 @provides("resflow")
 def resflow(dataset, model, use_baseline):
-    assert use_baseline
-    return {
+    config = {
         "schema_type": "resflow",
         "num_density_layers": 10,
-        "hidden_channels": [128] * 4
+        "hidden_channels": [128] * 4,
+
+        "st_nets": [10] * 2,
+        "p_nets": [10] * 2,
+        "q_nets": [10] * 2,
+
+        "max_epochs": 20000,
+        "max_bad_valid_epochs": 20000,
     }
+
+    if not use_baseline:
+        config["test_batch_size"] = 1000
+
+    return config
 
 
 @provides("affine")

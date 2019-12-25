@@ -52,12 +52,31 @@ def config(dataset, use_baseline):
     }
 
 
+@provides("resflow")
+def resflow(dataset, model, use_baseline):
+    config = {
+        "schema_type": "resflow",
+        "num_density_layers": 10,
+        "hidden_channels": [128] * 4,
+
+        "st_nets": [10] * 2,
+        "p_nets": [10] * 2,
+        "q_nets": [10] * 2
+    }
+
+    if not use_baseline:
+        config["valid_batch_size"] = 1000
+        config["test_batch_size"] = 1000
+
+    return config
+
+
 @provides("maf")
 def maf(dataset, model, use_baseline):
     if dataset in ["gas", "power"]:
         config = {
             "num_density_layers": 10,
-            "g_hidden_channels": [200] * 2 if use_baseline else [100] * 2,
+            "ar_map_hidden_channels": [200] * 2 if use_baseline else [100] * 2,
 
             "st_nets": [100] * 2,
             "p_nets": [200] * 2,
@@ -67,7 +86,7 @@ def maf(dataset, model, use_baseline):
     elif dataset in ["hepmass", "miniboone"]:
         config = {
             "num_density_layers": 10,
-            "g_hidden_channels": [512] * 2 if use_baseline else [128] * 2,
+            "ar_map_hidden_channels": [512] * 2 if use_baseline else [128] * 2,
 
             "st_nets": [128] * 2,
             "p_nets": [512] * 2,
