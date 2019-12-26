@@ -41,8 +41,8 @@ def config(dataset, use_baseline):
         "lr": 1e-3,
         "lr_schedule": "none",
         "weight_decay": 0.,
-        "max_bad_valid_epochs": 5000,
-        "max_epochs": 5000,
+        "max_bad_valid_epochs": 2000,
+        "max_epochs": 2000,
         "max_grad_norm": None,
         "epochs_per_test": 5,
 
