@@ -12,7 +12,8 @@ group(
         "rings",
         "2marginals",
         "1uniform",
-        "annulus"
+        "annulus",
+        "split-gaussian"
     ]
 )
 
@@ -156,15 +157,15 @@ def realnvp(dataset, model, use_baseline):
     return {
         "schema_type": "flat-realnvp",
 
-        "num_density_layers": 2,
+        "num_density_layers": 1,
         "coupler_shared_nets": True,
         "coupler_hidden_channels": [10] * 2,
 
-        "use_cond_affine": False,
+        "use_cond_affine": True,
 
         "st_nets": [10] * 2,
         "p_nets": [10] * 2,
-        "q_nets": [4] * 1,
+        "q_nets": [10] * 2,
     }
 
 

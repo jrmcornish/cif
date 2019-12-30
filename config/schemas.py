@@ -410,7 +410,7 @@ def get_flat_realnvp_schema(config):
             {
                 "type": "acl",
                 "mask_type": "alternating-channel",
-                "reverse_mask": i % 2 == 0,
+                "reverse_mask": i % 2 != 0,
                 "coupler": coupler_config,
                 "num_u_channels": 0
             },

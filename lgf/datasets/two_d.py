@@ -169,6 +169,13 @@ def get_2d_data(data, size):
         x2 = np.random.rand(size)
         data = np.stack((x1, x2), 1)
 
+    elif data == "split-gaussian":
+        x1 = np.random.normal(size=size)
+        x2 = np.random.normal(size=size)
+        x2[x1 >= 0] += 2
+        x2[x1 < 0] -= 2
+        data = np.stack((x1, x2), 1)
+
     else:
         assert False, f"Unknown dataset `{data}''"
 
