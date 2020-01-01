@@ -41,6 +41,10 @@ def train(config):
 def print_model(config):
     density, _, _, _ = setup_density_and_loaders(config, torch.device("cpu"))
     print(density)
+
+
+def print_num_params(config):
+    density, _, _, _ = setup_density_and_loaders(config, torch.device("cpu"))
     print(f"Number of parameters: {num_params(density):,}")
 
 

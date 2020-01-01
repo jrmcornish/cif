@@ -18,9 +18,10 @@ parser.add_argument("--model", choices=get_models(), required=True)
 parser.add_argument("--dataset", choices=get_datasets(), required=True)
 parser.add_argument("--baseline", action="store_true", help="Run baseline flow instead of LGF")
 parser.add_argument("--num-seeds", type=int, default=1, help="Number of random seeds to use.")
-parser.add_argument("--print-model", action="store_true", help="Print the model and exit")
-parser.add_argument("--print-schema", action="store_true", help="Print the model schema and exit")
 parser.add_argument("--print-config", action="store_true", help="Print the full config and exit")
+parser.add_argument("--print-schema", action="store_true", help="Print the model schema and exit")
+parser.add_argument("--print-model", action="store_true", help="Print the model and exit")
+parser.add_argument("--print-num-params", action="store_true", help="Print the number of parameters and exit")
 parser.add_argument("--checkpoints", choices=["best-valid", "latest", "both", "none"], default="both", help="Type of checkpoints to save (default: %(default)s)")
 parser.add_argument("--nosave", action="store_true", help="Don't save anything to disk")
 parser.add_argument("--data-root", default="data/", help="Location of training data (default: %(default)s)")
@@ -85,6 +86,12 @@ if args.print_model:
     from lgf.experiment import print_model
     for c in grid:
         print_model({**c, "write_to_disk": False})
+    should_train = False
+
+if args.print_num_params:
+    from lgf.experiment import print_num_params
+    for c in grid:
+        print_num_params({**c, "write_to_disk": False})
     should_train = False
 
 if args.print_schema:
