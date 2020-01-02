@@ -71,7 +71,11 @@ def load_run(run_dir, device):
 
     density, train_loader, valid_loader, test_loader = setup_density_and_loaders(config, device)
 
-    checkpoint = torch.load(run_dir / "checkpoints" / "best_valid.pt", map_location=device)
+    try:
+        checkpoint = torch.load(run_dir / "checkpoints" / "best_valid.pt", map_location=device)
+    except FileNotFoundError:
+        checkpoint = torch.load(run_dir / "checkpoints" / "latest.pt", map_location=device)
+
     print("Loaded checkpoint after epoch", checkpoint["epoch"])
 
     density.load_state_dict(checkpoint["module_state_dict"])
