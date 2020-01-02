@@ -305,7 +305,8 @@ def get_bijection(
         assert len(x_shape) == 1
         return ResidualFlowBijection(
             num_input_channels=x_shape[0],
-            hidden_channels=layer_config["hidden_channels"]
+            hidden_channels=layer_config["hidden_channels"],
+            lipschitz_constant=layer_config["lipschitz_constant"]
         )
 
     else:

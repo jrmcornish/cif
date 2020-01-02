@@ -57,6 +57,7 @@ def resflow(dataset, model, use_baseline):
         "schema_type": "resflow",
         "num_density_layers": 10,
         "hidden_channels": [128] * 4,
+        "lipschitz_constant": 0.9,
 
         "batch_norm": False,
 
@@ -81,6 +82,7 @@ def resflow(dataset, model, use_baseline):
         "schema_type": "resflow",
         "num_density_layers": 10,
         "hidden_channels": None,
+        "lipschitz_constant": None,
 
         "batch_norm": False,
 

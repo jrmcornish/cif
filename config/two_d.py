@@ -54,6 +54,7 @@ def resflow(dataset, model, use_baseline):
         "schema_type": "resflow",
         "num_density_layers": 10,
         "hidden_channels": [128] * 4,
+        "lipschitz_constant": 0.9,
 
         "st_nets": [10] * 2,
         "p_nets": [10] * 2,

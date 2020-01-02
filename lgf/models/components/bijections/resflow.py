@@ -25,7 +25,8 @@ class ResidualFlowBijection(Bijection):
     def __init__(
             self,
             num_input_channels,
-            hidden_channels
+            hidden_channels,
+            lipschitz_constant
     ):
         super().__init__(
             x_shape=(num_input_channels,),
@@ -35,10 +36,10 @@ class ResidualFlowBijection(Bijection):
         dims = [num_input_channels] + hidden_channels + [num_input_channels]
 
         self.layer = iResBlock(
-            self._build_nnet(dims),
+            self._build_nnet(dims, lipschitz_constant),
             n_dist="geometric",
 
-            # NOTE: this is the default from train_toy.py. Despite what the iResBlock  # docstring says, this setting uses unbiased estimation of the log Jacobian
+            # NOTE: this is the default from train_toy.py
             n_power_series=None,
 
             # NOTE: All settings are the defaults from train_toy.py
@@ -92,7 +93,7 @@ class ResidualFlowBijection(Bijection):
             if isinstance(m, modules_to_update):
                 m.compute_weight(update=True, n_iterations=num_iterations)
 
-    def _build_nnet(self, dims):
+    def _build_nnet(self, dims, lipschitz_constant):
         layers = []
         for i, (in_dim, out_dim) in enumerate(zip(dims[:-1], dims[1:])):
             layers += [
@@ -102,9 +103,9 @@ class ResidualFlowBijection(Bijection):
                 get_linear(
                     in_dim,
                     out_dim,
+                    coeff=lipschitz_constant,
 
                     # NOTE: settings all taken from defaults in train_toy.py
-                    coeff=0.9,
                     domain=2,
                     codomain=2,
 

@@ -609,7 +609,11 @@ def get_resflow_schema(config):
     result = [{"type": "flatten"}]
     for _ in range(config["num_density_layers"]):
         result += [
-            {"type": "resflow", "hidden_channels": config["hidden_channels"]},
+            {
+                "type": "resflow",
+                "hidden_channels": config["hidden_channels"],
+                "lipschitz_constant": config["lipschitz_constant"]
+            },
             {"type": "batch-norm", "per_channel": False}
         ]
     return result
