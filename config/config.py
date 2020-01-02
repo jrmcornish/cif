@@ -55,7 +55,6 @@ def get_config(dataset, model, use_baseline):
             "num_u_channels": 0,
             "use_cond_affine": False,
             "pure_cond_affine": False,
-            "num_train_elbo_samples": 1,
             "num_valid_elbo_samples": 1,
             "num_test_elbo_samples": 1,
         }

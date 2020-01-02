@@ -30,7 +30,6 @@ def test_baseline_glow_config():
         "max_grad_norm": None,
         "max_epochs": 1000,
         "epochs_per_test": 1,
-        "num_train_elbo_samples": 1,
         "num_valid_elbo_samples": 1,
         "num_test_elbo_samples": 1
     }
@@ -70,7 +69,6 @@ def test_lgf_glow_config():
         "max_grad_norm": None,
         "max_epochs": 1000,
         "epochs_per_test": 1,
-        "num_train_elbo_samples": 1,
         "num_valid_elbo_samples": 5,
         "num_test_elbo_samples": 10,
     }
@@ -123,7 +121,6 @@ def test_lgf_realnvp_config():
         "max_grad_norm": None,
         "max_epochs": 1000,
         "epochs_per_test": 1,
-        "num_train_elbo_samples": 1,
         "num_valid_elbo_samples": 5,
         "num_test_elbo_samples": 10,
     }
@@ -168,7 +165,6 @@ def test_baseline_realnvp_config():
         "max_grad_norm": None,
         "max_epochs": 1000,
         "epochs_per_test": 1,
-        "num_train_elbo_samples": 1,
         "num_valid_elbo_samples": 1,
         "num_test_elbo_samples": 1,
     }

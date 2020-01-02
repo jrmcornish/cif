@@ -46,7 +46,6 @@ def config(dataset, use_baseline):
         "max_grad_norm": None,
         "epochs_per_test": 5,
 
-        "num_train_elbo_samples": 1,
         "num_valid_elbo_samples": 5,
         "num_test_elbo_samples": 10,
     }
@@ -71,6 +70,36 @@ def resflow(dataset, model, use_baseline):
         config["test_batch_size"] = 1000
 
     return config
+
+
+@provides("resflow-no-g")
+def resflow(dataset, model, use_baseline):
+    assert not use_baseline
+    assert dataset == "miniboone"
+
+    config = {
+        "schema_type": "resflow",
+        "num_density_layers": 10,
+        "hidden_channels": None,
+
+        "batch_norm": False,
+
+        "use_cond_affine": True,
+        "pure_cond_affine": True,
+
+        "num_u_channels": 43,
+        "st_nets": [100] * 4,
+        "p_mu_nets": "identity",
+        "p_sigma_nets": "learned-constant",
+        "q_nets": [100] * 4
+    }
+
+    if not use_baseline:
+        config["valid_batch_size"] = 1000
+        config["test_batch_size"] = 1000
+
+    return config
+
 
 
 @provides("maf")
@@ -123,9 +152,10 @@ def nsf(dataset, model, use_baseline):
         "schema_type": "nsf",
 
         "autoregressive": True,
+        "num_density_layers": 10 if use_baseline else 5,
+        "tail_bound": 3,
 
         "batch_norm": False,
-        "tail_bound": 3,
 
         "opt": "adam",
         "lr_schedule": "cosine",
@@ -136,7 +166,11 @@ def nsf(dataset, model, use_baseline):
         "valid_batch_size": 5000,
         "test_batch_size": 5000,
 
-        "epochs_per_test": 5
+        "epochs_per_test": 5,
+
+        "st_nets": [75] * 2,
+        "p_nets": [75] * 2,
+        "q_nets": [75] * 2
     }
 
     if dataset in ["power", "gas", "hepmass"]:
@@ -148,16 +182,10 @@ def nsf(dataset, model, use_baseline):
 
         config = {
             "lr": 0.0005,
-            "num_density_layers": 10 if use_baseline else 5,
             "num_hidden_layers": 2,
             "num_hidden_channels": 256,
             "num_bins": 8,
             "dropout_probability": dropout,
-
-            "num_u_channels": 2 if dataset in ["power", "gas"] else 5,
-            "st_nets": 2 * [180],
-            "p_nets": 2 * [360],
-            "q_nets": 2 * [360]
         }
 
     elif dataset == "miniboone":
@@ -167,16 +195,10 @@ def nsf(dataset, model, use_baseline):
 
         config = {
             "lr": 0.0003,
-            "num_density_layers": 10 if use_baseline else 4,
             "num_hidden_layers": 1,
             "num_hidden_channels": 64,
             "num_bins": 4,
             "dropout_probability": 0.2,
-
-            "num_u_channels": 10,
-            "st_nets": 2 * [64],
-            "p_nets": 2 * [128],
-            "q_nets": 2 * [128]
         }
 
     else:
@@ -192,84 +214,3 @@ def nsf(dataset, model, use_baseline):
         "train_batch_size": batch_size
     }
 
-
-@provides("nsf-old")
-def nsf_old(dataset, model, use_baseline):
-    if dataset in ["power", "gas"]:
-        config = {
-            "num_density_layers": 10 if use_baseline else 7,
-            "num_hidden_layers": 2,
-            "num_hidden_channels": 256,
-            "num_bins": 8,
-            "dropout_probability": 0. if dataset == "power" else 0.1,
-
-            "st_nets": [120] * 2,
-            "p_nets": [240] * 2,
-            "q_nets": [240] * 2,
-
-            "lr": 0.0005,
-            "train_batch_size": 5120
-        }
-
-        # We convert the presecribed number of steps into epochs
-        if dataset == "gas":
-            config["max_epochs"] = (400_000 * 512) // 852_174
-        elif dataset == "power":
-            config["max_epochs"] = (400_000 * 512) // 1_615_917
-
-        # We run for a bit longer to ensure convergence
-        config["max_epochs"] += 100
-
-    elif dataset == "hepmass":
-        config = {
-            "num_density_layers": 20 if use_baseline else 10,
-            "num_hidden_layers": 1,
-            "num_hidden_channels": 128,
-            "num_bins": 8,
-            "dropout_probability": 0.2,
-
-            "st_nets": [64] * 2,
-            "p_nets": [192] * 2,
-            "q_nets": [192] * 2,
-
-            # We increase the lr and batch size by a factor of 10 from the prescribed values
-            "lr": 0.0005 * 10,
-            "train_batch_size": 256 * 10,
-
-            # We convert the presecribed number of steps into epochs, and run for 400
-            # epochs extra because we don't quite converge otherwise.
-            "max_epochs": (400_000 * 256) // 315_123 + 400
-        }
-
-    elif dataset == "miniboone":
-        config = {
-            "num_density_layers": 10 if use_baseline else 4,
-            "num_hidden_layers": 1,
-            "num_hidden_channels": 32,
-            "num_bins": 4,
-            "dropout_probability": 0.2,
-
-            "st_nets": [32] * 2,
-            "p_nets": [64] * 2,
-            "q_nets": [64] * 2,
-
-            # We increase the lr and batch size by a factor of 10 from the prescribed values
-            "lr": 0.0003 * 10,
-            "train_batch_size": 128 * 10,
-
-            # We convert the presecribed number of steps into epochs
-            "max_epochs": (200_000 * 128) // 29_556
-        }
-
-    return {
-        "schema_type": "nsf",
-
-        **config,
-
-        "tail_bound": 3,
-        "autoregressive": True,
-        "batch_norm": False,
-        "max_grad_norm": 5,
-
-        "lr_schedule": "cosine"
-    }

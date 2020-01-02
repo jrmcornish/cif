@@ -43,7 +43,6 @@ def config(dataset, use_baseline):
         "weight_decay": 0.,
         "epochs_per_test": 5,
 
-        "num_train_elbo_samples": 10,
         "num_valid_elbo_samples": 10,
         "num_test_elbo_samples": 100
     }
