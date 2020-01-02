@@ -18,8 +18,8 @@ from .writer import Writer, DummyWriter
 from config import get_schema
 
 
-def train(config):
-    density, trainer, writer = setup_experiment(config)
+def train(config, resume_dir):
+    density, trainer, writer = setup_experiment(config=config, resume_dir=resume_dir)
 
     writer.write_json("config", config)
 
@@ -93,7 +93,7 @@ def load_run(run_dir, device):
     return density, x_train, x_valid, x_test, config, checkpoint
 
 
-def setup_experiment(config):
+def setup_experiment(config, resume_dir):
     torch.manual_seed(config["seed"])
     np.random.seed(config["seed"]+1)
     random.seed(config["seed"]+2)
@@ -135,7 +135,14 @@ def setup_experiment(config):
         assert False, f"Invalid learning rate schedule `{config['lr_schedule']}'"
 
     if config["write_to_disk"]:
-        writer = Writer(logdir_root=config["logdir_root"], tag_group=config["dataset"])
+        if resume_dir is None:
+            logdir = config["logdir_root"]
+            make_subdir = True
+        else:
+            logdir = resume_dir
+            make_subdir = False
+
+        writer = Writer(logdir=logdir, make_subdir=make_subdir, tag_group=config["dataset"])
     else:
         writer = DummyWriter()
 

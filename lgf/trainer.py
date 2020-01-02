@@ -1,4 +1,5 @@
 import os
+from contextlib import suppress
 from collections import Counter
 
 import numpy as np
@@ -106,9 +107,6 @@ class Trainer:
         self._trainer.add_event_handler(Events.ITERATION_COMPLETED, TerminateOnNan())
         self._trainer.add_event_handler(Events.ITERATION_COMPLETED, self._log_training_info)
 
-        if should_checkpoint_latest:
-            self._trainer.add_event_handler(Events.EPOCH_COMPLETED, lambda _: self._save_checkpoint("latest"))
-
         ### Validation
 
         if early_stopping:
@@ -129,6 +127,21 @@ class Trainer:
 
         self._trainer.add_event_handler(Events.EPOCH_COMPLETED, self._test)
         self._tester.add_event_handler(Events.EPOCH_STARTED, lambda _: self._module.eval())
+
+        ### Checkpointing
+
+        if should_checkpoint_latest:
+            self._trainer.add_event_handler(Events.EPOCH_COMPLETED, lambda _: self._save_checkpoint("latest"))
+
+        try:
+            self._load_checkpoint("latest")
+        except FileNotFoundError:
+            print("Did not find `latest' checkpoint.")
+
+            try:
+                self._load_checkpoint("best_valid")
+            except FileNotFoundError:
+                print("Did not find `best_valid' checkpoint.")
 
     def train(self):
         self._trainer.run(data=self._train_loader, max_epochs=self._max_epochs)
@@ -237,3 +250,18 @@ class Trainer:
         }
 
         self._writer.write_checkpoint(tag, checkpoint)
+
+    def _load_checkpoint(self, tag):
+        checkpoint = self._writer.load_checkpoint(tag, device=self._device)
+
+        @self._trainer.on(Events.STARTED)
+        def resume_trainer_state(engine):
+            engine.state.epoch = checkpoint["epoch"]
+            engine.state.iteration = checkpoint["iteration"]
+
+        self._module.load_state_dict(checkpoint["module_state_dict"])
+        self._opt.load_state_dict(checkpoint["opt_state_dict"])
+        self._best_valid_loss = checkpoint["best_valid_loss"]
+        self._num_bad_valid_epochs = checkpoint["num_bad_valid_epochs"]
+
+        print(f"Loaded checkpoint `{tag}' after epoch {checkpoint['epoch']}")

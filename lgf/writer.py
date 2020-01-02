@@ -27,15 +27,17 @@ class Tee:
         self.secondary_file.flush()
 
 
+# TODO: Rename to LogDir or something since we load as well as write
 class Writer:
     _STDOUT = sys.stdout
     _STDERR = sys.stderr
 
-    def __init__(self, logdir_root, tag_group):
-        os.makedirs(logdir_root, exist_ok=True)
+    def __init__(self, logdir, make_subdir, tag_group):
+        if make_subdir:
+            os.makedirs(logdir, exist_ok=True)
 
-        timestamp = f"{datetime.datetime.now().strftime('%b%d_%H-%M-%S')}"
-        logdir = os.path.join(logdir_root, timestamp)
+            timestamp = f"{datetime.datetime.now().strftime('%b%d_%H-%M-%S')}"
+            logdir = os.path.join(logdir, timestamp)
 
         self._writer = SummaryWriter(logdir=logdir)
 
@@ -43,12 +45,12 @@ class Writer:
 
         sys.stdout = Tee(
             primary_file=self._STDOUT,
-            secondary_file=open(os.path.join(self._logdir, "stdout"), "w")
+            secondary_file=open(os.path.join(self._logdir, "stdout"), "a")
         )
 
         sys.stderr = Tee(
             primary_file=self._STDERR,
-            secondary_file=open(os.path.join(self._logdir, "stderr"), "w")
+            secondary_file=open(os.path.join(self._logdir, "stderr"), "a")
         )
 
     def write_scalar(self, tag, scalar_value, global_step=None):
@@ -83,7 +85,7 @@ class Writer:
 
     def write_checkpoint(self, tag, data):
         os.makedirs(self._checkpoints_dir, exist_ok=True)
-        checkpoint_path = os.path.join(self._checkpoints_dir, f"{tag}.pt")
+        checkpoint_path = self._checkpoint_path(tag)
 
         tmp_checkpoint_path = os.path.join(
             os.path.dirname(checkpoint_path),
@@ -93,6 +95,12 @@ class Writer:
         torch.save(data, tmp_checkpoint_path)
         # rename is atomic, so we guarantee our checkpoints are always good
         os.rename(tmp_checkpoint_path, checkpoint_path)
+
+    def load_checkpoint(self, tag, device):
+        return torch.load(self._checkpoint_path(tag), map_location=device)
+
+    def _checkpoint_path(self, tag):
+        return os.path.join(self._checkpoints_dir, f"{tag}.pt")
 
     @property
     def _checkpoints_dir(self):
