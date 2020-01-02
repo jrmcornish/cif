@@ -77,15 +77,17 @@ def load_run(run_dir, device):
 
     try:
         checkpoint = torch.load(run_dir / "checkpoints" / "best_valid.pt", map_location=device)
+        valid_exists = True
     except FileNotFoundError:
         checkpoint = torch.load(run_dir / "checkpoints" / "latest.pt", map_location=device)
+        valid_exists = False
 
     print("Loaded checkpoint after epoch", checkpoint["epoch"])
 
     density.load_state_dict(checkpoint["module_state_dict"])
 
     x_train = train_loader.dataset.x
-    x_valid = valid_loader.dataset.x
+    x_valid = None if not valid_exists else valid_loader.dataset.x
     x_test = test_loader.dataset.x
 
     return density, x_train, x_valid, x_test, config, checkpoint
