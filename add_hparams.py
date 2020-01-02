@@ -107,10 +107,11 @@ for path in tqdm.tqdm(glob.glob(f"{root}/*")):
         run_dir=path,
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
     )
+    num_elbo_samples = 1 if config["num_u_channels"] == 0 else 100
 
     density.eval()
     with torch.no_grad():
-        all_metrics = density.metrics(x_test, num_elbo_samples=100)
+        all_metrics = density.metrics(x_test, num_elbo_samples=num_elbo_samples)
 
     metrics = {
         "log-prob": all_metrics["log-prob"].mean().item(),
