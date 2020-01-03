@@ -1,4 +1,5 @@
 from .density import Density
+from .exact import BijectionDensity
 
 
 class ELBODensity(Density):
@@ -35,12 +36,20 @@ class ELBODensity(Density):
             "prior-dict": prior_dict
         }
 
+    def _fix_random_u(self):
+        fixed_prior, z = self.prior._fix_random_u()
+        z = z.unsqueeze(0)
+        u = self.p_u_density.sample(z)["sample"]
+        fixed_bijection = self.bijection.condition(u.squeeze(0))
+        new_z = fixed_bijection.z_to_x(z)["x"].squeeze(0)
+        return BijectionDensity(prior=fixed_prior, bijection=fixed_bijection), new_z
+
     def _sample(self, num_samples):
         z = self.prior.sample(num_samples)
         u = self.p_u_density.sample(z)["sample"]
         return self.bijection.z_to_x(z, u=u)["x"]
 
-    def _fixed_sample(self):
-        z = self.prior.fixed_sample()
+    def _fixed_sample(self, noise):
+        z = self.prior.fixed_sample(noise=noise)
         u = self.p_u_density.sample(z)["sample"]
         return self.bijection.z_to_x(z, u=u)["x"]

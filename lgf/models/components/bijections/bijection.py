@@ -35,11 +35,32 @@ class Bijection(nn.Module):
     def inverse(self):
         return InverseBijection(self)
 
+    # TODO: This is definitely not the best way to do things
+    def condition(self, u):
+        return ConditionedBijection(bijection=self, u=u)
+
     def _x_to_z(self, x, **kwargs):
         raise NotImplementedError
 
     def _z_to_x(self, z, **kwargs):
         raise NotImplementedError
+
+
+class ConditionedBijection(Bijection):
+    def __init__(self, bijection, u):
+        super().__init__(x_shape=bijection.x_shape, z_shape=bijection.z_shape)
+
+        self.bijection = bijection
+        self.register_buffer("u", u)
+
+    def _x_to_z(self, x, **kwargs):
+        return self.bijection.x_to_z(x, u=self._expand_u(x))
+
+    def _z_to_x(self, z, **kwargs):
+        return self.bijection.z_to_x(z, u=self._expand_u(z))
+
+    def _expand_u(self, inputs):
+        return self.u.unsqueeze(0).expand(inputs.shape[0], *[-1 for _ in self.u.shape])
 
 
 class InverseBijection(Bijection):

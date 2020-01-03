@@ -11,6 +11,11 @@ class BijectionDensity(Density):
         self.bijection = bijection
         self.prior = prior
 
+    def _fix_random_u(self):
+        fixed_prior, z = self.prior._fix_random_u()
+        new_z = self.bijection.z_to_x(z.unsqueeze(0))["x"].squeeze(0)
+        return BijectionDensity(bijection=self.bijection, prior=fixed_prior), new_z
+
     def _elbo(self, x):
         result = self.bijection.x_to_z(x)
         prior_dict = self.prior.elbo(result["z"])
@@ -24,8 +29,8 @@ class BijectionDensity(Density):
         z = self.prior.sample(num_samples)
         return self.bijection.z_to_x(z)["x"]
 
-    def _fixed_sample(self):
-        z = self.prior.fixed_sample()
+    def _fixed_sample(self, noise):
+        z = self.prior.fixed_sample(noise=noise)
         return self.bijection.z_to_x(z)["x"]
 
 

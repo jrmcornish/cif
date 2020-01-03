@@ -55,6 +55,9 @@ class DiagonalGaussianDensity(Density):
     def shape(self):
         return self.mean.shape
 
+    def _fix_random_u(self):
+        return self, self.sample(num_samples=1)[0]
+
     def _elbo(self, w):
         log_prob = diagonal_gaussian_log_prob(
             w,
@@ -70,8 +73,8 @@ class DiagonalGaussianDensity(Density):
         )
         return samples
 
-    def _fixed_sample(self):
-        return self._fixed_samples
+    def _fixed_sample(self, noise):
+        return noise
 
 
 class DiagonalGaussianConditionalDensity(nn.Module):
