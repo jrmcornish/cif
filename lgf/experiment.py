@@ -72,25 +72,21 @@ def load_run(run_dir, device):
 
     with open(run_dir / "config.json", "r") as f:
         config = json.load(f)
+        if config["num_u_channels"] > 0:
+            config["test_batch_size"] = 100
 
     density, train_loader, valid_loader, test_loader = setup_density_and_loaders(config, device)
 
     try:
         checkpoint = torch.load(run_dir / "checkpoints" / "best_valid.pt", map_location=device)
-        valid_exists = True
     except FileNotFoundError:
         checkpoint = torch.load(run_dir / "checkpoints" / "latest.pt", map_location=device)
-        valid_exists = False
 
     print("Loaded checkpoint after epoch", checkpoint["epoch"])
 
     density.load_state_dict(checkpoint["module_state_dict"])
 
-    x_train = train_loader.dataset.x
-    x_valid = None if not valid_exists else valid_loader.dataset.x
-    x_test = test_loader.dataset.x
-
-    return density, x_train, x_valid, x_test, config, checkpoint
+    return density, train_loader, valid_loader, test_loader, config, checkpoint
 
 
 def setup_experiment(config, resume_dir):
