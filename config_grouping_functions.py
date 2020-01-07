@@ -72,7 +72,7 @@ def simplify_value(val):
 
 
 def group_runs(root):
-    keys = differing_keys(model_dir)
+    keys = differing_keys(root)
 
     groups = {}
     for run in glob.glob(f"{root}/*"):

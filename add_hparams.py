@@ -22,6 +22,7 @@ keys = differing_keys(root)
 for path in tqdm.tqdm(glob.glob(f"{root}/*")):
     metrics_path = os.path.join(path, "metrics.json")
     if os.path.exists(metrics_path):
+        print("Skipping {}".format(path))
         continue
 
     vals = get_config_values(keys, path)
@@ -59,10 +60,10 @@ for path in tqdm.tqdm(glob.glob(f"{root}/*")):
         "num-params": num_params(density),
         "test-elbo-samples": num_elbo_samples
     }
-    metrics = {f"hparams/{k}": v for k, v in metrics.items()}
-
     with open(metrics_path, "w") as f:
         json.dump(metrics, f, indent=4)
+    
+    metrics = {f"hparams/{k}": v for k, v in metrics.items()}
 
     writer = SummaryWriter(logdir=path)
     writer.add_hparams(hparam_dict=vals, metric_dict=metrics)

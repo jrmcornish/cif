@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import glob
 import os
 import sys
 import shutil
@@ -31,3 +32,4 @@ for model_dir in glob.glob(f"{root}/*/*"):
         os.makedirs(group_dir)
         for run in group:
             shutil.move(run, group_dir)
+
