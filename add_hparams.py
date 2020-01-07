@@ -11,7 +11,7 @@ from tensorboardX import SummaryWriter
 
 import tqdm
 
-from ..lgf.experiment import load_run, num_params
+from lgf.experiment import load_run, num_params
 from config_grouping_functions import differing_keys, get_config_values
 
 root = sys.argv[1]
