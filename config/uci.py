@@ -1,4 +1,4 @@
-from .dsl import group, base, provides
+from .dsl import group, base, provides, GridParams
 
 
 group(
@@ -41,7 +41,7 @@ def config(dataset, use_baseline):
         "lr": 1e-3,
         "lr_schedule": "none",
         "weight_decay": 0.,
-        "max_bad_valid_epochs": 2000,
+        "max_bad_valid_epochs": 100,
         "max_epochs": 2000,
         "max_grad_norm": None,
         "epochs_per_test": 5,
@@ -71,6 +71,92 @@ def resflow(dataset, model, use_baseline):
         config["test_batch_size"] = 1000
 
     return config
+
+
+# Gives z = s(u)*x + t(u) <=> x = (z - t(u)) / s(u), u ~ N(0, I)
+# In other words, x|u ~ N(-t(u)/s(u), I / s(u))
+# TODO: Try alternative, more natural s/t parameterisation
+@provides("vae-like-resflow")
+def vae(dataset, model, use_baseline):
+    assert not use_baseline
+    return {
+        "schema_type": "cond-affine",
+        "num_density_layers": 10,
+
+        "batch_norm": False,
+
+        "st_nets": [128] * 4,
+        "p_nets": "fixed-constant",
+        "q_nets": GridParams([10] * 2, [100] * 4)
+    }
+
+
+# Gives z = x + mu(x) + sigma(x)*w, w ~ N(0, I)
+@provides("linear-cond-affine-like-resflow")
+def resflow(dataset, model, use_baseline):
+    assert not use_baseline
+
+    num_u_channels = {
+        "miniboone": 43,
+        "hepmass": 21,
+        "gas": 8,
+        "power": 6
+    }[dataset]
+
+    config = {
+        "schema_type": "cond-affine",
+        "num_density_layers": 10,
+
+        "num_u_channels": num_u_channels,
+
+        "batch_norm": False,
+
+        "s_nets": "fixed-constant",
+        "t_nets": "identity",
+        "p_nets": [128] * 4,
+        "q_nets": GridParams([10] * 2, [100] * 4)
+    }
+
+    if not use_baseline:
+        config["valid_batch_size"] = 1000
+        config["test_batch_size"] = 1000
+
+    return config
+
+
+# Gives z = x + t(mu(x) + sigma(x)*w), w ~ N(0, I)
+@provides("nonlinear-cond-affine-like-resflow")
+def resflow(dataset, model, use_baseline):
+    assert not use_baseline
+
+    num_u_channels = {
+        "miniboone": 43,
+        "hepmass": 21,
+        "gas": 8,
+        "power": 6
+    }[dataset]
+
+
+    config = {
+        "schema_type": "cond-affine",
+        "num_density_layers": 10,
+
+        "num_u_channels": num_u_channels,
+
+        "batch_norm": False,
+
+        "s_nets": "fixed-constant",
+        "t_nets": [128] * 2,
+        "p_nets": [128] * 2,
+        "q_nets": GridParams([10] * 2, [100] * 4)
+    }
+
+    if not use_baseline:
+        config["valid_batch_size"] = 1000
+        config["test_batch_size"] = 1000
+
+    return config
+
 
 
 @provides("resflow-no-g")
