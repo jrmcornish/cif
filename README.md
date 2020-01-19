@@ -31,7 +31,7 @@ Our code runs on several types of datasets, including synthetic 2-D data, UCI da
 
 The 2-D datasets are automatically generated, and the image datasets are downloaded automatically. However the UCI datasets will need to be manually downloaded from [this location](https://zenodo.org/record/1161203). The following should do the trick:
 
-    mkdir -p DATA_ROOT && wget -O - https://zenodo.org/record/1161203/files/data.tar.gz | tar --strip-components=1 -C DATA_ROOT -xvzf - data/{gas,hepmass,miniboone,power}
+    mkdir -p DATA_ROOT && wget -O - https://zenodo.org/record/1161203/files/data.tar.gz | tar --strip-components=1 -C DATA_ROOT -xvzf - data/{gas,hepmass,miniboone,power,BSDS300}
 
 Replace `DATA_ROOT` with the desired path to the data files. This path then needs to be specified as an argument to `main.py`.
 

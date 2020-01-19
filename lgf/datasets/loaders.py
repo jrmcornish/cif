@@ -30,7 +30,7 @@ def get_loaders(
     if dataset in ["cifar10", "svhn", "mnist", "fashion-mnist"]:
         train_dset, valid_dset, test_dset = get_image_datasets(dataset, data_root, make_valid_loader)
 
-    elif dataset in ["miniboone", "hepmass", "power", "gas"]:
+    elif dataset in ["miniboone", "hepmass", "power", "gas", "bsds300"]:
         # TODO: Make make_valid_loader apply here too
         train_dset, valid_dset, test_dset = get_UCI_datasets(dataset, data_root)
 

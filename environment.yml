@@ -15,6 +15,7 @@ dependencies:
   - tensorboardx
   - tqdm
   - pytest
+  - h5py
   - pip
   - pip:
     - pyro-ppl>=1.0

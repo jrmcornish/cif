@@ -8,6 +8,8 @@ import torch
 
 import pandas
 
+import h5py
+
 from .supervised_dataset import SupervisedDataset
 
 
@@ -136,6 +138,14 @@ def get_power_raw(data_root):
     return train_raw, valid_raw, test_raw
 
 
+def get_bsds300_raw(data_root):
+    with h5py.File(os.path.join(data_root, "BSDS300", "BSDS300.hdf5"), "r") as f:
+        train_raw = f["train"][()]
+        valid_raw = f["validation"][()]
+        test_raw = f["test"][()]
+    return train_raw, valid_raw, test_raw
+
+
 def get_raw_UCI_datasets(name, data_root):
     if name == "miniboone":
         data_fn = get_miniboone_raw
@@ -145,6 +155,8 @@ def get_raw_UCI_datasets(name, data_root):
         data_fn = get_hepmass_raw
     elif name == "power":
         data_fn = get_power_raw
+    elif name == "bsds300":
+        data_fn = get_bsds300_raw
     else:
         raise NotImplementedError
 

@@ -7,19 +7,21 @@ group(
         "gas",
         "hepmass",
         "power",
-        "miniboone"
+        "miniboone",
+        "bsds300"
     ]
 )
 
 
 @base
 def config(dataset, use_baseline):
-    if dataset in ["gas", "power"]:
-        num_u_channels = 2
-    elif dataset == "hepmass":
-        num_u_channels = 5
-    else:
-        num_u_channels = 10
+    num_u_channels = {
+        "gas": 2,
+        "power": 2,
+        "hepmass": 5,
+        "miniboone": 10,
+        "bsds300": 15
+    }[dataset]
 
     return {
         "num_u_channels": num_u_channels,
