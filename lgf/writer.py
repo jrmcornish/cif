@@ -93,8 +93,8 @@ class Writer:
         )
 
         torch.save(data, tmp_checkpoint_path)
-        # rename is atomic, so we guarantee our checkpoints are always good
-        os.rename(tmp_checkpoint_path, checkpoint_path)
+        # replace is atomic, so we guarantee our checkpoints are always good
+        os.replace(tmp_checkpoint_path, checkpoint_path)
 
     def load_checkpoint(self, tag, device):
         return torch.load(self._checkpoint_path(tag), map_location=device)

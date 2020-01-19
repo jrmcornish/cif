@@ -230,6 +230,7 @@ def get_coupler_config(shift_prefix, log_scale_prefix, shift_log_scale_prefix, c
     shift_log_scale_key = f"{shift_log_scale_prefix}_nets"
 
     if shift_key in config and log_scale_key in config:
+        assert shift_log_scale_key not in config, "Over-specified coupler config"
         return {
             "independent_nets": True,
             "shift_net": get_coupler_net_config(config[shift_key], schema_type),
@@ -237,6 +238,8 @@ def get_coupler_config(shift_prefix, log_scale_prefix, shift_log_scale_prefix, c
         }
 
     elif shift_log_scale_key in config:
+        assert shift_key not in config and log_scale_key not in config, \
+                "Over-specified coupler config"
         return {
             "independent_nets": False,
             "shift_log_scale_net": get_coupler_net_config(config[shift_log_scale_key], schema_type)
