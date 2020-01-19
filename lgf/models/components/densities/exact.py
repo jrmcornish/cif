@@ -16,6 +16,10 @@ class BijectionDensity(Density):
         new_z = self.bijection.z_to_x(z.unsqueeze(0))["x"].squeeze(0)
         return BijectionDensity(bijection=self.bijection, prior=fixed_prior), new_z
 
+    def fix_u(self, u):
+        fixed_prior = self.prior.fix_u(u=u)
+        return BijectionDensity(bijection=self.bijection, prior=fixed_prior)
+
     def _elbo(self, x):
         result = self.bijection.x_to_z(x)
         prior_dict = self.prior.elbo(result["z"])

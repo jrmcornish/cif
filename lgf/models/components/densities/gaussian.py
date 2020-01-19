@@ -58,6 +58,10 @@ class DiagonalGaussianDensity(Density):
     def _fix_random_u(self):
         return self, self.sample(num_samples=1)[0]
 
+    def fix_u(self, u):
+        assert not u
+        return self
+
     def _elbo(self, w):
         log_prob = diagonal_gaussian_log_prob(
             w,

@@ -46,6 +46,9 @@ class Density(nn.Module):
     def _fix_random_u(self):
         raise NotImplementedError
 
+    def fix_u(self, u):
+        raise NotImplementedError
+
     def elbo(self, x):
         return self("elbo", x)
 
