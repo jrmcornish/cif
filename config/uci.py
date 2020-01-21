@@ -43,7 +43,7 @@ def config(dataset, use_baseline):
         "lr": 1e-3,
         "lr_schedule": "none",
         "weight_decay": 0.,
-        "max_bad_valid_epochs": 100,
+        "max_bad_valid_epochs": 50,
         "max_epochs": 2000,
         "max_grad_norm": None,
         "epochs_per_test": 5,
@@ -75,27 +75,26 @@ def resflow(dataset, model, use_baseline):
     return config
 
 
-# Gives z = s(u)*x + t(u) <=> x = (z - t(u)) / s(u), u ~ N(0, I)
-# In other words, x|u ~ N(-t(u)/s(u), I / s(u))
-# TODO: Try alternative, more natural s/t parameterisation
-@provides("vae-like-resflow")
-def vae(dataset, model, use_baseline):
+# TODO: Could also try p_nets=[128]*4, st_nets=[10]*2
+@provides("cond-affine")
+def cond_affine(dataset, model, use_baseline):
     assert not use_baseline
+
     return {
         "schema_type": "cond-affine",
         "num_density_layers": 10,
 
         "batch_norm": False,
 
-        "st_nets": [128] * 4,
-        "p_nets": "fixed-constant",
+        "st_nets": [128] * 2,
+        "p_nets": [128] * 2,
         "q_nets": GridParams([10] * 2, [100] * 4)
     }
 
 
 # Gives z = x + mu(x) + sigma(x)*w, w ~ N(0, I)
 @provides("linear-cond-affine-like-resflow")
-def resflow(dataset, model, use_baseline):
+def linear_cond_affine_like_resflow(dataset, model, use_baseline):
     assert not use_baseline
 
     num_u_channels = {
@@ -128,7 +127,7 @@ def resflow(dataset, model, use_baseline):
 
 # Gives z = x + t(mu(x) + sigma(x)*w), w ~ N(0, I)
 @provides("nonlinear-cond-affine-like-resflow")
-def resflow(dataset, model, use_baseline):
+def nonlinear_cond_affine_like_resflow(dataset, model, use_baseline):
     assert not use_baseline
 
     num_u_channels = {
@@ -160,9 +159,8 @@ def resflow(dataset, model, use_baseline):
     return config
 
 
-
 @provides("resflow-no-g")
-def resflow(dataset, model, use_baseline):
+def resflow_no_g(dataset, model, use_baseline):
     assert not use_baseline
     assert dataset == "miniboone"
 
