@@ -240,7 +240,7 @@ def nsf(dataset, model, use_baseline):
         "schema_type": "nsf",
 
         "autoregressive": True,
-        "num_density_layers": 10 if use_baseline else 5,
+        "num_density_layers": 10 if use_baseline else 10,
         "tail_bound": 3,
 
         "batch_norm": False,
@@ -256,9 +256,9 @@ def nsf(dataset, model, use_baseline):
 
         "epochs_per_test": 5,
 
-        "st_nets": [75] * 2,
-        "p_nets": [75] * 2,
-        "q_nets": [75] * 2
+        "st_nets": [100] * 3,
+        "p_nets": [200] * 3,
+        "q_nets": [10] * 2
     }
 
     if dataset in ["power", "gas", "hepmass"]:
