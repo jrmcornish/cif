@@ -256,24 +256,25 @@ def nsf(dataset, model, use_baseline):
 
         "epochs_per_test": 5,
 
-        "st_nets": [100] * 3,
-        "p_nets": [200] * 3,
         "q_nets": [10] * 2
     }
 
-    if dataset in ["power", "gas", "hepmass"]:
-        dropout = {"power": 0., "gas": 0.1, "hepmass": 0.2}[dataset]
+    if dataset in ["power", "gas", "hepmass", "bsds300"]:
+        dropout = {"power": 0., "gas": 0.1, "hepmass": 0.2, "bsds300": 0.2}[dataset]
 
-        dset_size = {"power": 1_615_917, "gas": 852_174, "hepmass": 315_123}[dataset]
+        dset_size = {"power": 1_615_917, "gas": 852_174, "hepmass": 315_123, "bsds300": 1_000_000}[dataset]
         batch_size = 512
         train_steps = 400_000
 
         config = {
             "lr": 0.0005,
             "num_hidden_layers": 2,
-            "num_hidden_channels": 256,
+            "num_hidden_channels": 512 if dataset == "bsds300" else 256,
             "num_bins": 8,
             "dropout_probability": dropout,
+            
+            "st_nets": [100] * 3,
+            "p_nets": [200] * 3,
         }
 
     elif dataset == "miniboone":
@@ -287,6 +288,9 @@ def nsf(dataset, model, use_baseline):
             "num_hidden_channels": 64,
             "num_bins": 4,
             "dropout_probability": 0.2,
+            
+            "st_nets": [25] * 3,
+            "p_nets": [50] * 3,
         }
 
     else:
