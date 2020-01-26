@@ -46,7 +46,8 @@ from .components.networks import (
     ConstantNetwork,
     get_mlp,
     get_resnet,
-    get_glow_cnn
+    get_glow_cnn,
+    get_lipschitz_mlp
 )
 
 
@@ -303,10 +304,15 @@ def get_bijection(
 
     elif layer_config["type"] == "resflow":
         assert len(x_shape) == 1
+        num_x_channels = x_shape[0]
         return ResidualFlowBijection(
-            num_input_channels=x_shape[0],
-            hidden_channels=layer_config["hidden_channels"],
-            lipschitz_constant=layer_config["lipschitz_constant"]
+            num_input_channels=num_x_channels,
+            net=get_lipschitz_mlp(
+                num_input_channels=num_x_channels,
+                hidden_channels=layer_config["hidden_channels"],
+                num_output_channels=num_x_channels,
+                lipschitz_constant=layer_config["lipschitz_constant"]
+            )
         )
 
     else:

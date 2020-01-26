@@ -7,8 +7,6 @@ sys.path.insert(0, str(Path(__file__).parents[4] / "gitmodules"))
 try:
     from residual_flows.lib.layers import iResBlock
     from residual_flows.lib.layers.base import (
-        Swish,
-        get_linear,
         SpectralNormConv2d,
         SpectralNormLinear,
         InducedNormConv2d,
@@ -22,24 +20,13 @@ from .bijection import Bijection
 
 # Constitutes a single block
 class ResidualFlowBijection(Bijection):
-    def __init__(
-            self,
-            num_input_channels,
-            hidden_channels,
-            lipschitz_constant
-    ):
+    def __init__(self, num_input_channels, net):
         super().__init__(
             x_shape=(num_input_channels,),
             z_shape=(num_input_channels,)
         )
 
-        self.layer = self._get_iresblock(
-            net=self._get_net(
-                num_input_channels=num_input_channels,
-                hidden_channels=hidden_channels,
-                lipschitz_constant=lipschitz_constant
-            )
-        )
+        self.layer = self._get_iresblock(net=net)
 
         self.register_forward_pre_hook(self._update_lipschitz_forward_hook)
         self.register_backward_hook(self._queue_lipschitz_update_backward_hook)
@@ -74,18 +61,10 @@ class ResidualFlowBijection(Bijection):
                 self._requires_train_lipschitz_update = False
 
     def _update_lipschitz(self, num_iterations):
-        modules_to_update = (
-            InducedNormConv2d,
-            InducedNormLinear,
-
-            # NOTE: These two are here for completeness but should never occur,
-            # since `get_linear` and `get_conv2d` in the `residual_flows` repo 
-            # only create InducedNorm layers
-            SpectralNormConv2d,
-            SpectralNormLinear
-        )
+        modules_to_update = (InducedNormConv2d, InducedNormLinear)
 
         for m in self.layer.modules():
+            # TODO: Would be better to have the net inside self.layer do this itself
             if isinstance(m, modules_to_update):
                 m.compute_weight(
                     # Updates the estimate of the operator norm, i.e.
@@ -104,58 +83,6 @@ class ResidualFlowBijection(Bijection):
                     # NOTE: If both `n_iterations` and `(atol, rtol)` are specified,
                     # then power iterations are stopped when the first condition is met.
                 )
-
-    def _get_net(self, num_input_channels, hidden_channels, lipschitz_constant):
-        layers = []
-        prev_num_channels = num_input_channels
-        for i, num_channels in enumerate(hidden_channels + [num_input_channels]):
-            layers += [
-                Swish(),
-                self._get_linear_layer(
-                    num_input_channels=prev_num_channels,
-                    num_output_channels=num_channels,
-                    lipschitz_constant=lipschitz_constant,
-
-                    # Zero the weight matrix of the final layer. Done to align with
-                    # `train_toy.py`.
-                    zero_init=(i == len(hidden_channels))
-                )
-            ]
-
-            prev_num_channels = num_channels
-
-        return torch.nn.Sequential(*layers)
-
-    def _get_linear_layer(
-            self,
-            num_input_channels,
-            num_output_channels,
-            lipschitz_constant,
-            zero_init
-    ):
-        return get_linear(
-            in_features=num_input_channels,
-            out_features=num_output_channels,
-
-            # Corresponds to kappa in "Residual Flows" paper or c in original iResNet paper
-            coeff=lipschitz_constant,
-
-            # p-norms to use for the domain and codomain when enforcing Lipschitz constraint.
-            # We set these to 2 for simplicity in line with the discussion in Appendix D of 
-            # ResFlows paper.
-            domain=2,
-            codomain=2,
-
-            # Parameters to determine number of power iterations used when estimating the
-            # Lipschitz constant. These can all be set directly by the call to
-            # `compute_weight` as we do above, so these are all None here.
-            n_iterations=None,
-            atol=None,
-            rtol=None,
-
-            # (Approximately) zeros the weight matrix
-            zero_init=zero_init
-        )
 
     def _get_iresblock(self, net):
         return iResBlock(

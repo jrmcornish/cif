@@ -1,6 +1,19 @@
+import sys
+from pathlib import Path
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+sys.path.insert(0, str(Path(__file__).parents[3] / "gitmodules"))
+try:
+    from residual_flows.lib.layers.base import (
+        Swish,
+        InducedNormLinear,
+        InducedNormConv2d
+    )
+finally:
+    sys.path.pop(0)
 
 
 class ConstantNetwork(nn.Module):
@@ -44,7 +57,7 @@ class ResidualBlock(nn.Module):
             kernel_size=3,
             stride=1,
             padding=1,
-            bias=False
+            bias=False # TODO: Should we have a bias after the second convolution?
         )
 
 
@@ -112,6 +125,7 @@ def get_glow_cnn(num_input_channels, num_hidden_channels, num_output_channels):
         in_channels=num_hidden_channels,
         out_channels=num_hidden_channels,
         kernel_size=1,
+        padding=0,
         bias=False
     )
 
@@ -214,3 +228,127 @@ class AutoregressiveMLP(nn.Module):
         result = self.flat_ar_mlp(inputs)
         result = result.view(inputs.shape[0], self.num_output_heads, self.num_input_channels)
         return result
+
+
+def get_lipschitz_mlp(
+        num_input_channels,
+        hidden_channels,
+        num_output_channels,
+        lipschitz_constant
+):
+    layers = []
+    prev_num_channels = num_input_channels
+    for i, num_channels in enumerate(hidden_channels + [num_output_channels]):
+        layers += [
+            Swish(),
+            _get_lipschitz_linear_layer(
+                num_input_channels=prev_num_channels,
+                num_output_channels=num_channels,
+                lipschitz_constant=lipschitz_constant,
+
+                # Zero the weight matrix of the final layer. Done to align with
+                # `train_toy.py`.
+                zero_init=(i == len(hidden_channels))
+            )
+        ]
+
+        prev_num_channels = num_channels
+
+    return nn.Sequential(*layers)
+
+
+def _get_lipschitz_linear_layer(
+        num_input_channels,
+        num_output_channels,
+        lipschitz_constant,
+        zero_init
+):
+    return InducedNormLinear(
+        in_features=num_input_channels,
+        out_features=num_output_channels,
+
+        # Corresponds to kappa in "Residual Flows" paper or c in original iResNet paper
+        coeff=lipschitz_constant,
+
+        # p-norms to use for the domain and codomain when enforcing Lipschitz constraint.
+        # We set these to 2 for simplicity in line with the discussion in Appendix D of 
+        # ResFlows paper.
+        domain=2,
+        codomain=2,
+
+        # Parameters to determine number of power iterations used when estimating the
+        # Lipschitz constant. These can all be set directly when calling `compute_weight`,
+        # so we make None here.
+        n_iterations=None,
+        atol=None,
+        rtol=None,
+
+        # (Approximately) zeros the weight matrix
+        zero_init=zero_init
+    )
+
+
+def get_lipschitz_cnn(
+        num_input_channels,
+        num_hidden_channels,
+        num_output_channels,
+        lipschitz_constant
+):
+    conv1 = _get_lipschitz_conv_layer(
+        num_input_channels=num_input_channels,
+        num_output_channels=num_hidden_channels,
+        kernel_size=3,
+        padding=1,
+        lipschitz_constant=lipschitz_constant
+    )
+
+    conv2 = _get_lipschitz_conv_layer(
+        num_input_channels=num_hidden_channels,
+        num_output_channels=num_hidden_channels,
+        kernel_size=1,
+        padding=0,
+        lipschitz_constant=lipschitz_constant
+    )
+
+    conv3 = _get_lipschitz_conv_layer(
+        num_input_channels=num_hidden_channels,
+        num_output_channels=num_output_channels,
+        kernel_size=3,
+        padding=1,
+        lipschitz_constant=lipschitz_constant
+    )
+
+    lipswish = Swish()
+
+    return nn.Sequential(lipswish, conv1, lipswish, conv2, lipswish, conv3)
+
+
+def _get_lipschitz_conv_layer(
+        num_input_channels,
+        num_output_channels,
+        kernel_size,
+        padding,
+        lipschitz_constant
+):
+    return InducedNormConv2d(
+        in_channels=num_input_channels,
+        out_channels=num_hidden_channels,
+
+        kernel_size=kernel_size,
+        stride=1,
+        padding=padding,
+
+        # We always add bias since we don't use batch norm in our Lipschitz CNNs
+        bias=True,
+
+        coeff=lipschitz_constant,
+
+        # See note in `_get_lipschitz_linear_layer`
+        domain=2,
+        codomain=2,
+
+        # See note in `_get_lipschitz_linear_layer`
+        n_iterations=None,
+        atol=None,
+        rtol=None
+    )
