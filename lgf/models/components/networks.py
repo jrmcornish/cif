@@ -31,46 +31,45 @@ class ConstantNetwork(nn.Module):
 class ResidualBlock(nn.Module):
     def __init__(self, num_channels):
         super().__init__()
-        self.conv1 = self._get_conv3x3(num_channels)
         self.bn1 = nn.BatchNorm2d(num_channels)
-        self.conv2 = self._get_conv3x3(num_channels)
+        self.conv1 = self._get_conv3x3(num_channels, bias=False)
         self.bn2 = nn.BatchNorm2d(num_channels)
-        self.relu = nn.ReLU()
+        self.conv2 = self._get_conv3x3(num_channels, bias=True)
 
     def forward(self, inputs):
         out = self.bn1(inputs)
-        out = self.relu(out)
+        out = torch.relu(out)
         out = self.conv1(out)
 
         out = self.bn2(out)
-        out = self.relu(out)
+        out = torch.relu(out)
         out = self.conv2(out)
 
         out = out + inputs
 
         return out
 
-    def _get_conv3x3(self, num_channels):
+    def _get_conv3x3(self, num_channels, bias):
         return nn.Conv2d(
             in_channels=num_channels,
             out_channels=num_channels,
             kernel_size=3,
             stride=1,
             padding=1,
-            bias=False # TODO: Should we have a bias after the second convolution?
+            bias=bias
         )
 
 
-# TODO: Add a bias
 class ScaledTanh2dModule(nn.Module):
     def __init__(self, module, num_channels):
         super().__init__()
         self.module = module
         self.weights = nn.Parameter(torch.ones(num_channels, 1, 1))
+        self.bias = nn.Parameter(torch.zeros(num_channels, 1, 1))
 
     def forward(self, inputs):
         out = self.module(inputs)
-        out = self.weights * torch.tanh(out)
+        out = self.weights * torch.tanh(out) + self.bias
         return out
 
 
