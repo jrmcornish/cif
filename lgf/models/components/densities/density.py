@@ -55,7 +55,7 @@ class Density(nn.Module):
     def sample(self, num_samples):
         return self("sample", num_samples)
 
-    def fixed_sample(self, noise):
+    def fixed_sample(self, noise=None):
         return self("fixed-sample", noise)
 
     def _elbo(self, x):

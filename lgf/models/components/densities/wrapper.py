@@ -14,8 +14,8 @@ class DequantizationDensity(Density):
     def _sample(self, num_samples):
         return self.density.sample(num_samples)
 
-    def _fixed_sample(self):
-        return self.density.fixed_sample()
+    def _fixed_sample(self, noise):
+        return self.density.fixed_sample(noise=noise)
 
 
 class PassthroughBeforeEvalDensity(Density):
@@ -43,5 +43,5 @@ class PassthroughBeforeEvalDensity(Density):
     def _sample(self, num_samples):
         return self.density.sample(num_samples)
 
-    def _fixed_sample(self):
-        return self.density.fixed_sample()
+    def _fixed_sample(self, noise):
+        return self.density.fixed_sample(noise=noise)

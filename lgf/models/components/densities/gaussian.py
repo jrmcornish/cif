@@ -78,7 +78,7 @@ class DiagonalGaussianDensity(Density):
         return samples
 
     def _fixed_sample(self, noise):
-        return noise
+        return noise if noise is not None else self._fixed_samples
 
 
 class DiagonalGaussianConditionalDensity(nn.Module):

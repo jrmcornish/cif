@@ -68,8 +68,8 @@ class BijectionMixtureDensity(Density):
         return {"elbo": elbo}
 
     # TODO: Variable names here are a mess
-    def _fixed_sample(self):
-        z = self.prior.fixed_sample()
+    def _fixed_sample(self, noise):
+        z = self.prior.fixed_sample(noise=noise)
 
         bucketed_z = [[] for _ in self.bijections]
         k = []
