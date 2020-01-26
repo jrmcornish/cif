@@ -513,6 +513,7 @@ class TestResidualFlowBijection(_TestBijection, unittest.TestCase):
         self.eps = 1e-4
         self.bijection = ResidualFlowBijection(
             num_input_channels=4,
+            lipschitz_constant=0.9,
             hidden_channels=[20, 30]
         )
 

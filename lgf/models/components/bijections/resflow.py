@@ -33,21 +33,12 @@ class ResidualFlowBijection(Bijection):
             z_shape=(num_input_channels,)
         )
 
-        dims = [num_input_channels] + hidden_channels + [num_input_channels]
-
-        self.layer = iResBlock(
-            self._build_nnet(dims, lipschitz_constant),
-            n_dist="geometric",
-
-            # NOTE: this is the default from train_toy.py
-            n_power_series=None,
-
-            # NOTE: All settings are the defaults from train_toy.py
-            exact_trace=False,
-            brute_force=False,
-            n_samples=1,
-            neumann_grad=False,
-            grad_in_forward=False,
+        self.layer = self._get_iresblock(
+            net=self._get_net(
+                num_input_channels=num_input_channels,
+                hidden_channels=hidden_channels,
+                lipschitz_constant=lipschitz_constant
+            )
         )
 
         self.register_forward_pre_hook(self._update_lipschitz_forward_hook)
@@ -84,40 +75,132 @@ class ResidualFlowBijection(Bijection):
 
     def _update_lipschitz(self, num_iterations):
         modules_to_update = (
-            SpectralNormConv2d,
-            SpectralNormLinear,
             InducedNormConv2d,
-            InducedNormLinear
+            InducedNormLinear,
+
+            # NOTE: These two are here for completeness but should never occur,
+            # since `get_linear` and `get_conv2d` in the `residual_flows` repo 
+            # only create InducedNorm layers
+            SpectralNormConv2d,
+            SpectralNormLinear
         )
+
         for m in self.layer.modules():
             if isinstance(m, modules_to_update):
-                m.compute_weight(update=True, n_iterations=num_iterations)
+                m.compute_weight(
+                    # Updates the estimate of the operator norm, i.e.
+                    # \tilde{\sigma}_i in (2) in the original iResNet paper
+                    update=True,
 
-    def _build_nnet(self, dims, lipschitz_constant):
-        layers = []
-        for i, (in_dim, out_dim) in enumerate(zip(dims[:-1], dims[1:])):
-            layers += [
-                # TODO: Copied from train_toy.py, but should not apply for first layer?
-                Swish(),
+                    # Maximum number of power iterations to use. Must specify
+                    # this or `(atol, rtol)` below.
+                    n_iterations=num_iterations,
 
-                get_linear(
-                    in_dim,
-                    out_dim,
-                    coeff=lipschitz_constant,
-
-                    # NOTE: settings all taken from defaults in train_toy.py
-                    domain=2,
-                    codomain=2,
-
-                    # NOTE: All set to None because we specify these manually at each call
-                    # to compute_weight()
-                    n_iterations=None,
+                    # Tolerances to use for adaptive number of power iterations
+                    # as described in Appendix E of ResFlow paper.
                     atol=None,
-                    rtol=None,
+                    rtol=None
 
-                    # TODO: Copied from train_toy.py, but should only apply to last layer?
-                    zero_init=(out_dim == 2),
+                    # NOTE: If both `n_iterations` and `(atol, rtol)` are specified,
+                    # then power iterations are stopped when the first condition is met.
+                )
+
+    def _get_net(self, num_input_channels, hidden_channels, lipschitz_constant):
+        layers = []
+        prev_num_channels = num_input_channels
+        for i, num_channels in enumerate(hidden_channels + [num_input_channels]):
+            layers += [
+                Swish(),
+                self._get_linear_layer(
+                    num_input_channels=prev_num_channels,
+                    num_output_channels=num_channels,
+                    lipschitz_constant=lipschitz_constant,
+
+                    # Zero the weight matrix of the final layer. Done to align with
+                    # `train_toy.py`.
+                    zero_init=(i == len(hidden_channels))
                 )
             ]
 
+            prev_num_channels = num_channels
+
         return torch.nn.Sequential(*layers)
+
+    def _get_linear_layer(
+            self,
+            num_input_channels,
+            num_output_channels,
+            lipschitz_constant,
+            zero_init
+    ):
+        return get_linear(
+            in_features=num_input_channels,
+            out_features=num_output_channels,
+
+            # Corresponds to kappa in "Residual Flows" paper or c in original iResNet paper
+            coeff=lipschitz_constant,
+
+            # p-norms to use for the domain and codomain when enforcing Lipschitz constraint.
+            # We set these to 2 for simplicity in line with the discussion in Appendix D of 
+            # ResFlows paper.
+            domain=2,
+            codomain=2,
+
+            # Parameters to determine number of power iterations used when estimating the
+            # Lipschitz constant. These can all be set directly by the call to
+            # `compute_weight` as we do above, so these are all None here.
+            n_iterations=None,
+            atol=None,
+            rtol=None,
+
+            # (Approximately) zeros the weight matrix
+            zero_init=zero_init
+        )
+
+    def _get_iresblock(self, net):
+        return iResBlock(
+            nnet=net,
+
+            # NOTE: All settings below are the defaults from train_toy.py
+
+            # Compute the log Jacobian determinant directly via brute force.
+            # Only implemented for 2D inputs.
+            brute_force=False,
+
+            # If not None, uses a truncated approximation (as in the original iResNet
+            # paper) to the log Jacobian determinant with `n_power_series` terms
+            n_power_series=None,
+
+            # Use the Neumann series estimator for the gradient of the log Jacobian (8)
+            # instead of the estimator (6). Reduces memory, but may give different
+            # behaviour because not equivalent to the standard estimator.
+            neumann_grad=False,
+
+            # Distribution of N to use in Russian Roulette estimator (6) or (8). Can be
+            # either "geometric" or "poisson"
+            n_dist="geometric",
+
+            # Parameter of N if n_dist == "geometric"
+            geom_p=0.5,
+
+            # Parameter of N if n_dist == "poisson". Ignored since
+            # `n_dist == "geometric"`
+            lamb=-1.,
+
+            # Shifts the distribution of N in (6) or (8) to the right by the amount
+            # specified. This means more terms in the expectations are computed exactly,
+            # which reduces variance, but with more computational cost.
+            n_exact_terms=2,
+
+            # Number of Monte Carlo samples of (n, v) to use when estimating (6) or (8)
+            n_samples=1,
+
+            # Estimate the log Jacobian determinant using the exact trace, rather than
+            # the Hutchinson's estimator as in (6) or (8)
+            exact_trace=False,
+
+            # Use the decomposition of the gradient of the loss (9) to allow computing
+            # gradients during the forward pass in order to save memory. Should not
+            # change behaviour of algorithm.
+            grad_in_forward=False,
+        )
