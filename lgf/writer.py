@@ -135,3 +135,7 @@ class DummyWriter:
 
     def write_textfile(self, tag, text):
         pass
+
+    # TODO: Ideally we would load something here
+    def load_checkpoint(self, tag, device):
+        raise FileNotFoundError
