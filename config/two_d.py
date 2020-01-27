@@ -208,7 +208,7 @@ def nsf(dataset, model, use_baseline):
 
         "max_grad_norm": 5,
 
-        "num_density_layers": 10,
+        "num_density_layers": 5,
         # "num_bins": 64 if use_baseline else 24,
         "num_bins": 8,
         # "num_hidden_channels": 32,
@@ -220,11 +220,11 @@ def nsf(dataset, model, use_baseline):
 
         "lr_schedule": "cosine",
         "lr": 0.0005,
-        "max_epochs": 300,
+        "max_epochs": 1000,
 
-        "st_nets": [24] * 2,
-        "p_nets": [24] * 3,
-        "q_nets": [24] * 3,
+        "st_nets": [10] * 2,
+        "p_nets": [10] * 2,
+        "q_nets": [10] * 2,
     }
 
 
