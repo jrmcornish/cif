@@ -32,9 +32,9 @@ class ResidualBlock(nn.Module):
     def __init__(self, num_channels):
         super().__init__()
         self.bn1 = nn.BatchNorm2d(num_channels)
-        self.conv1 = self._get_conv3x3(num_channels, bias=False)
+        self.conv1 = self._get_conv3x3(num_channels)
         self.bn2 = nn.BatchNorm2d(num_channels)
-        self.conv2 = self._get_conv3x3(num_channels, bias=True)
+        self.conv2 = self._get_conv3x3(num_channels)
 
     def forward(self, inputs):
         out = self.bn1(inputs)
@@ -49,14 +49,18 @@ class ResidualBlock(nn.Module):
 
         return out
 
-    def _get_conv3x3(self, num_channels, bias):
+    def _get_conv3x3(self, num_channels):
         return nn.Conv2d(
             in_channels=num_channels,
             out_channels=num_channels,
             kernel_size=3,
             stride=1,
             padding=1,
-            bias=bias
+
+            # We don't add a bias here since any subsequent ResidualBlock
+            # will begin with a batch norm. However, we add a bias at the
+            # output of the whole network.
+            bias=False
         )
 
 
@@ -80,11 +84,13 @@ def get_resnet(
 ):
     num_hidden_channels = hidden_channels[0] if hidden_channels else num_output_channels
 
+    # TODO: Should we have an input batch norm?
     layers = [
         nn.Conv2d(
             in_channels=num_input_channels,
             out_channels=num_hidden_channels,
             kernel_size=3,
+            stride=1,
             padding=1,
             bias=False
         )
@@ -99,9 +105,13 @@ def get_resnet(
         nn.Conv2d(
             in_channels=num_hidden_channels,
             out_channels=num_output_channels,
-            kernel_size=1
+            kernel_size=1,
+            padding=0,
+            bias=True
         )
     ]
+
+    # TODO: Should we have an output batch norm?
 
     return ScaledTanh2dModule(
         module=nn.Sequential(*layers),
