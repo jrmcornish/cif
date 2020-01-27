@@ -200,22 +200,31 @@ def planar(dataset, model, use_baseline):
     }
 
 
-@provides("nsf")
+@provides("nsf-ar")
 def nsf(dataset, model, use_baseline):
     return {
         "schema_type": "nsf",
+        "autoregressive": True,
 
-        "num_density_layers": 2,
-        "num_bins": 64 if use_baseline else 24,
-        "num_hidden_channels": 32,
+        "max_grad_norm": 5,
+
+        "num_density_layers": 10,
+        # "num_bins": 64 if use_baseline else 24,
+        "num_bins": 8,
+        # "num_hidden_channels": 32,
+        "num_hidden_channels": 256,
         "num_hidden_layers": 2,
-        "tail_bound": 5,
-        "autoregressive": False,
+        # "tail_bound": 5,
+        "tail_bound": 3,
         "dropout_probability": 0.,
+
+        "lr_schedule": "cosine",
+        "lr": 0.0005,
+        "max_epochs": 300,
 
         "st_nets": [24] * 2,
         "p_nets": [24] * 3,
-        "q_nets": [24] * 3
+        "q_nets": [24] * 3,
     }
 
 
