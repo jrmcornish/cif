@@ -205,6 +205,7 @@ def nsf(dataset, model, use_baseline):
     return {
         "schema_type": "nsf",
         "autoregressive": True,
+        "use_linear": False,
 
         "max_grad_norm": 5,
 

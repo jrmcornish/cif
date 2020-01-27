@@ -71,15 +71,7 @@ def get_base_schema(config):
         )
 
     elif ty == "nsf":
-        return get_nsf_schema(
-            num_density_layers=config["num_density_layers"],
-            num_hidden_layers=config["num_hidden_layers"],
-            num_hidden_channels=config["num_hidden_channels"],
-            num_bins=config["num_bins"],
-            tail_bound=config["tail_bound"],
-            autoregressive=config["autoregressive"],
-            dropout_probability=config["dropout_probability"]
-        )
+        return get_nsf_schema(config=config)
 
     elif ty == "bnaf":
         return get_bnaf_schema(
@@ -482,30 +474,27 @@ def get_sos_schema(
 
 
 def get_nsf_schema(
-        num_density_layers,
-        num_hidden_layers, # TODO: Use a more descriptive name
-        num_hidden_channels,
-        num_bins,
-        tail_bound,
-        autoregressive,
-        dropout_probability
+        config
 ):
     result = [{"type": "flatten"}]
 
-    for i in range(num_density_layers):
-        result += [{"type": "rand-channel-perm"}, {"type": "linear"}]
+    for i in range(config["num_density_layers"]):
+        if "use_linear" in config and not config["use_linear"]:
+            result += [{"type": "rand-channel-perm"}]
+        else:
+            result += [{"type": "rand-channel-perm"}, {"type": "linear"}]
 
         layer = {
-            "type": "nsf-ar" if autoregressive else "nsf-c",
-            "num_hidden_channels": num_hidden_channels,
-            "num_hidden_layers": num_hidden_layers,
-            "num_bins": num_bins,
-            "tail_bound": tail_bound,
+            "type": "nsf-ar" if config["autoregressive"] else "nsf-c",
+            "num_hidden_channels": config["num_hidden_channels"],
+            "num_hidden_layers": config["num_hidden_layers"],
+            "num_bins": config["num_bins"],
+            "tail_bound": config["tail_bound"],
             "activation": "relu",
-            "dropout_probability": dropout_probability
+            "dropout_probability": config["dropout_probability"]
         }
 
-        if not autoregressive:
+        if not config["autoregressive"]:
             layer["reverse_mask"] = i % 2 == 0
 
         result.append(layer)
@@ -518,7 +507,10 @@ def get_nsf_schema(
             }
         )
 
-    result += [{"type": "rand-channel-perm"}, {"type": "linear"}]
+    if "use_linear" in config and not config["use_linear"]:
+        result += [{"type": "rand-channel-perm"}]
+    else:
+        result += [{"type": "rand-channel-perm"}, {"type": "linear"}]
 
     return result
 
