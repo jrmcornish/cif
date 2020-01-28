@@ -6,12 +6,6 @@ import torch
 sys.path.insert(0, str(Path(__file__).parents[4] / "gitmodules"))
 try:
     from residual_flows.lib.layers import iResBlock
-    from residual_flows.lib.layers.base import (
-        SpectralNormConv2d,
-        SpectralNormLinear,
-        InducedNormConv2d,
-        InducedNormLinear
-    )
 finally:
     sys.path.pop(0)
 
@@ -20,69 +14,18 @@ from .bijection import Bijection
 
 # Constitutes a single block
 class ResidualFlowBijection(Bijection):
-    def __init__(self, num_input_channels, net):
-        super().__init__(
-            x_shape=(num_input_channels,),
-            z_shape=(num_input_channels,)
-        )
+    def __init__(self, x_shape, lipschitz_net):
+        super().__init__(x_shape=x_shape, z_shape=x_shape)
 
-        self.layer = self._get_iresblock(net=net)
-
-        self.register_forward_pre_hook(self._update_lipschitz_forward_hook)
-        self.register_backward_hook(self._queue_lipschitz_update_backward_hook)
-
-        self._requires_train_lipschitz_update = True
-        self._requires_eval_lipschitz_update = True
+        self.block = self._get_iresblock(net=lipschitz_net)
 
     def _x_to_z(self, x, **kwargs):
-        z, neg_log_jac = self.layer(x, x.new_zeros((x.shape[0], 1)))
+        z, neg_log_jac = self.block(x, x.new_zeros((x.shape[0], 1)))
         return {"z": z, "log-jac": -neg_log_jac}
 
     def _z_to_x(self, z, **kwargs):
-        x, neg_log_jac = self.layer.inverse(z, z.new_zeros((z.shape[0], 1)))
+        x, neg_log_jac = self.block.inverse(z, z.new_zeros((z.shape[0], 1)))
         return {"x": x, "log-jac": -neg_log_jac}
-
-    def _queue_lipschitz_update_backward_hook(self, *args, **kwargs):
-        self._requires_train_lipschitz_update = True
-        self._requires_eval_lipschitz_update = True
-
-    def _update_lipschitz_forward_hook(self, *args, **kwargs):
-        # NOTE: Numbers of iterations from defaults in train_toy.py
-
-        if self.training:
-            if self._requires_train_lipschitz_update:
-                self._update_lipschitz(num_iterations=5)
-                self._requires_train_lipschitz_update = False
-
-        else:
-            if self._requires_eval_lipschitz_update:
-                self._update_lipschitz(num_iterations=200)
-                self._requires_eval_lipschitz_update = False
-                self._requires_train_lipschitz_update = False
-
-    def _update_lipschitz(self, num_iterations):
-        modules_to_update = (InducedNormConv2d, InducedNormLinear)
-
-        for m in self.layer.modules():
-            # TODO: Would be better to have the net inside self.layer do this itself
-            if isinstance(m, modules_to_update):
-                m.compute_weight(
-                    # Updates the estimate of the operator norm, i.e.
-                    # \tilde{\sigma}_i in (2) in the original iResNet paper
-                    update=True,
-
-                    # Maximum number of power iterations to use. Must specify
-                    # this or `(atol, rtol)` below.
-                    n_iterations=num_iterations,
-
-                    # Tolerances to use for adaptive number of power iterations
-                    # as described in Appendix E of ResFlow paper.
-                    atol=None,
-                    rtol=None
-
-                    # NOTE: If both `n_iterations` and `(atol, rtol)` are specified,
-                    # then power iterations are stopped when the first condition is met.
-                )
 
     def _get_iresblock(self, net):
         return iResBlock(

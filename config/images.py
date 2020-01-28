@@ -31,6 +31,7 @@ def config(dataset, use_baseline):
         "max_grad_norm": None,
         "max_epochs": 1000,
         "epochs_per_test": 1,
+        "early_stopping": True,
 
         "num_valid_elbo_samples": 5,
         "num_test_elbo_samples": 10
@@ -48,7 +49,6 @@ def realnvp(dataset, model, use_baseline):
         "p_nets": [64] * 2,
         "q_nets": [64] * 2,
 
-        "early_stopping": True,
         "train_batch_size": 100,
         "valid_batch_size": 500,
         "test_batch_size": 500,
@@ -106,3 +106,35 @@ def glow(dataset, model, use_baseline):
     config["centering_tf_scale"] = 256
 
     return config
+
+
+@provides("resflow")
+def resflow(dataset, model, use_baseline):
+    logit_tf_lambda = {
+        "mnist": 1e-5,
+        "cifar10": 0.05,
+    }[dataset]
+
+    return {
+        "schema_type": "multiscale-resflow",
+
+        "train_batch_size": 64,
+        "valid_batch_size": 500,
+        "test_batch_size": 500,
+
+        "opt": "adam",
+        "lr": 1e-3,
+        "weight_decay": 0., # TODO: Differs from paper
+
+        "logit_tf_lambda": logit_tf_lambda,
+        "logit_tf_scale": 256,
+        "num_scales": 1, #3,
+        "num_blocks_per_scale": 4, # 16,
+        "num_hidden_channels": 64, # 512,
+        "lipschitz_constant": 0.98,
+        "max_train_lipschitz_iters": None,
+        "max_test_lipschitz_iters": None,
+        "lipschitz_tolerance": 1e-3,
+        "num_output_fc_blocks": 1, #4,
+        "output_fc_hidden_channels": [128] * 2
+    }

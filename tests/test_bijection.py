@@ -514,8 +514,8 @@ class TestResidualFlowBijection(_TestBijection, unittest.TestCase):
         self.eps = 1e-4
         num_input_channels = 4
         self.bijection = ResidualFlowBijection(
-            num_input_channels=num_input_channels,
-            net=get_lipschitz_mlp(
+            x_shape=(num_input_channels,),
+            lipschitz_net=get_lipschitz_mlp(
                 num_input_channels=num_input_channels,
                 hidden_channels=[20, 30],
                 num_output_channels=4,

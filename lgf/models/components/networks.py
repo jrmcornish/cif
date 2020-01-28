@@ -239,11 +239,88 @@ class AutoregressiveMLP(nn.Module):
         return result
 
 
+class LipschitzNetwork(nn.Module):
+    _MODULES_TO_UPDATE = (InducedNormConv2d, InducedNormLinear)
+
+    def __init__(
+            self,
+            layers,
+            max_train_lipschitz_iters,
+            max_test_lipschitz_iters,
+            lipschitz_tolerance
+    ):
+        super().__init__()
+
+        self.layers = layers
+        self.net = nn.Sequential(*layers)
+
+        self.max_train_lipschitz_iters = max_train_lipschitz_iters
+        self.max_test_lipschitz_iters = max_test_lipschitz_iters
+        self.lipschitz_tolerance = lipschitz_tolerance
+
+        self.register_forward_pre_hook(self._update_lipschitz_forward_hook)
+        self.register_backward_hook(self._queue_lipschitz_update_backward_hook)
+
+        self._requires_train_lipschitz_update = True
+        self._requires_eval_lipschitz_update = True
+
+    def forward(self, inputs):
+        return self.net(inputs)
+
+    def _queue_lipschitz_update_backward_hook(self, *args, **kwargs):
+        self._requires_train_lipschitz_update = True
+        self._requires_eval_lipschitz_update = True
+
+    def _update_lipschitz_forward_hook(self, *args, **kwargs):
+        # NOTE: Numbers of iterations from defaults in train_toy.py
+
+        if self.training:
+            if self._requires_train_lipschitz_update:
+                self._update_lipschitz(max_iterations=self.max_train_lipschitz_iters)
+                self._requires_train_lipschitz_update = False
+
+        else:
+            if self._requires_eval_lipschitz_update:
+                self._update_lipschitz(max_iterations=self.max_test_lipschitz_iters)
+                self._requires_eval_lipschitz_update = False
+                self._requires_train_lipschitz_update = False
+
+    def _update_lipschitz(self, max_iterations):
+        for m in self._modules_to_update():
+            m.compute_weight(
+                # Updates the estimate of the operator norm, i.e.
+                # \tilde{\sigma}_i in (2) in the original iResNet paper
+                update=True,
+
+                # Maximum number of power iterations to use. Must specify
+                # this or `(atol, rtol)` below.
+                n_iterations=max_iterations,
+
+                # Tolerances to use for adaptive number of power iterations
+                # as described in Appendix E of ResFlow paper.
+                atol=self.lipschitz_tolerance,
+                rtol=self.lipschitz_tolerance
+
+                # NOTE: If both `n_iterations` and `(atol, rtol)` are specified,
+                # then power iterations are stopped when the first condition is met.
+            )
+
+    def _modules_to_update(self):
+        # XXX: We only do a shallow update (i.e. don't use self.net.modules()) since
+        # we should not have nested InducedNorm modules
+        for m in self.layers:
+            if isinstance(m, self._MODULES_TO_UPDATE):
+                yield m
+
+
 def get_lipschitz_mlp(
         num_input_channels,
         hidden_channels,
         num_output_channels,
-        lipschitz_constant
+        lipschitz_constant,
+        max_train_lipschitz_iters,
+        max_test_lipschitz_iters,
+        lipschitz_tolerance
 ):
     layers = []
     prev_num_channels = num_input_channels
@@ -263,7 +340,12 @@ def get_lipschitz_mlp(
 
         prev_num_channels = num_channels
 
-    return nn.Sequential(*layers)
+    return LipschitzNetwork(
+        layers=layers,
+        max_train_lipschitz_iters=max_train_lipschitz_iters,
+        max_test_lipschitz_iters=max_test_lipschitz_iters,
+        lipschitz_tolerance=lipschitz_tolerance
+    )
 
 
 def _get_lipschitz_linear_layer(
@@ -301,14 +383,19 @@ def get_lipschitz_cnn(
         num_input_channels,
         num_hidden_channels,
         num_output_channels,
-        lipschitz_constant
+        lipschitz_constant,
+        max_train_lipschitz_iters,
+        max_test_lipschitz_iters,
+        lipschitz_tolerance
 ):
     conv1 = _get_lipschitz_conv_layer(
         num_input_channels=num_input_channels,
         num_output_channels=num_hidden_channels,
         kernel_size=3,
         padding=1,
-        lipschitz_constant=lipschitz_constant
+        lipschitz_constant=lipschitz_constant,
+        max_lipschitz_iters=max_test_lipschitz_iters,
+        lipschitz_tolerance=lipschitz_tolerance
     )
 
     conv2 = _get_lipschitz_conv_layer(
@@ -316,7 +403,9 @@ def get_lipschitz_cnn(
         num_output_channels=num_hidden_channels,
         kernel_size=1,
         padding=0,
-        lipschitz_constant=lipschitz_constant
+        lipschitz_constant=lipschitz_constant,
+        max_lipschitz_iters=max_test_lipschitz_iters,
+        lipschitz_tolerance=lipschitz_tolerance
     )
 
     conv3 = _get_lipschitz_conv_layer(
@@ -324,24 +413,36 @@ def get_lipschitz_cnn(
         num_output_channels=num_output_channels,
         kernel_size=3,
         padding=1,
-        lipschitz_constant=lipschitz_constant
+        lipschitz_constant=lipschitz_constant,
+        max_lipschitz_iters=max_test_lipschitz_iters,
+        lipschitz_tolerance=lipschitz_tolerance
     )
 
     lipswish = Swish()
 
-    return nn.Sequential(lipswish, conv1, lipswish, conv2, lipswish, conv3)
+    layers = [lipswish, conv1, lipswish, conv2, lipswish, conv3]
+
+    return LipschitzNetwork(
+        layers=layers,
+        max_train_lipschitz_iters=max_train_lipschitz_iters,
+        max_test_lipschitz_iters=max_test_lipschitz_iters,
+        lipschitz_tolerance=lipschitz_tolerance
+    )
 
 
+# TODO: Should assert that one of max_lipschitz_iters or lipschitz_tolerance is not None
 def _get_lipschitz_conv_layer(
         num_input_channels,
         num_output_channels,
         kernel_size,
         padding,
-        lipschitz_constant
+        lipschitz_constant,
+        max_lipschitz_iters,
+        lipschitz_tolerance
 ):
     return InducedNormConv2d(
         in_channels=num_input_channels,
-        out_channels=num_hidden_channels,
+        out_channels=num_output_channels,
 
         kernel_size=kernel_size,
         stride=1,
@@ -350,14 +451,15 @@ def _get_lipschitz_conv_layer(
         # We always add bias since we don't use batch norm in our Lipschitz CNNs
         bias=True,
 
+        # See note in `_get_lipschitz_linear_layer`
         coeff=lipschitz_constant,
 
         # See note in `_get_lipschitz_linear_layer`
         domain=2,
         codomain=2,
 
-        # See note in `_get_lipschitz_linear_layer`
-        n_iterations=None,
-        atol=None,
-        rtol=None
+        # TODO: Document why we add here
+        n_iterations=max_lipschitz_iters,
+        atol=lipschitz_tolerance,
+        rtol=lipschitz_tolerance
     )

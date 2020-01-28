@@ -18,9 +18,7 @@ def test_baseline_multiscale_realnvp_schema():
             "value": 1e-06
         },
         {
-            "type": "logit",
-            "lambda": 0.0,
-            "scale": 1.0
+            "type": "logit"
         },
         {
             "type": "acl",
@@ -331,9 +329,7 @@ def test_lgf_multiscale_realnvp_schema():
             "value": 1e-06
         },
         {
-            "type": "logit",
-            "lambda": 0.0,
-            "scale": 1.0
+            "type": "logit"
         },
         {
             "type": "acl",

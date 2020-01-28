@@ -47,7 +47,8 @@ from .components.networks import (
     get_mlp,
     get_resnet,
     get_glow_cnn,
-    get_lipschitz_mlp
+    get_lipschitz_mlp,
+    get_lipschitz_cnn
 )
 
 
@@ -302,16 +303,14 @@ def get_bijection(
             cond_activation=get_activation(layer_config["cond_activation"])
         )
 
-    elif layer_config["type"] == "resflow":
-        assert len(x_shape) == 1
-        num_x_channels = x_shape[0]
+    elif layer_config["type"] == "resblock":
+        # TODO: Rename Bijection
         return ResidualFlowBijection(
-            num_input_channels=num_x_channels,
-            net=get_lipschitz_mlp(
-                num_input_channels=num_x_channels,
-                hidden_channels=layer_config["hidden_channels"],
-                num_output_channels=num_x_channels,
-                lipschitz_constant=layer_config["lipschitz_constant"]
+            x_shape=x_shape,
+            lipschitz_net=get_lipschitz_net(
+                input_shape=x_shape,
+                num_output_channels=x_shape[0],
+                config=layer_config["net"]
             )
         )
 
@@ -476,3 +475,32 @@ def get_activation(name):
         return nn.ReLU
     else:
         assert False, f"Invalid activation {name}"
+
+
+def get_lipschitz_net(input_shape, num_output_channels, config):
+    if config["type"] == "cnn":
+        assert len(input_shape) == 3
+        return get_lipschitz_cnn(
+            num_input_channels=input_shape[0],
+            num_hidden_channels=config["num_hidden_channels"],
+            num_output_channels=num_output_channels,
+            lipschitz_constant=config["lipschitz_constant"],
+            max_train_lipschitz_iters=config["max_train_lipschitz_iters"],
+            max_test_lipschitz_iters=config["max_test_lipschitz_iters"],
+            lipschitz_tolerance=config["lipschitz_tolerance"]
+        )
+
+    elif config["type"] == "mlp":
+        assert len(input_shape) == 1
+        return get_lipschitz_mlp(
+            num_input_channels=input_shape[0],
+            hidden_channels=config["hidden_channels"],
+            num_output_channels=num_output_channels,
+            lipschitz_constant=config["lipschitz_constant"],
+            max_train_lipschitz_iters=config["max_train_lipschitz_iters"],
+            max_test_lipschitz_iters=config["max_test_lipschitz_iters"],
+            lipschitz_tolerance=config["lipschitz_tolerance"]
+        )
+
+    else:
+        assert False, f"Invalid Lipschitz net type {config['net']}"

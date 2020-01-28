@@ -114,8 +114,11 @@ def get_base_schema(config):
     elif ty == "affine":
         return get_affine_schema(config=config)
 
-    elif ty == "resflow":
-        return get_resflow_schema(config=config)
+    elif ty == "flat-resflow":
+        return get_flat_resflow_schema(config=config)
+
+    elif ty == "multiscale-resflow":
+        return get_multiscale_resflow_schema(config=config)
 
     else:
         assert False, f"Invalid schema type `{ty}'"
@@ -191,7 +194,7 @@ def get_logit_tf_schema(lam, scale):
     return [
         {"type": "scalar-mult", "value": (1 - 2*lam) / scale},
         {"type": "scalar-add", "value": lam},
-        {"type": "logit", "lambda": 0., "scale": 1.}
+        {"type": "logit"}
     ]
 
 
@@ -608,15 +611,79 @@ def get_affine_schema(config):
     )
 
 
-def get_resflow_schema(config):
+# TODO: Should have actnorm rather than batchnorm
+def get_flat_resflow_schema(config):
     result = [{"type": "flatten"}]
     for _ in range(config["num_density_layers"]):
         result += [
             {
-                "type": "resflow",
-                "hidden_channels": config["hidden_channels"],
-                "lipschitz_constant": config["lipschitz_constant"]
+                "type": "resblock",
+                "net": {
+                    "type": "mlp",
+                    "hidden_channels": config["hidden_channels"]
+                }
             },
-            {"type": "batch-norm", "per_channel": False}
+            {
+                "type": "batch-norm",
+                "per_channel": False
+            }
         ]
+
+    add_lipschitz_config_to_resblocks(result, config)
+
     return result
+
+
+# TODO: Should have actnorm rather than batchnorm
+def get_multiscale_resflow_schema(config):
+    result = []
+
+    for i in range(config["num_scales"]):
+        if i > 0:
+            result.append({"type": "squeeze"})
+
+        result.append({"type": "batch-norm", "per_channel": True})
+
+        for j in range(config["num_blocks_per_scale"]):
+            result += [
+                {
+                    "type": "resblock",
+                    "net": {
+                        "type": "cnn",
+                        "num_hidden_channels":  config["num_hidden_channels"]
+                    }
+                },
+                {
+                    "type": "batch-norm",
+                    "per_channel": True
+                }
+            ]
+
+    result.append({"type": "flatten"})
+
+    for _ in range(config["num_output_fc_blocks"]):
+        result.append({
+            "type": "resblock",
+            "net": {
+                "type": "mlp",
+                "hidden_channels": config["output_fc_hidden_channels"]
+            }
+        })
+
+    add_lipschitz_config_to_resblocks(result, config)
+
+    return result
+
+
+def add_lipschitz_config_to_resblocks(schema, config):
+    keys_to_copy = [
+        "lipschitz_constant",
+        "max_train_lipschitz_iters",
+        "max_test_lipschitz_iters",
+        "lipschitz_tolerance"
+    ]
+
+    for layer in schema:
+        if layer["type"] == "resblock":
+            for key in keys_to_copy:
+                layer["net"][key] = config[key]

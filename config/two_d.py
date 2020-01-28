@@ -51,10 +51,14 @@ def config(dataset, use_baseline):
 @provides("resflow")
 def resflow(dataset, model, use_baseline):
     config = {
-        "schema_type": "resflow",
+        "schema_type": "flat-resflow",
         "num_density_layers": 10,
         "hidden_channels": [128] * 4,
+
         "lipschitz_constant": 0.9,
+        "max_train_lipschitz_iters": 5,
+        "max_test_lipschitz_iters": 200,
+        "lipschitz_tolerance": None,
 
         "st_nets": [10] * 2,
         "p_nets": [10] * 2,
