@@ -311,7 +311,8 @@ def get_bijection(
                 input_shape=x_shape,
                 num_output_channels=x_shape[0],
                 config=layer_config["net"]
-            )
+            ),
+            reduce_memory=layer_config["reduce_memory"]
         )
 
     else:

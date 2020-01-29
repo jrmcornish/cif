@@ -676,7 +676,7 @@ def get_multiscale_resflow_schema(config):
 
 
 def add_lipschitz_config_to_resblocks(schema, config):
-    keys_to_copy = [
+    net_keys_to_copy = [
         "lipschitz_constant",
         "max_train_lipschitz_iters",
         "max_test_lipschitz_iters",
@@ -685,5 +685,7 @@ def add_lipschitz_config_to_resblocks(schema, config):
 
     for layer in schema:
         if layer["type"] == "resblock":
-            for key in keys_to_copy:
+            for key in net_keys_to_copy:
                 layer["net"][key] = config[key]
+
+            layer["reduce_memory"] = config["reduce_memory"]

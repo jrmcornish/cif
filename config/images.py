@@ -126,8 +126,12 @@ def resflow(dataset, model, use_baseline):
         "lr": 1e-3,
         "weight_decay": 0., # TODO: Differs from paper
 
+        # NOTE: Unlike paper, we do not do Polyak averaging
+
         "logit_tf_lambda": logit_tf_lambda,
         "logit_tf_scale": 256,
+
+        "reduce_memory": True,
         "num_scales": 1, #3,
         "num_blocks_per_scale": 4, # 16,
         "num_hidden_channels": 64, # 512,
@@ -135,6 +139,6 @@ def resflow(dataset, model, use_baseline):
         "max_train_lipschitz_iters": None,
         "max_test_lipschitz_iters": None,
         "lipschitz_tolerance": 1e-3,
-        "num_output_fc_blocks": 1, #4,
-        "output_fc_hidden_channels": [128] * 2
+        "num_output_fc_blocks": 4,
+        "output_fc_hidden_channels": [32] * 2 # [128] * 2
     }

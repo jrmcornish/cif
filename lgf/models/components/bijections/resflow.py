@@ -14,10 +14,15 @@ from .bijection import Bijection
 
 # Constitutes a single block
 class ResidualFlowBijection(Bijection):
-    def __init__(self, x_shape, lipschitz_net):
+    def __init__(
+            self,
+            x_shape,
+            lipschitz_net,
+            reduce_memory
+    ):
         super().__init__(x_shape=x_shape, z_shape=x_shape)
 
-        self.block = self._get_iresblock(net=lipschitz_net)
+        self.block = self._get_iresblock(net=lipschitz_net, reduce_memory=reduce_memory)
 
     def _x_to_z(self, x, **kwargs):
         z, neg_log_jac = self.block(x, x.new_zeros((x.shape[0], 1)))
@@ -27,7 +32,7 @@ class ResidualFlowBijection(Bijection):
         x, neg_log_jac = self.block.inverse(z, z.new_zeros((z.shape[0], 1)))
         return {"x": x, "log-jac": -neg_log_jac}
 
-    def _get_iresblock(self, net):
+    def _get_iresblock(self, net, reduce_memory):
         return iResBlock(
             nnet=net,
 
@@ -44,7 +49,7 @@ class ResidualFlowBijection(Bijection):
             # Use the Neumann series estimator for the gradient of the log Jacobian (8)
             # instead of the estimator (6). Reduces memory, but may give different
             # behaviour because not equivalent to the standard estimator.
-            neumann_grad=False,
+            neumann_grad=reduce_memory,
 
             # Distribution of N to use in Russian Roulette estimator (6) or (8). Can be
             # either "geometric" or "poisson"
@@ -72,5 +77,5 @@ class ResidualFlowBijection(Bijection):
             # Use the decomposition of the gradient of the loss (9) to allow computing
             # gradients during the forward pass in order to save memory. Should not
             # change behaviour of algorithm.
-            grad_in_forward=False,
+            grad_in_forward=reduce_memory
         )
