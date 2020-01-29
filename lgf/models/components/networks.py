@@ -326,6 +326,7 @@ def get_lipschitz_mlp(
     prev_num_channels = num_input_channels
     for i, num_channels in enumerate(hidden_channels + [num_output_channels]):
         layers += [
+            # We use separate Swish's because each has a parameter (beta)
             Swish(),
             _get_lipschitz_linear_layer(
                 num_input_channels=prev_num_channels,
@@ -418,9 +419,8 @@ def get_lipschitz_cnn(
         lipschitz_tolerance=lipschitz_tolerance
     )
 
-    lipswish = Swish()
-
-    layers = [lipswish, conv1, lipswish, conv2, lipswish, conv3]
+    # We use separate Swish's because each has a parameter (beta)
+    layers = [Swish(), conv1, Swish(), conv2, Swish(), conv3]
 
     return LipschitzNetwork(
         layers=layers,
