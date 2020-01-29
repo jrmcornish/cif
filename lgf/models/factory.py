@@ -480,9 +480,8 @@ def get_activation(name):
 
 def get_lipschitz_net(input_shape, num_output_channels, config):
     if config["type"] == "cnn":
-        assert len(input_shape) == 3
         return get_lipschitz_cnn(
-            num_input_channels=input_shape[0],
+            input_shape=input_shape,
             num_hidden_channels=config["num_hidden_channels"],
             num_output_channels=num_output_channels,
             lipschitz_constant=config["lipschitz_constant"],

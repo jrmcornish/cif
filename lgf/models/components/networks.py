@@ -331,7 +331,10 @@ def get_lipschitz_mlp(
             _get_lipschitz_linear_layer(
                 num_input_channels=prev_num_channels,
                 num_output_channels=num_channels,
+
                 lipschitz_constant=lipschitz_constant,
+                max_lipschitz_iters=max_test_lipschitz_iters,
+                lipschitz_tolerance=lipschitz_tolerance,
 
                 # Zero the weight matrix of the final layer. Done to align with
                 # `train_toy.py`.
@@ -353,6 +356,8 @@ def _get_lipschitz_linear_layer(
         num_input_channels,
         num_output_channels,
         lipschitz_constant,
+        max_lipschitz_iters,
+        lipschitz_tolerance,
         zero_init
 ):
     return InducedNormLinear(
@@ -368,12 +373,10 @@ def _get_lipschitz_linear_layer(
         domain=2,
         codomain=2,
 
-        # Parameters to determine number of power iterations used when estimating the
-        # Lipschitz constant. These can all be set directly when calling `compute_weight`,
-        # so we make None here.
-        n_iterations=None,
-        atol=None,
-        rtol=None,
+        # TODO: Document why we add here
+        n_iterations=max_lipschitz_iters,
+        atol=lipschitz_tolerance,
+        rtol=lipschitz_tolerance,
 
         # (Approximately) zeros the weight matrix
         zero_init=zero_init
@@ -381,7 +384,7 @@ def _get_lipschitz_linear_layer(
 
 
 def get_lipschitz_cnn(
-        num_input_channels,
+        input_shape,
         num_hidden_channels,
         num_output_channels,
         lipschitz_constant,
@@ -389,6 +392,9 @@ def get_lipschitz_cnn(
         max_test_lipschitz_iters,
         lipschitz_tolerance
 ):
+    assert len(input_shape) == 3
+    num_input_channels = input_shape[0]
+
     conv1 = _get_lipschitz_conv_layer(
         num_input_channels=num_input_channels,
         num_output_channels=num_hidden_channels,
@@ -422,6 +428,12 @@ def get_lipschitz_cnn(
     # We use separate Swish's because each has a parameter (beta)
     layers = [Swish(), conv1, Swish(), conv2, Swish(), conv3]
 
+    # It is necessary to pass inputs through the convs because the
+    # spatial dimensions (which are required for the Lipschitz iterations)
+    # are inferred dynamically by the InducedNormConv2d layers.
+    dummy_inputs = torch.empty(1, *input_shape)
+    nn.Sequential(*layers)(dummy_inputs)
+
     return LipschitzNetwork(
         layers=layers,
         max_train_lipschitz_iters=max_train_lipschitz_iters,
@@ -430,7 +442,6 @@ def get_lipschitz_cnn(
     )
 
 
-# TODO: Should assert that one of max_lipschitz_iters or lipschitz_tolerance is not None
 def _get_lipschitz_conv_layer(
         num_input_channels,
         num_output_channels,
@@ -440,6 +451,8 @@ def _get_lipschitz_conv_layer(
         max_lipschitz_iters,
         lipschitz_tolerance
 ):
+    assert max_lipschitz_iters is not None or lipschitz_tolerance is not None
+
     return InducedNormConv2d(
         in_channels=num_input_channels,
         out_channels=num_output_channels,
