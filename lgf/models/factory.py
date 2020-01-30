@@ -30,7 +30,8 @@ from .components.bijections import (
     FFJORDBijection,
     PlanarBijection,
     ConditionalPlanarBijection,
-    ResidualFlowBijection
+    ResidualFlowBijection,
+    ActNormBijection
 )
 from .components.densities import (
     DiagonalGaussianDensity,
@@ -200,6 +201,9 @@ def get_bijection(
             apply_affine=layer_config["apply_affine"],
             momentum=layer_config["momentum"]
         )
+
+    elif layer_config["type"] == "act-norm":
+        return ActNormBijection(x_shape=x_shape)
 
     elif layer_config["type"] == "affine":
         return AffineBijection(

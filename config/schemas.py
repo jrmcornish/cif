@@ -3,20 +3,24 @@ def get_schema(config):
 
     if config["pure_cond_affine"]:
         assert config["use_cond_affine"]
-        schema = remove_non_batch_norm_layers(schema=schema)
+        schema = remove_non_normalise_layers(schema=schema)
 
     if config["use_cond_affine"]:
         assert config["num_u_channels"] > 0
-        schema = add_cond_affine_before_each_batch_norm(schema=schema, config=config)
+        schema = add_cond_affine_before_each_normalise(schema=schema, config=config)
 
     schema = apply_pq_coupler_config_settings(schema=schema, config=config)
 
     schema = get_preproc_schema(config=config) + schema
 
+    assert not (config["batch_norm"] and config["act_norm"])
+
     if config["batch_norm"]:
-        schema = apply_batch_norm_config_settings(schema=schema, config=config)
+        schema = replace_normalise_with_batch_norm(schema=schema, config=config)
+    elif config["act_norm"]:
+        schema = replace_normalise_with_act_norm(schema=schema)
     else:
-        schema = remove_batch_norm_layers(schema=schema)
+        schema = remove_normalise_layers(schema=schema)
 
     return schema
 
@@ -124,15 +128,15 @@ def get_base_schema(config):
         assert False, f"Invalid schema type `{ty}'"
 
 
-def remove_non_batch_norm_layers(schema):
-    return [layer for layer in schema if layer["type"] == "batch-norm"]
+def remove_non_normalise_layers(schema):
+    return [layer for layer in schema if layer["type"] == "normalise"]
 
 
-def remove_batch_norm_layers(schema):
-    return [layer for layer in schema if layer["type"] != "batch-norm"]
+def remove_normalise_layers(schema):
+    return [layer for layer in schema if layer["type"] != "normalise"]
 
 
-def apply_batch_norm_config_settings(schema, config):
+def replace_normalise_with_batch_norm(schema, config):
     if config["batch_norm_use_running_averages"]:
         new_schema = []
         momentum = config["batch_norm_momentum"]
@@ -151,9 +155,10 @@ def apply_batch_norm_config_settings(schema, config):
     apply_affine = config["batch_norm_apply_affine"]
 
     for layer in schema:
-        if layer["type"] == "batch-norm":
+        if layer["type"] == "normalise":
             new_schema.append({
-                **layer,
+                "type": "batch-norm",
+                "per_channel": True, # Hard coded for now; seems always to do better
                 "momentum": momentum,
                 "apply_affine": config["batch_norm_apply_affine"]
             })
@@ -164,10 +169,23 @@ def apply_batch_norm_config_settings(schema, config):
     return new_schema
 
 
-def add_cond_affine_before_each_batch_norm(schema, config):
+def replace_normalise_with_act_norm(schema):
+    new_schema = []
+
+    for layer in schema:
+        if layer["type"] == "normalise":
+            new_schema.append({"type": "act-norm"})
+
+        else:
+            new_schema.append(layer)
+
+    return new_schema
+
+
+def add_cond_affine_before_each_norm(schema, config):
     new_schema = []
     for layer in schema:
-        if layer["type"] == "batch-norm":
+        if layer["type"] == "normalise":
             new_schema.append(get_cond_affine_layer(config))
 
         new_schema.append(layer)
@@ -331,8 +349,7 @@ def get_multiscale_realnvp_schema(coupler_hidden_channels):
                     }
                 },
                 {
-                    "type": "batch-norm",
-                    "per_channel": True
+                    "type": "normalise"
                 }
             ]
 
@@ -358,8 +375,7 @@ def get_glow_schema(
         for _ in range(num_steps_per_scale):
             schema += [
                 {
-                    "type": "batch-norm",
-                    "per_channel": True
+                    "type": "normalise"
                 },
                 {
                     "type": "invconv",
@@ -421,8 +437,7 @@ def get_flat_realnvp_schema(config):
                 "num_u_channels": 0
             },
             {
-                "type": "batch-norm",
-                "per_channel": False
+                "type": "normalise"
             }
         ]
 
@@ -446,8 +461,7 @@ def get_maf_schema(
                 "activation": "tanh"
             },
             {
-                "type": "batch-norm",
-                "per_channel": False
+                "type": "normalise"
             }
         ]
 
@@ -476,8 +490,7 @@ def get_sos_schema(
                 "polynomial_degree": polynomial_degree
             },
             {
-                "type": "batch-norm",
-                "per_channel": False
+                "type": "normalise"
             }
         ]
 
@@ -515,9 +528,7 @@ def get_nsf_schema(
 
         result.append(
             {
-                "type": "batch-norm",
-                "per_channel": False,
-                "apply_affine": True
+                "type": "normalise"
             }
         )
 
@@ -547,8 +558,7 @@ def get_bnaf_schema(
                 "residual": i < num_density_layers - 1
             },
             {
-                "type": "batch-norm",
-                "per_channel": False
+                "type": "normalise"
             }
         ]
 
@@ -590,7 +600,7 @@ def get_planar_schema(config):
 
     result = [
         layer,
-        {"type": "batch-norm", "per_channel": False}
+        {"type": "normalise"}
     ] * config["num_density_layers"]
 
     return [{"type": "flatten"}] + result
@@ -599,7 +609,7 @@ def get_planar_schema(config):
 def get_cond_affine_schema(config):
     return (
         [{"type": "flatten"}] +
-        [{"type": "batch-norm", "per_channel": False}] * config["num_density_layers"]
+        [{"type": "normalise"}] * config["num_density_layers"]
     )
 
 
@@ -624,8 +634,7 @@ def get_flat_resflow_schema(config):
                 }
             },
             {
-                "type": "batch-norm",
-                "per_channel": False
+                "type": "normalise"
             }
         ]
 
@@ -642,7 +651,7 @@ def get_multiscale_resflow_schema(config):
         if i > 0:
             result.append({"type": "squeeze"})
 
-        result.append({"type": "batch-norm", "per_channel": True})
+        result.append({"type": "normalise"})
 
         for j in range(config["num_blocks_per_scale"]):
             result += [
@@ -654,21 +663,25 @@ def get_multiscale_resflow_schema(config):
                     }
                 },
                 {
-                    "type": "batch-norm",
-                    "per_channel": True
+                    "type": "normalise"
                 }
             ]
 
     result.append({"type": "flatten"})
 
     for _ in range(config["num_output_fc_blocks"]):
-        result.append({
-            "type": "resblock",
-            "net": {
-                "type": "mlp",
-                "hidden_channels": config["output_fc_hidden_channels"]
+        result += [
+            {
+                "type": "resblock",
+                "net": {
+                    "type": "mlp",
+                    "hidden_channels": config["output_fc_hidden_channels"]
+                }
+            },
+            {
+                "type": "normalise"
             }
-        })
+        ]
 
     add_lipschitz_config_to_resblocks(result, config)
 

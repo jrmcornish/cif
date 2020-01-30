@@ -126,6 +126,7 @@ def glow(dataset, model, use_baseline):
 #   * They train on the full training set and take the model with best test score,
 #     whereas we use a validation set that is extracted from the training set
 #   * They resize MNIST to 32x32 whereas we keep the dimension at 28x28
+#   * They do some kind of gradient normalisation, as well as gradient clipping
 #
 # TODO: We need to add actnorm
 @provides("resflow")
@@ -148,6 +149,9 @@ def resflow(dataset, model, use_baseline):
 
         "logit_tf_lambda": logit_tf_lambda,
         "logit_tf_scale": 256,
+
+        "batch_norm": False,
+        "act_norm": True,
 
         "reduce_memory": True,
         "num_scales": 1, #3,
