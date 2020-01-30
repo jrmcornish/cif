@@ -27,16 +27,16 @@ def get_preproc_schema(config):
     else:
         schema = []
 
-    if "logit_tf_lambda" in config and "logit_tf_scale" in config:
-        assert "rescale_tf_scale" not in config
+    if config.get("logit_tf_lambda") is not None and config.get("logit_tf_scale") is not None:
+        assert config.get("rescale_tf_scale") is None
         schema += get_logit_tf_schema(
             lam=config["logit_tf_lambda"],
             scale=config["logit_tf_scale"]
         )
 
-    elif "centering_tf_scale" in config:
-        assert "logit_tf_lambda" not in config
-        assert "logit_tf_scale" not in config
+    elif config.get("centering_tf_scale") is not None:
+        assert config.get("logit_tf_lambda") is None
+        assert config.get("logit_tf_scale") is None
         schema += get_centering_tf_schema(
             scale=config["centering_tf_scale"]
         )

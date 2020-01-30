@@ -25,11 +25,11 @@ class ResidualFlowBijection(Bijection):
         self.block = self._get_iresblock(net=lipschitz_net, reduce_memory=reduce_memory)
 
     def _x_to_z(self, x, **kwargs):
-        z, neg_log_jac = self.block(x, x.new_zeros((x.shape[0], 1)))
+        z, neg_log_jac = self.block(x=x, logpx=0.)
         return {"z": z, "log-jac": -neg_log_jac}
 
     def _z_to_x(self, z, **kwargs):
-        x, neg_log_jac = self.block.inverse(z, z.new_zeros((z.shape[0], 1)))
+        x, neg_log_jac = self.block.inverse(y=z, logpy=0.)
         return {"x": x, "log-jac": -neg_log_jac}
 
     def _get_iresblock(self, net, reduce_memory):

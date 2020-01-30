@@ -108,10 +108,30 @@ def glow(dataset, model, use_baseline):
     return config
 
 
+# NOTE: We differ from the ResFlows paper in the following ways:
+#
+#   * We do not do Polyak averaging
+#   * We have weight_decay = 0. (Note that if we want to set this ourselves,
+#     we would need to correct for the fact that their objective is in bpd.)
+#   * Our logit transform for MNIST has parameter 1e-6 instead of 1e-5 (although
+#     1e-6 is what is used in the `residual-flows` implementation).
+#
+# Unlike the ResFlows paper, we do not do Polyak averaging
+# Additionally, although not mentioned in the ResFlows paper, we differ 
+# from the `residual-flows` implementation in the following ways:
+#
+#   * We use default hyperparameters for Adam, i.e. betas = (0.9, 0.999). In
+#     `residual-flows`, they use betas = (0.9, 0.99).
+#   * We do not use learning rate warmup
+#   * They train on the full training set and take the model with best test score,
+#     whereas we use a validation set that is extracted from the training set
+#   * They resize MNIST to 32x32 whereas we keep the dimension at 28x28
+#
+# TODO: We need to add actnorm
 @provides("resflow")
 def resflow(dataset, model, use_baseline):
     logit_tf_lambda = {
-        "mnist": 1e-5,
+        "mnist": 1e-6,
         "cifar10": 0.05,
     }[dataset]
 
@@ -124,9 +144,7 @@ def resflow(dataset, model, use_baseline):
 
         "opt": "adam",
         "lr": 1e-3,
-        "weight_decay": 0., # TODO: Differs from paper
-
-        # NOTE: Unlike paper, we do not do Polyak averaging
+        "weight_decay": 0.,
 
         "logit_tf_lambda": logit_tf_lambda,
         "logit_tf_scale": 256,
