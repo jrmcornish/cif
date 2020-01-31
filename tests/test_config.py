@@ -21,7 +21,8 @@ def test_baseline_glow_config():
         "weight_decay": 0.1,
         "centering_tf_scale": 256,
         "dequantize": True,
-        "batch_norm": True,
+        "act_norm": False, # TODO: Should be True
+        "batch_norm": True, # TODO: Should be False
         "batch_norm_apply_affine": True,
         "batch_norm_use_running_averages": True,
         "batch_norm_momentum": 0.1,
@@ -60,6 +61,7 @@ def test_lgf_glow_config():
         "weight_decay": 0.1,
         "centering_tf_scale": 256,
         "dequantize": True,
+        "act_norm": False,
         "batch_norm": True,
         "batch_norm_apply_affine": False,
         "batch_norm_use_running_averages": True,
@@ -112,6 +114,7 @@ def test_lgf_realnvp_config():
         "logit_tf_lambda": 1e-06,
         "logit_tf_scale": 256,
         "dequantize": True,
+        "act_norm": False,
         "batch_norm": True,
         "batch_norm_apply_affine": False,
         "batch_norm_use_running_averages": True,
@@ -156,6 +159,7 @@ def test_baseline_realnvp_config():
         "logit_tf_lambda": 1e-06,
         "logit_tf_scale": 256,
         "dequantize": True,
+        "act_norm": False,
         "batch_norm": True,
         "batch_norm_apply_affine": True,
         "batch_norm_use_running_averages": True,

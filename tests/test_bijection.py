@@ -519,8 +519,12 @@ class TestResidualFlowBijection(_TestBijection, unittest.TestCase):
                 num_input_channels=num_input_channels,
                 hidden_channels=[20, 30],
                 num_output_channels=4,
-                lipschitz_constant=0.9
-            )
+                lipschitz_constant=0.9,
+                max_train_lipschitz_iters=None,
+                max_test_lipschitz_iters=None,
+                lipschitz_tolerance=1e-3
+            ),
+            reduce_memory=True
         )
 
 
