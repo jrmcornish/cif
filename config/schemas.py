@@ -184,9 +184,12 @@ def replace_normalise_with_act_norm(schema):
 
 def add_cond_affine_before_each_normalise(schema, config):
     new_schema = []
+    flattened = False
     for layer in schema:
-        if layer["type"] == "normalise":
-            new_schema.append(get_cond_affine_layer(config))
+        if layer["type"] == "flatten":
+            flattened = True
+        elif layer["type"] == "normalise":
+            new_schema.append(get_cond_affine_layer(config, flattened))
 
         new_schema.append(layer)
 
@@ -195,12 +198,16 @@ def add_cond_affine_before_each_normalise(schema, config):
 
 def apply_pq_coupler_config_settings(schema, config):
     new_schema = []
+    flattened = False
     for layer in schema:
+        if layer["type"] == "flatten":
+            flattened = True
+
         if layer.get("num_u_channels", 0) > 0:
             layer = {
                 **layer,
-                "p_coupler": get_p_coupler_config(config),
-                "q_coupler": get_q_coupler_config(config)
+                "p_coupler": get_p_coupler_config(config, flattened),
+                "q_coupler": get_q_coupler_config(config, flattened)
             }
 
         new_schema.append(layer)
@@ -223,29 +230,33 @@ def get_centering_tf_schema(scale):
     ]
 
 
-def get_cond_affine_layer(config):
+def get_cond_affine_layer(config, flattened):
     return {
         "type": "cond-affine",
         "num_u_channels": config["num_u_channels"],
-        "st_coupler": get_st_coupler_config(config),
+        "st_coupler": get_st_coupler_config(config, flattened),
     }
 
 
-def get_st_coupler_config(config):
-    return get_coupler_config("t", "s", "st", config)
+def get_st_coupler_config(config, flattened):
+    return get_coupler_config("t", "s", "st", config, flattened)
 
 
-def get_p_coupler_config(config):
-    return get_coupler_config("p_mu", "p_sigma", "p", config)
+def get_p_coupler_config(config, flattened):
+    return get_coupler_config("p_mu", "p_sigma", "p", config, flattened)
 
 
-def get_q_coupler_config(config):
-    return get_coupler_config("q_mu", "q_sigma", "q", config)
+def get_q_coupler_config(config, flattened):
+    return get_coupler_config("q_mu", "q_sigma", "q", config, flattened)
 
 
-def get_coupler_config(shift_prefix, log_scale_prefix, shift_log_scale_prefix, config):
-    schema_type = config["schema_type"]
-
+def get_coupler_config(
+        shift_prefix,
+        log_scale_prefix,
+        shift_log_scale_prefix,
+        config,
+        flattened
+):
     shift_key = f"{shift_prefix}_nets"
     log_scale_key = f"{log_scale_prefix}_nets"
     shift_log_scale_key = f"{shift_log_scale_prefix}_nets"
@@ -254,8 +265,8 @@ def get_coupler_config(shift_prefix, log_scale_prefix, shift_log_scale_prefix, c
         assert shift_log_scale_key not in config, "Over-specified coupler config"
         return {
             "independent_nets": True,
-            "shift_net": get_coupler_net_config(config[shift_key], schema_type),
-            "log_scale_net": get_coupler_net_config(config[log_scale_key], schema_type)
+            "shift_net": get_coupler_net_config(config[shift_key], flattened),
+            "log_scale_net": get_coupler_net_config(config[log_scale_key], flattened)
         }
 
     elif shift_log_scale_key in config:
@@ -263,14 +274,14 @@ def get_coupler_config(shift_prefix, log_scale_prefix, shift_log_scale_prefix, c
                 "Over-specified coupler config"
         return {
             "independent_nets": False,
-            "shift_log_scale_net": get_coupler_net_config(config[shift_log_scale_key], schema_type)
+            "shift_log_scale_net": get_coupler_net_config(config[shift_log_scale_key], flattened)
         }
 
     else:
         assert False, f"Must specify either `{shift_log_scale_key}', or both `{shift_key}' and `{log_scale_key}'"
 
 
-def get_coupler_net_config(net_spec, schema_type):
+def get_coupler_net_config(net_spec, flattened):
     if net_spec in ["fixed-constant", "learned-constant"]:
         return {
             "type": "constant",
@@ -284,34 +295,25 @@ def get_coupler_net_config(net_spec, schema_type):
         }
 
     elif isinstance(net_spec, list):
-        if schema_type in ["multiscale-realnvp", "multiscale-resflow"]:
-            return {
-                "type": "resnet",
-                "hidden_channels": net_spec
-            }
-
-        elif schema_type in [
-            "maf", "flat-realnvp", "sos", "nsf", "bnaf",
-            "planar", "ffjord", "cond-affine", "resflow"
-        ]:
+        if flattened:
             return {
                 "type": "mlp",
                 "activation": "tanh",
                 "hidden_channels": net_spec
             }
-
         else:
-            assert False, f"Invalid schema type {schema_type} for net specification {net_spec}"
-
-    elif isinstance(net_spec, int):
-        if schema_type == "glow":
             return {
-                "type": "glow-cnn",
-                "num_hidden_channels": net_spec
+                "type": "resnet",
+                "hidden_channels": net_spec
             }
 
-        else:
-            assert False, f"Invalid schema type {schema_type} for net specification {net_spec}"
+    elif isinstance(net_spec, int):
+        assert not flattened
+
+        return {
+            "type": "glow-cnn",
+            "num_hidden_channels": net_spec
+        }
 
     else:
         assert False, f"Invalid net specifier {net_spec}"
