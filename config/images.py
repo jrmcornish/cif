@@ -21,6 +21,7 @@ def config(dataset, use_baseline):
 
         "dequantize": True,
 
+        "act_norm": False,
         "batch_norm": True,
         "batch_norm_apply_affine": use_baseline,
         "batch_norm_use_running_averages": True,
@@ -140,8 +141,8 @@ def resflow(dataset, model, use_baseline):
         "schema_type": "multiscale-resflow",
 
         "train_batch_size": 64,
-        "valid_batch_size": 500,
-        "test_batch_size": 500,
+        "valid_batch_size": 128,
+        "test_batch_size": 128,
 
         "opt": "adam",
         "lr": 1e-3,
@@ -154,13 +155,17 @@ def resflow(dataset, model, use_baseline):
         "act_norm": True,
 
         "reduce_memory": True,
-        "num_scales": 1, #3,
-        "num_blocks_per_scale": 4, # 16,
-        "num_hidden_channels": 64, # 512,
+        "num_scales": 3,
+        "num_blocks_per_scale": 8,
+        "num_hidden_channels": 512,
         "lipschitz_constant": 0.98,
         "max_train_lipschitz_iters": None,
         "max_test_lipschitz_iters": None,
         "lipschitz_tolerance": 1e-3,
         "num_output_fc_blocks": 4,
-        "output_fc_hidden_channels": [32] * 2 # [128] * 2
+        "output_fc_hidden_channels": [128] * 2,
+
+        "st_nets": [10] * 2,
+        "p_nets": [10] * 2,
+        "q_nets": [10] * 2
     }

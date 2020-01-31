@@ -182,7 +182,7 @@ def replace_normalise_with_act_norm(schema):
     return new_schema
 
 
-def add_cond_affine_before_each_norm(schema, config):
+def add_cond_affine_before_each_normalise(schema, config):
     new_schema = []
     for layer in schema:
         if layer["type"] == "normalise":
@@ -284,7 +284,7 @@ def get_coupler_net_config(net_spec, schema_type):
         }
 
     elif isinstance(net_spec, list):
-        if schema_type == "multiscale-realnvp":
+        if schema_type in ["multiscale-realnvp", "multiscale-resflow"]:
             return {
                 "type": "resnet",
                 "hidden_channels": net_spec
@@ -649,7 +649,12 @@ def get_multiscale_resflow_schema(config):
 
     for i in range(config["num_scales"]):
         if i > 0:
-            result.append({"type": "squeeze"})
+            result.append(
+                {
+                    "type": "squeeze",
+                    "factor": 2
+                }
+            )
 
         result.append({"type": "normalise"})
 
