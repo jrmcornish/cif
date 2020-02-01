@@ -156,15 +156,18 @@ def resflow(dataset, model, use_baseline):
 
         "reduce_memory": True,
         "num_scales": 3,
-        "num_blocks_per_scale": 8,
-        "num_hidden_channels": 512,
+        "num_blocks_per_scale": 4,
+        "num_hidden_channels": 128,
         "lipschitz_constant": 0.98,
         "max_train_lipschitz_iters": None,
         "max_test_lipschitz_iters": None,
         "lipschitz_tolerance": 1e-3,
         "num_output_fc_blocks": 4,
-        "output_fc_hidden_channels": [128] * 2,
+        "output_fc_hidden_channels": [64] * 2,
 
+        # TODO: Make glow-cnn's by specifying as integer value.
+        # However, don't necessarily zero outputs (as currently done by Glow CNNs) -
+        # i.e. add option to enable/disable this in schema.
         "st_nets": [10] * 2,
         "p_nets": [10] * 2,
         "q_nets": [10] * 2
