@@ -8,12 +8,14 @@ import numpy as np
 
 import torch
 import torch.optim as optim
+import torch.nn as nn
 
 from .trainer import Trainer
 from .datasets import get_loaders
 from .visualizer import DummyDensityVisualizer, ImageDensityVisualizer, TwoDimensionalDensityVisualizer
 from .models import get_density
 from .writer import Writer, DummyWriter
+from .metrics import metrics
 
 from config import get_schema
 
@@ -101,6 +103,13 @@ def setup_experiment(config, resume_dir):
         device=device
     )
 
+    if torch.cuda.device_count() > 1:
+        print("Using", torch.cuda.device_count(), "GPUs.")
+        density = nn.DataParallel(density)
+
+    # TODO: Could do lazily inside Trainer
+    density.to(torch.device("cuda"))
+
     if config["opt"] == "sgd":
         opt_class = optim.SGD
     elif config["opt"] == "adam":
@@ -156,7 +165,7 @@ def setup_experiment(config, resume_dir):
 
     if config["schema_type"] == "ffjord":
         def train_metrics(density, x):
-            train_info = density.elbo(x)
+            train_info = density("elbo", x)
             loss = -train_info["elbo"].mean()
 
             nfes = torch.tensor(0.)
@@ -167,10 +176,14 @@ def setup_experiment(config, resume_dir):
             return {"loss": loss, "nfes": nfes}
 
     else:
-        train_metrics = lambda density, x: {"loss": -density.elbo(x)["elbo"].mean()}
+        def train_metrics(density, x):
+            return {"loss": -density("elbo", x)["elbo"].mean()}
 
-    valid_loss = lambda density, x: -density.metrics(x, config["num_valid_elbo_samples"])["log-prob"]
-    test_metrics = lambda density, x: density.metrics(x, config["num_test_elbo_samples"])
+    def valid_loss(density, x):
+        return -metrics(density, x, config["num_valid_elbo_samples"])["log-prob"]
+
+    def test_metrics(density, x):
+        return metrics(density, x, config["num_test_elbo_samples"])
 
     trainer = Trainer(
         module=density,

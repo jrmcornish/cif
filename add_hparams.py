@@ -12,6 +12,7 @@ from tensorboardX import SummaryWriter
 import tqdm
 
 from lgf.experiment import load_run, num_params
+from lgf.metrics import metrics
 from config_grouping_functions import differing_keys, get_config_values
 
 root = sys.argv[1]
@@ -45,7 +46,7 @@ for path in tqdm.tqdm(glob.glob(f"{root}/*")):
     with torch.no_grad():
         for (x, _) in tqdm.tqdm(test_loader):
             try:
-                all_metrics = density.metrics(x, num_elbo_samples=num_elbo_samples)
+                all_metrics = metrics(density, x, num_elbo_samples)
                 sum_log_prob += all_metrics["log-prob"].sum().item()
                 sum_elbo_gap += all_metrics["elbo-gap"].sum().item()
             except Exception as e:

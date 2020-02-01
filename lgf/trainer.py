@@ -71,7 +71,7 @@ class Trainer:
             should_checkpoint_best_valid
     ):
         self._module = module
-        self._module.to(device)
+
         self._device = device
 
         self._train_metrics = train_metrics
