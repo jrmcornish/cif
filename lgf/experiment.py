@@ -41,16 +41,24 @@ def train(config, resume_dir):
 
 
 def print_model(config):
-    density, _, _, _ = setup_density_and_loaders(config, torch.device("cpu"))
+    density, _, _, _ = setup_density_and_loaders(
+        config=config,
+        device=torch.device("cpu"),
+        data_parallel=False
+    )
     print(density)
 
 
 def print_num_params(config):
-    density, _, _, _ = setup_density_and_loaders(config, torch.device("cpu"))
+    density, _, _, _ = setup_density_and_loaders(
+        config=config,
+        device=torch.device("cpu"),
+        data_parallel=False
+    )
     print(f"Number of parameters: {num_params(density):,}")
 
 
-def setup_density_and_loaders(config, device):
+def setup_density_and_loaders(config, device, data_parallel):
     train_loader, valid_loader, test_loader = get_loaders(
         dataset=config["dataset"],
         device=device,
@@ -63,13 +71,17 @@ def setup_density_and_loaders(config, device):
 
     density = get_density(
         schema=get_schema(config=config),
-        x_train=train_loader.dataset.x
-    ).to(device)
+        x_train=train_loader.dataset.x,
+        data_parallel=data_parallel
+    )
+
+    # TODO: Could do lazily inside Trainer
+    density.to(device)
 
     return density, train_loader, valid_loader, test_loader
 
 
-def load_run(run_dir, device):
+def load_run(run_dir, device, data_parallel):
     run_dir = Path(run_dir)
 
     with open(run_dir / "config.json", "r") as f:
@@ -77,7 +89,11 @@ def load_run(run_dir, device):
         if config["num_u_channels"] > 0:
             config["test_batch_size"] = 100
 
-    density, train_loader, valid_loader, test_loader = setup_density_and_loaders(config, device)
+    density, train_loader, valid_loader, test_loader = setup_density_and_loaders(
+        config=config,
+        device=device,
+        data_parallel=data_parallel
+    )
 
     try:
         checkpoint = torch.load(run_dir / "checkpoints" / "best_valid.pt", map_location=device)
@@ -100,15 +116,9 @@ def setup_experiment(config, resume_dir):
 
     density, train_loader, valid_loader, test_loader = setup_density_and_loaders(
         config=config,
-        device=device
+        device=device,
+        data_parallel=torch.cuda.device_count() > 1
     )
-
-    if torch.cuda.device_count() > 1:
-        print("Using", torch.cuda.device_count(), "GPUs.")
-        density = nn.DataParallel(density)
-
-    # TODO: Could do lazily inside Trainer
-    density.to(torch.device("cuda"))
 
     if config["opt"] == "sgd":
         opt_class = optim.SGD

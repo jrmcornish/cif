@@ -246,7 +246,7 @@ class LipschitzNetwork(nn.Module):
             self,
             layers,
             max_train_lipschitz_iters,
-            max_test_lipschitz_iters,
+            max_eval_lipschitz_iters,
             lipschitz_tolerance
     ):
         super().__init__()
@@ -255,11 +255,10 @@ class LipschitzNetwork(nn.Module):
         self.net = nn.Sequential(*layers)
 
         self.max_train_lipschitz_iters = max_train_lipschitz_iters
-        self.max_test_lipschitz_iters = max_test_lipschitz_iters
+        self.max_eval_lipschitz_iters = max_eval_lipschitz_iters
         self.lipschitz_tolerance = lipschitz_tolerance
 
-        self.register_forward_pre_hook(self._update_lipschitz_forward_hook)
-        self.register_backward_hook(self._queue_lipschitz_update_backward_hook)
+        self.register_backward_hook(self._queue_lipschitz_update)
 
         self._requires_train_lipschitz_update = True
         self._requires_eval_lipschitz_update = True
@@ -267,13 +266,11 @@ class LipschitzNetwork(nn.Module):
     def forward(self, inputs):
         return self.net(inputs)
 
-    def _queue_lipschitz_update_backward_hook(self, *args, **kwargs):
+    def _queue_lipschitz_update(self, *args, **kwargs):
         self._requires_train_lipschitz_update = True
         self._requires_eval_lipschitz_update = True
 
-    def _update_lipschitz_forward_hook(self, *args, **kwargs):
-        # NOTE: Numbers of iterations from defaults in train_toy.py
-
+    def update_lipschitz_constant(self):
         if self.training:
             if self._requires_train_lipschitz_update:
                 self._update_lipschitz(max_iterations=self.max_train_lipschitz_iters)
@@ -281,7 +278,7 @@ class LipschitzNetwork(nn.Module):
 
         else:
             if self._requires_eval_lipschitz_update:
-                self._update_lipschitz(max_iterations=self.max_test_lipschitz_iters)
+                self._update_lipschitz(max_iterations=self.max_eval_lipschitz_iters)
                 self._requires_eval_lipschitz_update = False
                 self._requires_train_lipschitz_update = False
 
@@ -319,7 +316,7 @@ def get_lipschitz_mlp(
         num_output_channels,
         lipschitz_constant,
         max_train_lipschitz_iters,
-        max_test_lipschitz_iters,
+        max_eval_lipschitz_iters,
         lipschitz_tolerance
 ):
     layers = []
@@ -333,7 +330,7 @@ def get_lipschitz_mlp(
                 num_output_channels=num_channels,
 
                 lipschitz_constant=lipschitz_constant,
-                max_lipschitz_iters=max_test_lipschitz_iters,
+                max_lipschitz_iters=max_eval_lipschitz_iters,
                 lipschitz_tolerance=lipschitz_tolerance,
 
                 # Zero the weight matrix of the final layer. Done to align with
@@ -347,7 +344,7 @@ def get_lipschitz_mlp(
     return LipschitzNetwork(
         layers=layers,
         max_train_lipschitz_iters=max_train_lipschitz_iters,
-        max_test_lipschitz_iters=max_test_lipschitz_iters,
+        max_eval_lipschitz_iters=max_eval_lipschitz_iters,
         lipschitz_tolerance=lipschitz_tolerance
     )
 
@@ -389,7 +386,7 @@ def get_lipschitz_cnn(
         num_output_channels,
         lipschitz_constant,
         max_train_lipschitz_iters,
-        max_test_lipschitz_iters,
+        max_eval_lipschitz_iters,
         lipschitz_tolerance
 ):
     assert len(input_shape) == 3
@@ -401,7 +398,7 @@ def get_lipschitz_cnn(
         kernel_size=3,
         padding=1,
         lipschitz_constant=lipschitz_constant,
-        max_lipschitz_iters=max_test_lipschitz_iters,
+        max_lipschitz_iters=max_eval_lipschitz_iters,
         lipschitz_tolerance=lipschitz_tolerance
     )
 
@@ -411,7 +408,7 @@ def get_lipschitz_cnn(
         kernel_size=1,
         padding=0,
         lipschitz_constant=lipschitz_constant,
-        max_lipschitz_iters=max_test_lipschitz_iters,
+        max_lipschitz_iters=max_eval_lipschitz_iters,
         lipschitz_tolerance=lipschitz_tolerance
     )
 
@@ -421,7 +418,7 @@ def get_lipschitz_cnn(
         kernel_size=3,
         padding=1,
         lipschitz_constant=lipschitz_constant,
-        max_lipschitz_iters=max_test_lipschitz_iters,
+        max_lipschitz_iters=max_eval_lipschitz_iters,
         lipschitz_tolerance=lipschitz_tolerance
     )
 
@@ -437,7 +434,7 @@ def get_lipschitz_cnn(
     return LipschitzNetwork(
         layers=layers,
         max_train_lipschitz_iters=max_train_lipschitz_iters,
-        max_test_lipschitz_iters=max_test_lipschitz_iters,
+        max_eval_lipschitz_iters=max_eval_lipschitz_iters,
         lipschitz_tolerance=lipschitz_tolerance
     )
 

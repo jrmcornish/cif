@@ -31,7 +31,8 @@ for path in tqdm.tqdm(glob.glob(f"{root}/*")):
     try:
         density, train_loader, valid_loader, test_loader, config, checkpoint = load_run(
             run_dir=path,
-            device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+            data_parallel=torch.cuda.device_count() > 1
         )
     except KeyError as e:
         import ipdb; ipdb.set_trace()

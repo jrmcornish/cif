@@ -22,9 +22,6 @@ class Density(nn.Module):
         fixed_density, _ = self._fix_random_u()
         return fixed_density
 
-    def _fix_random_u(self):
-        raise NotImplementedError
-
     def fix_u(self, u):
         raise NotImplementedError
 
@@ -36,6 +33,9 @@ class Density(nn.Module):
 
     def fixed_sample(self, noise=None):
         return self("fixed-sample", noise)
+
+    def _fix_random_u(self):
+        raise NotImplementedError
 
     def _elbo(self, x):
         raise NotImplementedError

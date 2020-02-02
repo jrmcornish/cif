@@ -40,7 +40,9 @@ from .components.densities import (
     BijectionDensity,
     SplitDensity,
     DequantizationDensity,
-    PassthroughBeforeEvalDensity
+    PassthroughBeforeEvalDensity,
+    UpdateLipschitzBeforeForwardDensity,
+    DataParallelDensity
 )
 from .components.couplers import IndependentCoupler, ChunkedSharedCoupler
 from .components.networks import (
@@ -52,14 +54,22 @@ from .components.networks import (
     get_lipschitz_cnn
 )
 
-
 def get_density(
         schema,
-        x_train
+        x_train,
+        data_parallel
 ):
     x_shape = x_train.shape[1:]
 
+    # TODO: Ugly to have the first schema item be special like this.
+    # Would be better to have a schema be a dict of form:
+    #   {
+    #       "wrappers": [{"type": "wrapper-1-type", ...}, ...],
+    #       "x-to-z": [{"type": ...}, ...]
+    #   }
     if schema[0]["type"] == "passthrough-before-eval":
+        assert not data_parallel, "Not yet supported due to possibly unexpected behaviour"
+
         num_points = schema[0]["num_passthrough_data_points"]
         x_idxs = torch.randperm(x_train.shape[0])[:num_points]
         return PassthroughBeforeEvalDensity(
@@ -67,8 +77,20 @@ def get_density(
             x=x_train[x_idxs]
         )
 
-    else:
-        return get_density_recursive(schema, x_shape)
+    density = get_density_recursive(schema, x_shape)
+
+    if data_parallel:
+        density = DataParallelDensity(density)
+
+    # We have to do this _after_ DataParallel because we need Lipschitz updates to
+    # happen globally, i.e. not be split on separate GPUs, or we will get autograd
+    # errors.
+    for layer in schema:
+        if layer["type"] == "resblock":
+            density = UpdateLipschitzBeforeForwardDensity(density)
+            break
+
+    return density
 
 
 def get_density_recursive(
@@ -490,7 +512,7 @@ def get_lipschitz_net(input_shape, num_output_channels, config):
             num_output_channels=num_output_channels,
             lipschitz_constant=config["lipschitz_constant"],
             max_train_lipschitz_iters=config["max_train_lipschitz_iters"],
-            max_test_lipschitz_iters=config["max_test_lipschitz_iters"],
+            max_eval_lipschitz_iters=config["max_test_lipschitz_iters"],
             lipschitz_tolerance=config["lipschitz_tolerance"]
         )
 
@@ -502,7 +524,7 @@ def get_lipschitz_net(input_shape, num_output_channels, config):
             num_output_channels=num_output_channels,
             lipschitz_constant=config["lipschitz_constant"],
             max_train_lipschitz_iters=config["max_train_lipschitz_iters"],
-            max_test_lipschitz_iters=config["max_test_lipschitz_iters"],
+            max_eval_lipschitz_iters=config["max_test_lipschitz_iters"],
             lipschitz_tolerance=config["lipschitz_tolerance"]
         )
 
