@@ -645,12 +645,18 @@ def get_flat_resflow_schema(config):
     return result
 
 
-# TODO: Should have actnorm rather than batchnorm
 def get_multiscale_resflow_schema(config):
     result = []
 
-    for i in range(config["num_scales"]):
-        if i > 0:
+    for i, num_blocks in enumerate(config["scales"]):
+        if i == 0:
+            result.append(
+                {
+                    "type": "normalise"
+                }
+            )
+
+        else:
             result.append(
                 {
                     "type": "squeeze",
@@ -658,9 +664,7 @@ def get_multiscale_resflow_schema(config):
                 }
             )
 
-        result.append({"type": "normalise"})
-
-        for j in range(config["num_blocks_per_scale"]):
+        for j in range(num_blocks):
             result += [
                 {
                     "type": "resblock",

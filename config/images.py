@@ -155,8 +155,7 @@ def resflow(dataset, model, use_baseline):
         "act_norm": True,
 
         "reduce_memory": True,
-        "num_scales": 3,
-        "num_blocks_per_scale": 4,
+        "scales": [4] * 3,
         "num_hidden_channels": 128,
         "lipschitz_constant": 0.98,
         "max_train_lipschitz_iters": None,
