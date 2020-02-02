@@ -308,12 +308,19 @@ def get_coupler_net_config(net_spec, flattened):
             }
 
     elif isinstance(net_spec, int):
-        assert not flattened
-
-        return {
-            "type": "glow-cnn",
-            "num_hidden_channels": net_spec
-        }
+        if flattened:
+            return {
+                "type": "mlp",
+                "activation": "tanh",
+                # Multiply by 2 to match the 2 hidden layers of the glow-cnns
+                "hidden_channels": [net_spec] * 2
+            }
+        else:
+            return {
+                "type": "glow-cnn",
+                "num_hidden_channels": net_spec,
+                "zero_init_output": True
+            }
 
     else:
         assert False, f"Invalid net specifier {net_spec}"
@@ -391,7 +398,8 @@ def get_glow_schema(
                         "independent_nets": False,
                         "shift_log_scale_net": {
                             "type": "glow-cnn",
-                            "num_hidden_channels": coupler_num_hidden_channels
+                            "num_hidden_channels": coupler_num_hidden_channels,
+                            "zero_init_output": True
                         }
                     },
                     "num_u_channels": 0
@@ -678,7 +686,11 @@ def get_multiscale_resflow_schema(config):
                 }
             ]
 
-    result.append({"type": "flatten"})
+    result.append(
+        {
+            "type": "flatten"
+        }
+    )
 
     for _ in range(config["num_output_fc_blocks"]):
         result += [

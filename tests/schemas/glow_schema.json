@@ -1,0 +1,2335 @@
+[
+    {
+        "type": "dequantization"
+    },
+    {
+        "type": "scalar-mult",
+        "value": 0.00390625
+    },
+    {
+        "type": "scalar-add",
+        "value": -0.5
+    },
+    {
+        "type": "squeeze",
+        "factor": 2
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "split"
+    },
+    {
+        "type": "squeeze",
+        "factor": 2
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "split"
+    },
+    {
+        "type": "squeeze",
+        "factor": 2
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "invconv",
+        "lu": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "glow-cnn",
+                "num_hidden_channels": 512,
+                "zero_init_output": true
+            }
+        },
+        "num_u_channels": 0
+    }
+]

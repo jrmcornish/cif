@@ -43,7 +43,8 @@ class TestGlowCNN(unittest.TestCase):
         glow_cnn = get_glow_cnn(
             num_input_channels=in_channels,
             num_hidden_channels=hidden_channels[0],
-            num_output_channels=out_channels
+            num_output_channels=out_channels,
+            zero_init_output=True
         )
 
         batch_size = 5

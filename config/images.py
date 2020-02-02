@@ -164,10 +164,7 @@ def resflow(dataset, model, use_baseline):
         "num_output_fc_blocks": 4,
         "output_fc_hidden_channels": [64] * 2,
 
-        # TODO: Make glow-cnn's by specifying as integer value.
-        # However, don't necessarily zero outputs (as currently done by Glow CNNs) -
-        # i.e. add option to enable/disable this in schema.
-        "st_nets": [10] * 2,
-        "p_nets": [10] * 2,
-        "q_nets": [10] * 2
+        "st_nets": 32,
+        "p_nets": 32,
+        "q_nets": 32
     }

@@ -119,7 +119,12 @@ def get_resnet(
     )
 
 
-def get_glow_cnn(num_input_channels, num_hidden_channels, num_output_channels):
+def get_glow_cnn(
+        num_input_channels,
+        num_hidden_channels,
+        num_output_channels,
+        zero_init_output
+):
     conv1 = nn.Conv2d(
         in_channels=num_input_channels,
         out_channels=num_hidden_channels,
@@ -146,8 +151,10 @@ def get_glow_cnn(num_input_channels, num_hidden_channels, num_output_channels):
         kernel_size=3,
         padding=1
     )
-    conv3.weight.data.zero_()
-    conv3.bias.data.zero_()
+
+    if zero_init_output:
+        conv3.weight.data.zero_()
+        conv3.bias.data.zero_()
 
     relu = nn.ReLU()
 

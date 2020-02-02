@@ -480,7 +480,8 @@ def get_coupler_net(input_shape, num_output_channels, net_config):
         return get_glow_cnn(
             num_input_channels=num_input_channels,
             num_hidden_channels=net_config["num_hidden_channels"],
-            num_output_channels=num_output_channels
+            num_output_channels=num_output_channels,
+            zero_init_output=net_config["zero_init_output"]
         )
 
     elif net_config["type"] == "constant":
