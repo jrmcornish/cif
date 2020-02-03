@@ -79,6 +79,7 @@ def get_density(
 
     density = get_density_recursive(schema, x_shape)
 
+    # TODO: This can create problems with parallelisation
     if data_parallel:
         density = DataParallelDensity(density)
 
