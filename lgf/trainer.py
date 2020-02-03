@@ -128,6 +128,8 @@ class Trainer:
         self._trainer.add_event_handler(Events.EPOCH_COMPLETED, self._test)
         self._tester.add_event_handler(Events.EPOCH_STARTED, lambda _: self._module.eval())
 
+        self._trainer.add_event_handler(Events.EPOCH_STARTED, self._test)
+
         ### Checkpointing
 
         if should_checkpoint_latest:
@@ -174,6 +176,9 @@ class Trainer:
             for k, v in state.metrics.items():
                 self._writer.write_scalar(f"test/{k}", v, global_step=engine.state.epoch)
 
+                if not torch.isfinite(v):
+                    self._save_checkpoint(tag="nan_test")
+
             self._visualizer.visualize(self._module, epoch)
 
     def _test_batch(self, engine, batch):
@@ -195,6 +200,9 @@ class Trainer:
                 self._save_checkpoint(tag="best_valid")
 
         else:
+            if not torch.isfinite(valid_loss):
+                self._save_checkpoint(tag="nan_validation")
+
             self._num_bad_valid_epochs += 1
 
             # We do this manually (i.e. don't use Ignite's early stopping) to permit
