@@ -129,7 +129,6 @@ def glow(dataset, model, use_baseline):
 #   * They resize MNIST to 32x32 whereas we keep the dimension at 28x28
 #   * They do some kind of gradient normalisation, as well as gradient clipping
 #
-# TODO: We need to add actnorm
 @provides("resflow")
 def resflow(dataset, model, use_baseline):
     logit_tf_lambda = {
@@ -141,8 +140,9 @@ def resflow(dataset, model, use_baseline):
         "schema_type": "multiscale-resflow",
 
         "train_batch_size": 64,
-        "valid_batch_size": 128,
-        "test_batch_size": 128,
+        "valid_batch_size": 512,
+        "test_batch_size": 512,
+        "epochs_per_test": 5,
 
         "opt": "adam",
         "lr": 1e-3,
@@ -164,7 +164,7 @@ def resflow(dataset, model, use_baseline):
         "num_output_fc_blocks": 4,
         "output_fc_hidden_channels": [64] * 2,
 
-        "st_nets": 32,
-        "p_nets": 32,
-        "q_nets": 32
+        "st_nets": [32] * 2,
+        "p_nets": [32] * 2,
+        "q_nets": [32] * 2
     }
