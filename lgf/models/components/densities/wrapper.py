@@ -60,7 +60,9 @@ class DataParallelDensity(nn.DataParallel):
         return self("elbo", x)
 
     def sample(self, num_samples):
-        return self("sample", num_samples)
+        # Bypass DataParallel
+        return self.module.sample(num_samples)
 
     def fixed_sample(self, noise=None):
-        return self("fixed-sample", noise)
+        # Bypass DataParallel
+        return self.module.fixed_sample(noise=noise)
