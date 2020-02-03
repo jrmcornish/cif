@@ -140,8 +140,8 @@ def resflow(dataset, model, use_baseline):
         "schema_type": "multiscale-resflow",
 
         "train_batch_size": 64,
-        "valid_batch_size": 512,
-        "test_batch_size": 512,
+        "valid_batch_size": 256,
+        "test_batch_size": 256,
         "epochs_per_test": 5,
 
         "opt": "adam",
