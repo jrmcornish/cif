@@ -128,8 +128,6 @@ class Trainer:
         self._trainer.add_event_handler(Events.EPOCH_COMPLETED, self._test)
         self._tester.add_event_handler(Events.EPOCH_STARTED, lambda _: self._module.eval())
 
-        self._trainer.add_event_handler(Events.EPOCH_STARTED, self._test)
-
         ### Checkpointing
 
         if should_checkpoint_latest:
