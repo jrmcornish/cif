@@ -202,9 +202,9 @@ def maf(dataset, model, use_baseline):
             "q_nets": [200] * 2,
         }
 
-    elif dataset in ["hepmass", "miniboone"]:
+    elif dataset in ["hepmass", "miniboone", "bsds300"]:
         config = {
-            "num_density_layers": 10,
+            "num_density_layers": 5,
             "ar_map_hidden_channels": [512] * 2 if use_baseline else [128] * 2,
 
             "st_nets": [128] * 2,
@@ -212,9 +212,29 @@ def maf(dataset, model, use_baseline):
             "q_nets": [512] * 2
         }
 
+    config["lr"] = 1e-4
     config["schema_type"] = "maf"
 
+    if dataset == "bsds300":
+        config["test_batch_size"] = 1000
+        config["valid_batch_size"] = 1000
+
     return config
+
+
+@provides("realnvp")
+def realnvp(dataset, model, use_baseline):
+    return {
+        "schema_type": "flat-realnvp",
+
+        "num_density_layers": 20,
+        "coupler_shared_nets": True,
+        "coupler_hidden_channels": [1024] * 2,
+
+        "st_nets": [100] * 2,
+        "p_nets": [100] * 2,
+        "q_nets": [100] * 2,
+    }
 
 
 @provides("sos")
@@ -240,7 +260,7 @@ def nsf(dataset, model, use_baseline):
         "schema_type": "nsf",
 
         "autoregressive": True,
-        "num_density_layers": 10 if use_baseline else 10,
+        "num_density_layers": 10,
         "tail_bound": 3,
 
         "batch_norm": False,
@@ -256,7 +276,6 @@ def nsf(dataset, model, use_baseline):
 
         "epochs_per_test": 5,
 
-        "q_nets": [10] * 2
     }
 
     if dataset in ["power", "gas", "hepmass", "bsds300"]:
@@ -275,6 +294,7 @@ def nsf(dataset, model, use_baseline):
             
             "st_nets": [100] * 3,
             "p_nets": [200] * 3,
+            "q_nets": [10] * 2,
         }
 
     elif dataset == "miniboone":
@@ -288,9 +308,10 @@ def nsf(dataset, model, use_baseline):
             "num_hidden_channels": 64,
             "num_bins": 4,
             "dropout_probability": 0.2,
-            
+
             "st_nets": [25] * 3,
             "p_nets": [50] * 3,
+            "q_nets": [10] * 2,
         }
 
     else:
