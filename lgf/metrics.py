@@ -4,7 +4,7 @@ import numpy as np
 def metrics(density, x, num_elbo_samples):
     x_samples = x.repeat_interleave(num_elbo_samples, dim=0)
 
-    result = density("elbo", x_samples)
+    result = density.elbo(x_samples)
 
     elbo_samples = result["elbo"].view(x.shape[0], num_elbo_samples, 1)
     elbo = elbo_samples.mean(dim=1)

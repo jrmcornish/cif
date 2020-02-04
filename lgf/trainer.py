@@ -104,7 +104,6 @@ class Trainer:
         AverageMetric().attach(self._trainer)
         ProgressBar(persist=True).attach(self._trainer, ["loss"])
 
-        self._trainer.add_event_handler(Events.EPOCH_STARTED, lambda _: self._module.train())
         self._trainer.add_event_handler(Events.ITERATION_COMPLETED, TerminateOnNan())
         self._trainer.add_event_handler(Events.ITERATION_COMPLETED, self._log_training_info)
 
@@ -146,6 +145,8 @@ class Trainer:
         self._trainer.run(data=self._train_loader, max_epochs=self._max_epochs)
 
     def _train_batch(self, engine, batch):
+        self._module.train()
+
         x, _ = batch # TODO: Potentially pass y also for genericity
         x = x.to(self._device)
 
@@ -176,7 +177,7 @@ class Trainer:
                 self._writer.write_scalar(f"test/{k}", v, global_step=engine.state.epoch)
 
                 if not torch.isfinite(v):
-                    self._save_checkpoint(tag="nan_test")
+                    self._save_checkpoint(tag="nan_during_test")
 
             self._visualizer.visualize(self._module, epoch)
 
@@ -202,7 +203,7 @@ class Trainer:
 
         else:
             if not torch.isfinite(valid_loss):
-                self._save_checkpoint(tag="nan_validation")
+                self._save_checkpoint(tag="nan_during_validation")
 
             self._num_bad_valid_epochs += 1
 
@@ -273,4 +274,4 @@ class Trainer:
         self._best_valid_loss = checkpoint["best_valid_loss"]
         self._num_bad_valid_epochs = checkpoint["num_bad_valid_epochs"]
 
-        print(f"Loaded checkpoint `{tag}' after epoch {checkpoint['epoch']}")
+        print(f"Loaded checkpoint `{tag}' after epoch {checkpoint['epoch']}", file=sys.stderr)
