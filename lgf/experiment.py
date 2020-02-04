@@ -173,7 +173,7 @@ def setup_experiment(config, resume_dir):
 
         writer = Writer(logdir=logdir, make_subdir=make_subdir, tag_group=config["dataset"])
     else:
-        writer = DummyWriter()
+        writer = DummyWriter(logdir=resume_dir)
 
     if config["dataset"] in ["cifar10", "svhn", "fashion-mnist", "mnist"]:
         visualizer = ImageDensityVisualizer(writer=writer)

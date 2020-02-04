@@ -27,7 +27,9 @@ class Tee:
         self.secondary_file.flush()
 
 
-# TODO: Rename to LogDir or something since we load as well as write
+# TODO: Rename to LogDir or something since we load as well as write. Could make
+# a base class that knows all directories, and then inherit ReadOnlyLogDir and
+# WriteableLogDir.
 class Writer:
     _STDOUT = sys.stdout
     _STDERR = sys.stderr
@@ -41,16 +43,19 @@ class Writer:
 
         self._writer = SummaryWriter(logdir=logdir)
 
+        assert logdir == self._writer.logdir
+        self._logdir = logdir
+
         self._tag_group = tag_group
 
         sys.stdout = Tee(
             primary_file=self._STDOUT,
-            secondary_file=open(os.path.join(self._logdir, "stdout"), "a")
+            secondary_file=open(os.path.join(logdir, "stdout"), "a")
         )
 
         sys.stderr = Tee(
             primary_file=self._STDERR,
-            secondary_file=open(os.path.join(self._logdir, "stderr"), "a")
+            secondary_file=open(os.path.join(logdir, "stderr"), "a")
         )
 
     def write_scalar(self, tag, scalar_value, global_step=None):
@@ -106,15 +111,15 @@ class Writer:
     def _checkpoints_dir(self):
         return os.path.join(self._logdir, "checkpoints")
 
-    @property
-    def _logdir(self):
-        return self._writer.logdir
-
     def _tag(self, tag):
         return f"{self._tag_group}/{tag}"
 
 
-class DummyWriter:
+# XXX: A bit ugly - we only inherit to ensure we have _checkpoint_path()
+class DummyWriter(Writer):
+    def __init__(self, logdir):
+        self._logdir = logdir
+
     def write_scalar(self, tag, scalar_value, global_step=None):
         pass
 
@@ -130,12 +135,14 @@ class DummyWriter:
     def write_json(self, tag, data):
         pass
 
-    def write_checkpoint(self, tag, data):
-        pass
-
     def write_textfile(self, tag, text):
         pass
 
-    # TODO: Ideally we would load something here
+    def write_checkpoint(self, tag, data):
+        pass
+
     def load_checkpoint(self, tag, device):
-        raise FileNotFoundError
+        if self._logdir is None:
+            raise FileNotFoundError
+        else:
+            return super().load_checkpoint(tag, device)
