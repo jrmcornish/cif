@@ -133,6 +133,7 @@ def glow(dataset, model, use_baseline):
 def resflow(dataset, model, use_baseline):
     logit_tf_lambda = {
         "mnist": 1e-6,
+        "fashion-mnist": 1e-6,
         "cifar10": 0.05,
     }[dataset]
 
