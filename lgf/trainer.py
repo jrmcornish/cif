@@ -1,6 +1,7 @@
 import os
 from contextlib import suppress
 from collections import Counter
+import sys
 
 import numpy as np
 
@@ -116,7 +117,6 @@ class Trainer:
             ProgressBar(persist=False, desc="Validating").attach(self._validator)
 
             self._trainer.add_event_handler(Events.EPOCH_COMPLETED, self._validate)
-            self._validator.add_event_handler(Events.EPOCH_STARTED, lambda _: self._module.eval())
 
         ### Testing
 
@@ -125,8 +125,7 @@ class Trainer:
         AverageMetric().attach(self._tester)
         ProgressBar(persist=False, desc="Testing").attach(self._tester)
 
-        self._trainer.add_event_handler(Events.EPOCH_COMPLETED, self._test)
-        self._tester.add_event_handler(Events.EPOCH_STARTED, lambda _: self._module.eval())
+        self._trainer.add_event_handler(Events.EPOCH_COMPLETED, self._test_and_log)
 
         ### Checkpointing
 
@@ -136,12 +135,12 @@ class Trainer:
         try:
             self._load_checkpoint("latest")
         except FileNotFoundError:
-            print("Did not find `latest' checkpoint.")
+            print("Did not find `latest' checkpoint.", file=sys.stderr)
 
             try:
                 self._load_checkpoint("best_valid")
             except FileNotFoundError:
-                print("Did not find `best_valid' checkpoint.")
+                print("Did not find `best_valid' checkpoint.", file=sys.stderr)
 
     def train(self):
         self._trainer.run(data=self._train_loader, max_epochs=self._max_epochs)
@@ -165,13 +164,15 @@ class Trainer:
 
         return train_metrics
 
+    def test(self):
+        self._module.eval()
+        return self._tester.run(data=self._test_loader).metrics
+
     @torch.no_grad()
-    def _test(self, engine):
+    def _test_and_log(self, engine):
         epoch = engine.state.epoch
         if (epoch - 1) % self._epochs_per_test == 0: # Test after first epoch
-            state = self._tester.run(data=self._test_loader)
-
-            for k, v in state.metrics.items():
+            for k, v in self.test().items():
                 self._writer.write_scalar(f"test/{k}", v, global_step=engine.state.epoch)
 
                 if not torch.isfinite(v):
@@ -186,6 +187,8 @@ class Trainer:
 
     @torch.no_grad()
     def _validate(self, engine):
+        self._module.eval()
+
         state = self._validator.run(data=self._valid_loader)
         valid_loss = state.metrics["loss"]
 

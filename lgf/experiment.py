@@ -40,9 +40,23 @@ def train(config, resume_dir):
     trainer.train()
 
 
+def print_test_metrics(config, resume_dir):
+    _, trainer, _ = setup_experiment(
+        config={**config, "write_to_disk": False},
+        resume_dir=resume_dir
+    )
+
+    with torch.no_grad():
+        test_metrics = trainer.test()
+
+    test_metrics = {k: v.item() for k, v in test_metrics.items()}
+
+    print(json.dumps(test_metrics, indent=4))
+
+
 def print_model(config):
     density, _, _, _ = setup_density_and_loaders(
-        config=config,
+        config={**config, "write_to_disk": False},
         device=torch.device("cpu"),
         data_parallel=False
     )
@@ -51,7 +65,7 @@ def print_model(config):
 
 def print_num_params(config):
     density, _, _, _ = setup_density_and_loaders(
-        config=config,
+        config={**config, "write_to_disk": False},
         device=torch.device("cpu"),
         data_parallel=False
     )

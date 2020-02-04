@@ -1,3 +1,5 @@
+import sys
+
 import torch
 
 from .two_d import get_2d_datasets
@@ -25,7 +27,7 @@ def get_loaders(
         valid_batch_size,
         test_batch_size
 ):
-    print("Loading data...", end="", flush=True)
+    print("Loading data...", end="", flush=True, file=sys.stderr)
 
     if dataset in ["cifar10", "svhn", "mnist", "fashion-mnist"]:
         train_dset, valid_dset, test_dset = get_image_datasets(dataset, data_root, make_valid_loader)
@@ -38,7 +40,7 @@ def get_loaders(
         # TODO: Make make_valid_loader apply here too
         train_dset, valid_dset, test_dset = get_2d_datasets(dataset)
 
-    print("Done.")
+    print("Done.", file=sys.stderr)
 
     train_loader = get_loader(train_dset, device, train_batch_size, drop_last=True)
 
