@@ -40,8 +40,8 @@ class BatchNormBijection(Bijection):
             var = self._average((x - mean)**2)
 
             if self.momentum == 1:
-                self.running_mean.copy_(mean)
-                self.running_var.copy_(var)
+                self.running_mean = mean
+                self.running_var = var
 
             elif self.momentum > 0:
                 # TODO: Should raise an exception or do something here if we get a nan
