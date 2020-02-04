@@ -246,7 +246,8 @@ class Trainer:
             "module_state_dict": self._module.state_dict(),
             "opt_state_dict": self._opt.state_dict(),
             "best_valid_loss": self._best_valid_loss,
-            "num_bad_valid_epochs": self._num_bad_valid_epochs
+            "num_bad_valid_epochs": self._num_bad_valid_epochs,
+            "lr_scheduler_state_dict": self._lr_scheduler.state_dict()
         }
 
         self._writer.write_checkpoint(tag, checkpoint)
@@ -263,5 +264,6 @@ class Trainer:
         self._opt.load_state_dict(checkpoint["opt_state_dict"])
         self._best_valid_loss = checkpoint["best_valid_loss"]
         self._num_bad_valid_epochs = checkpoint["num_bad_valid_epochs"]
+        self._lr_scheduler.load_state_dict(checkpoint["lr_scheduler_state_dict"])
 
         print(f"Loaded checkpoint `{tag}' after epoch {checkpoint['epoch']}")
