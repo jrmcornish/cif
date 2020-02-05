@@ -129,7 +129,7 @@ def setup_experiment(config, resume_dir):
     density, train_loader, valid_loader, test_loader = setup_density_and_loaders(
         config=config,
         device=device,
-        data_parallel=torch.cuda.device_count() > 1
+        data_parallel=True
     )
 
     if config["opt"] == "sgd":
