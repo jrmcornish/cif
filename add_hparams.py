@@ -58,7 +58,7 @@ for path in tqdm.tqdm(glob.glob(f"{root}/*")):
 
     points_in_test = test_loader.dataset.x.shape[0]
     metrics = {
-        "bpd": sum_bpd / amount,
+        "bpd": sum_bpd / points_in_test,
         "log-prob": sum_log_prob / points_in_test,
         "elbo-gap": sum_elbo_gap / points_in_test,
         "epoch": checkpoint["epoch"],
