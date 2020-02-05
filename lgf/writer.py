@@ -15,6 +15,10 @@ class Tee:
 
         self.encoding = self.primary_file.encoding
 
+    # TODO: Should redirect all attrs to primary_file if not found here.
+    def isatty(self):
+        return self.primary_file.isatty()
+
     def fileno(self):
         return self.primary_file.fileno()
 
