@@ -204,20 +204,23 @@ def maf(dataset, model, use_baseline):
 
     elif dataset in ["hepmass", "miniboone", "bsds300"]:
         config = {
-            "num_density_layers": 5,
-            "ar_map_hidden_channels": [512] * 2 if use_baseline else [128] * 2,
+            "num_density_layers": 10,
+            "ar_map_hidden_channels": [512] * 2,
 
             "st_nets": [128] * 2,
             "p_nets": [512] * 2,
             "q_nets": [512] * 2
         }
 
-    config["lr"] = 1e-4
     config["schema_type"] = "maf"
 
     if dataset == "bsds300":
+        config["lr"] = 1e-4
         config["test_batch_size"] = 1000
         config["valid_batch_size"] = 1000
+
+        if not use_baseline:
+            config["epochs_per_test"] = 1000
 
     return config
 
