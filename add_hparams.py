@@ -42,6 +42,7 @@ for path in tqdm.tqdm(glob.glob(f"{root}/*")):
 
     density.eval()
     sum_log_prob = 0.
+    sum_bpd = 0.
     sum_elbo_gap = 0.
 
     with torch.no_grad():
@@ -49,6 +50,7 @@ for path in tqdm.tqdm(glob.glob(f"{root}/*")):
             try:
                 all_metrics = metrics(density, x, num_elbo_samples)
                 sum_log_prob += all_metrics["log-prob"].sum().item()
+                sum_bpd += all_metrics["bpd"].sum().item()
                 sum_elbo_gap += all_metrics["elbo-gap"].sum().item()
             except Exception as e:
                 import ipdb; ipdb.set_trace()
@@ -56,6 +58,7 @@ for path in tqdm.tqdm(glob.glob(f"{root}/*")):
 
     points_in_test = test_loader.dataset.x.shape[0]
     metrics = {
+        "bpd": sum_bpd / amount,
         "log-prob": sum_log_prob / points_in_test,
         "elbo-gap": sum_elbo_gap / points_in_test,
         "epoch": checkpoint["epoch"],

@@ -100,8 +100,6 @@ def load_run(run_dir, device, data_parallel):
 
     with open(run_dir / "config.json", "r") as f:
         config = json.load(f)
-        if config["num_u_channels"] > 0:
-            config["test_batch_size"] = 100
 
     density, train_loader, valid_loader, test_loader = setup_density_and_loaders(
         config=config,
