@@ -214,3 +214,46 @@ def resflow(dataset, model, use_baseline):
         "p_nets": [32] * 2,
         "q_nets": [32] * 2
     }
+
+
+@provides("resflow-small")
+def resflow(dataset, model, use_baseline):
+    logit_tf_lambda = {
+        "mnist": 1e-6,
+        "fashion-mnist": 1e-6,
+        "cifar10": 0.05,
+    }[dataset]
+
+    return {
+        "schema_type": "multiscale-resflow",
+
+        "train_batch_size": 64,
+        "valid_batch_size": 256,
+        "test_batch_size": 256,
+        "epochs_per_test": 5,
+
+        "opt": "adam",
+        "lr": 1e-3,
+        "weight_decay": 0.,
+
+        "logit_tf_lambda": logit_tf_lambda,
+        "logit_tf_scale": 256,
+
+        "batch_norm": False,
+        "act_norm": True,
+
+        "reduce_memory": True,
+        "scales": [3, 3, 2],
+        "num_hidden_channels": 64,
+        "lipschitz_constant": 0.98,
+        "max_train_lipschitz_iters": None,
+        "max_test_lipschitz_iters": None,
+        "lipschitz_tolerance": 1e-3,
+        "num_output_fc_blocks": 2,
+        "output_fc_hidden_channels": [32] * 2,
+
+        "st_nets": [64] * 2,
+        "p_nets": [64] * 2,
+        "q_nets": [64] * 2
+    }
+
