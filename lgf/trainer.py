@@ -264,6 +264,9 @@ class Trainer:
         self._opt.load_state_dict(checkpoint["opt_state_dict"])
         self._best_valid_loss = checkpoint["best_valid_loss"]
         self._num_bad_valid_epochs = checkpoint["num_bad_valid_epochs"]
-        self._lr_scheduler.load_state_dict(checkpoint["lr_scheduler_state_dict"])
+        try:
+            self._lr_scheduler.load_state_dict(checkpoint["lr_scheduler_state_dict"])
+        except KeyError:
+            print("No lr scheduler in saved checkpoint")
 
         print(f"Loaded checkpoint `{tag}' after epoch {checkpoint['epoch']}")
