@@ -17,12 +17,19 @@ from ignite.contrib.handlers.tensorboard_logger import TensorboardLogger, Output
 
 
 class AverageMetric(Metric):
+    # XXX: This is not ideal, since we are overriding a protected attribute in Metric.
+    # However, as of ignite v0.3.0, this is necessary to allow us to return a
+    # map from the Engines we attach this to. (In particular, note that e.g.
+    # `Trainer._train_batch` should return a map of the form `{"metrics": METRICS_MAP}`.)
+    _required_output_keys = ["metrics"]
+
     def reset(self):
         self._sums = Counter()
         self._num_examples = Counter()
 
     def update(self, output):
-        for k, v in output.items():
+        metrics, = output
+        for k, v in metrics.items():
             self._sums[k] += torch.sum(v)
             self._num_examples[k] += torch.numel(v)
 
@@ -163,7 +170,7 @@ class Trainer:
 
         self._lr_scheduler.step()
 
-        return train_metrics
+        return {"metrics": train_metrics}
 
     def test(self):
         self._module.eval()
@@ -184,7 +191,7 @@ class Trainer:
     def _test_batch(self, engine, batch):
         x, _ = batch
         x = x.to(self._device)
-        return self._test_metrics(self._module, x)
+        return {"metrics": self._test_metrics(self._module, x)}
 
     @torch.no_grad()
     def _validate(self, engine):
@@ -218,13 +225,13 @@ class Trainer:
     def _validate_batch(self, engine, batch):
         x, _ = batch
         x = x.to(self._device)
-        return {"loss": self._valid_loss(self._module, x)}
+        return {"metrics": {"loss": self._valid_loss(self._module, x)}}
 
     def _log_training_info(self, engine):
         i = engine.state.iteration
 
         if i % self._STEPS_PER_LOSS_WRITE == 0:
-            for k, v in engine.state.output.items():
+            for k, v in engine.state.output["metrics"].items():
                 self._writer.write_scalar("train/" + k, v, global_step=i)
 
         # TODO: Inefficient to recompute this if we are doing gradient clipping
