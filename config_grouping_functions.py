@@ -19,7 +19,7 @@ def all_keys(configs):
 
 
 def should_ignore_key(key):
-    return key in ["seed", "schema_type", "max_bad_valid_epochs"]
+    return key in ["seed", "schema_type", "max_bad_valid_epochs", "valid_batch_size", "test_batch_size"]
 
 
 def differing_keys(root):

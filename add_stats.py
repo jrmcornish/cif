@@ -9,14 +9,19 @@ import numpy as np
 
 
 root = sys.argv[1]
+try:
+    depth = int(sys.argv[2])
+except IndexError:
+    depth = 3
+trail = "/*" * depth
 
 
-for group in glob.glob(f"{root}/*/*/*"):
+for group in glob.glob(f"{root}{trail}"):
     if os.path.exists(f"{group}/stats.json"):
         os.unlink(f"{group}/stats.json")
 
 
-for group in glob.glob(f"{root}/*/*/*"):
+for group in glob.glob(f"{root}{trail}"):
     if not os.path.isdir(group):
         continue
 
@@ -24,6 +29,8 @@ for group in glob.glob(f"{root}/*/*/*"):
     
 
     for run in glob.glob(f"{group}/*"):
+        if not os.path.isdir(run):
+            continue
         try:
             with open(f"{run}/metrics.json", "r") as f:
                 metrics = json.load(f)
@@ -35,10 +42,10 @@ for group in glob.glob(f"{root}/*/*/*"):
     else:
         stats = { "mean": np.mean(log_probs) }
 
-        if len(log_probs) >= 3:
+        if len(log_probs) >= 2:
             stats["stderr"] = np.std(log_probs) / np.sqrt(len(log_probs))
         else:
-            print(f"No stderr for {group} because less than 3 samples")
+            print(f"No stderr for {group} because fewer than 3 samples")
 
         with open(f"{group}/stats.json", "w") as f:
             json.dump(stats, f)

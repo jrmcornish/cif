@@ -208,19 +208,15 @@ def maf(dataset, model, use_baseline):
             "ar_map_hidden_channels": [512] * 2,
 
             "st_nets": [128] * 2,
-            "p_nets": [512] * 2,
-            "q_nets": [512] * 2
+            "p_nets": [128] * 2,
+            "q_nets": [128] * 2
         }
 
     config["schema_type"] = "maf"
+    config["batch_norm"] = use_baseline
 
     if dataset == "bsds300":
         config["lr"] = 1e-4
-        config["test_batch_size"] = 1000
-        config["valid_batch_size"] = 1000
-
-        if not use_baseline:
-            config["epochs_per_test"] = 1000
 
     return config
 

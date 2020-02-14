@@ -30,6 +30,9 @@ for model_dir in glob.glob(f"{root}/*/*"):
     for i, group in enumerate(groups):
         group_dir = f"{model_dir}/{i}"
         os.makedirs(group_dir)
+        shutil.copyfile(f"{group[0]}/config.json", f"{group_dir}/config.json")
+
         for run in group:
             shutil.move(run, group_dir)
+
 
