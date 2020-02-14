@@ -62,13 +62,16 @@ class DiagonalGaussianDensity(Density):
         assert not u
         return self
 
-    def _elbo(self, w):
+    def _elbo(self, z):
         log_prob = diagonal_gaussian_log_prob(
-            w,
-            self.mean.expand_as(w),
-            self.stddev.expand_as(w),
+            z,
+            self.mean.expand_as(z),
+            self.stddev.expand_as(z),
         )
-        return {"elbo": log_prob}
+        return {
+            "elbo": log_prob,
+            "z": z
+        }
 
     def _sample(self, num_samples):
         samples, _ = diagonal_gaussian_sample(
@@ -78,7 +81,7 @@ class DiagonalGaussianDensity(Density):
         return samples
 
     def _fixed_sample(self, noise):
-        return noise
+        return noise if noise is not None else self._fixed_samples
 
 
 class DiagonalGaussianConditionalDensity(nn.Module):

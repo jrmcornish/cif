@@ -17,9 +17,9 @@ class SplitDensity(Density):
         elbo2 = self.density_2.elbo(x2)["elbo"]
         return {"elbo": elbo1 + elbo2}
 
-    def _fixed_sample(self):
-        x1 = self.density_1.fixed_sample()
-        x2 = self.density_2.fixed_sample()
+    def _fixed_sample(self, noise):
+        x1 = self.density_1.fixed_sample(noise=noise)
+        x2 = self.density_2.fixed_sample(noise=noise)
         return torch.cat((x1, x2), dim=self.dim)
 
     def _sample(self, num_samples):

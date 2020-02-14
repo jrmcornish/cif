@@ -47,6 +47,7 @@ parser.add_argument("--print-config", action="store_true", help="Print the full 
 parser.add_argument("--print-schema", action="store_true", help="Print the model schema and exit")
 parser.add_argument("--print-model", action="store_true", help="Print the model and exit")
 parser.add_argument("--print-num-params", action="store_true", help="Print the number of parameters and exit")
+parser.add_argument("--test", action="store_true", help="Test model and exit instead of training.")
 
 args = parser.parse_args()
 
@@ -104,13 +105,13 @@ grid = expand_grid(config)
 if args.print_model:
     from lgf.experiment import print_model
     for c in grid:
-        print_model({**c, "write_to_disk": False})
+        print_model(c)
     should_train = False
 
 if args.print_num_params:
     from lgf.experiment import print_num_params
     for c in grid:
-        print_num_params({**c, "write_to_disk": False})
+        print_num_params(c)
     should_train = False
 
 if args.print_schema:
@@ -125,11 +126,15 @@ if args.print_schema:
             print(json.dumps(get_schema(c), indent=4))
     should_train = False
 
-if should_train:
-    from lgf.experiment import train
+if should_train or args.test:
+    from lgf.experiment import train, print_test_metrics
     with contextlib.suppress(KeyboardInterrupt):
         for c in grid:
             for _ in range(args.num_seeds):
                 # TODO: A bit misleading to log changed seed if we resume like this
                 c = {**c, "seed": int(time.time() * 1e6) % 2**32}
-                train(config=c, resume_dir=args.resume)
+
+                if args.test:
+                    print_test_metrics(config=c, resume_dir=args.resume)
+                else:
+                    train(config=c, resume_dir=args.resume)

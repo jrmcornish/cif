@@ -9,4 +9,4 @@
 	url = https://github.com/rtqichen/ffjord
 [submodule "gitmodules/residual-flows"]
 	path = gitmodules/residual_flows
-	url = https://github.com/rtqichen/residual-flows.git
+	url = https://github.com/jrmcornish/residual-flows.git

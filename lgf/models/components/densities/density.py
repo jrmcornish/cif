@@ -18,33 +18,9 @@ class Density(nn.Module):
         else:
             assert False, f"Invalid mode {mode}"
 
-    def metrics(self, x, num_elbo_samples=1):
-        x_samples = x.repeat_interleave(num_elbo_samples, dim=0)
-        result = self.elbo(x_samples)
-
-        elbo_samples = result["elbo"].view(x.shape[0], num_elbo_samples, 1)
-        elbo = elbo_samples.mean(dim=1)
-
-        log_prob = elbo_samples.logsumexp(dim=1) - np.log(num_elbo_samples)
-
-        dim = int(np.prod(x.shape[1:]))
-        bpd = -log_prob / dim / np.log(2)
-
-        elbo_gap = log_prob - elbo
-
-        return {
-            "elbo": elbo,
-            "log-prob": log_prob,
-            "elbo-gap": elbo_gap,
-            "bpd": bpd
-        }
-
     def fix_random_u(self):
         fixed_density, _ = self._fix_random_u()
         return fixed_density
-
-    def _fix_random_u(self):
-        raise NotImplementedError
 
     def fix_u(self, u):
         raise NotImplementedError
@@ -55,8 +31,11 @@ class Density(nn.Module):
     def sample(self, num_samples):
         return self("sample", num_samples)
 
-    def fixed_sample(self, noise):
+    def fixed_sample(self, noise=None):
         return self("fixed-sample", noise)
+
+    def _fix_random_u(self):
+        raise NotImplementedError
 
     def _elbo(self, x):
         raise NotImplementedError

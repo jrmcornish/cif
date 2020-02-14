@@ -30,7 +30,8 @@ from .components.bijections import (
     FFJORDBijection,
     PlanarBijection,
     ConditionalPlanarBijection,
-    ResidualFlowBijection
+    ResidualFlowBijection,
+    ActNormBijection
 )
 from .components.densities import (
     DiagonalGaussianDensity,
@@ -39,24 +40,36 @@ from .components.densities import (
     BijectionDensity,
     SplitDensity,
     DequantizationDensity,
-    PassthroughBeforeEvalDensity
+    PassthroughBeforeEvalDensity,
+    UpdateLipschitzBeforeForwardDensity,
+    DataParallelDensity
 )
 from .components.couplers import IndependentCoupler, ChunkedSharedCoupler
 from .components.networks import (
     ConstantNetwork,
     get_mlp,
     get_resnet,
-    get_glow_cnn
+    get_glow_cnn,
+    get_lipschitz_mlp,
+    get_lipschitz_cnn
 )
-
 
 def get_density(
         schema,
-        x_train
+        x_train,
+        data_parallel
 ):
     x_shape = x_train.shape[1:]
 
+    # TODO: Ugly to have the first schema item be special like this.
+    # Would be better to have a schema be a dict of form:
+    #   {
+    #       "wrappers": [{"type": "wrapper-1-type", ...}, ...],
+    #       "x-to-z": [{"type": ...}, ...]
+    #   }
     if schema[0]["type"] == "passthrough-before-eval":
+        assert not data_parallel, "Not yet supported due to possibly unexpected behaviour"
+
         num_points = schema[0]["num_passthrough_data_points"]
         x_idxs = torch.randperm(x_train.shape[0])[:num_points]
         return PassthroughBeforeEvalDensity(
@@ -64,8 +77,21 @@ def get_density(
             x=x_train[x_idxs]
         )
 
-    else:
-        return get_density_recursive(schema, x_shape)
+    density = get_density_recursive(schema, x_shape)
+
+    # TODO: This can create problems with parallelisation
+    if data_parallel:
+        density = DataParallelDensity(density)
+
+    # We have to do this _after_ DataParallel because we need Lipschitz updates to
+    # happen globally, i.e. not be split on separate GPUs, or we will get autograd
+    # errors.
+    for layer in schema:
+        if layer["type"] == "resblock":
+            density = UpdateLipschitzBeforeForwardDensity(density)
+            break
+
+    return density
 
 
 def get_density_recursive(
@@ -199,6 +225,9 @@ def get_bijection(
             momentum=layer_config["momentum"]
         )
 
+    elif layer_config["type"] == "act-norm":
+        return ActNormBijection(x_shape=x_shape)
+
     elif layer_config["type"] == "affine":
         return AffineBijection(
             x_shape=x_shape,
@@ -301,12 +330,16 @@ def get_bijection(
             cond_activation=get_activation(layer_config["cond_activation"])
         )
 
-    elif layer_config["type"] == "resflow":
-        assert len(x_shape) == 1
+    elif layer_config["type"] == "resblock":
+        # TODO: Rename Bijection
         return ResidualFlowBijection(
-            num_input_channels=x_shape[0],
-            hidden_channels=layer_config["hidden_channels"],
-            lipschitz_constant=layer_config["lipschitz_constant"]
+            x_shape=x_shape,
+            lipschitz_net=get_lipschitz_net(
+                input_shape=x_shape,
+                num_output_channels=x_shape[0],
+                config=layer_config["net"]
+            ),
+            reduce_memory=layer_config["reduce_memory"]
         )
 
     else:
@@ -448,7 +481,8 @@ def get_coupler_net(input_shape, num_output_channels, net_config):
         return get_glow_cnn(
             num_input_channels=num_input_channels,
             num_hidden_channels=net_config["num_hidden_channels"],
-            num_output_channels=num_output_channels
+            num_output_channels=num_output_channels,
+            zero_init_output=net_config["zero_init_output"]
         )
 
     elif net_config["type"] == "constant":
@@ -470,3 +504,31 @@ def get_activation(name):
         return nn.ReLU
     else:
         assert False, f"Invalid activation {name}"
+
+
+def get_lipschitz_net(input_shape, num_output_channels, config):
+    if config["type"] == "cnn":
+        return get_lipschitz_cnn(
+            input_shape=input_shape,
+            num_hidden_channels=config["num_hidden_channels"],
+            num_output_channels=num_output_channels,
+            lipschitz_constant=config["lipschitz_constant"],
+            max_train_lipschitz_iters=config["max_train_lipschitz_iters"],
+            max_eval_lipschitz_iters=config["max_test_lipschitz_iters"],
+            lipschitz_tolerance=config["lipschitz_tolerance"]
+        )
+
+    elif config["type"] == "mlp":
+        assert len(input_shape) == 1
+        return get_lipschitz_mlp(
+            num_input_channels=input_shape[0],
+            hidden_channels=config["hidden_channels"],
+            num_output_channels=num_output_channels,
+            lipschitz_constant=config["lipschitz_constant"],
+            max_train_lipschitz_iters=config["max_train_lipschitz_iters"],
+            max_eval_lipschitz_iters=config["max_test_lipschitz_iters"],
+            lipschitz_tolerance=config["lipschitz_tolerance"]
+        )
+
+    else:
+        assert False, f"Invalid Lipschitz net type {config['net']}"

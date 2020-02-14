@@ -1,0 +1,303 @@
+[
+    {
+        "type": "dequantization"
+    },
+    {
+        "type": "scalar-mult",
+        "value": 0.0039062421875
+    },
+    {
+        "type": "scalar-add",
+        "value": 1e-06
+    },
+    {
+        "type": "logit"
+    },
+    {
+        "type": "acl",
+        "mask_type": "checkerboard",
+        "reverse_mask": false,
+        "num_u_channels": 0,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "resnet",
+                "hidden_channels": [
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64
+                ]
+            }
+        }
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "checkerboard",
+        "reverse_mask": true,
+        "num_u_channels": 0,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "resnet",
+                "hidden_channels": [
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64
+                ]
+            }
+        }
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "checkerboard",
+        "reverse_mask": false,
+        "num_u_channels": 0,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "resnet",
+                "hidden_channels": [
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64
+                ]
+            }
+        }
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "squeeze",
+        "factor": 2
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": true,
+        "num_u_channels": 0,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "resnet",
+                "hidden_channels": [
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64
+                ]
+            }
+        }
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": false,
+        "num_u_channels": 0,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "resnet",
+                "hidden_channels": [
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64
+                ]
+            }
+        }
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "split-channel",
+        "reverse_mask": true,
+        "num_u_channels": 0,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "resnet",
+                "hidden_channels": [
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64
+                ]
+            }
+        }
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "split"
+    },
+    {
+        "type": "acl",
+        "mask_type": "checkerboard",
+        "reverse_mask": false,
+        "num_u_channels": 0,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "resnet",
+                "hidden_channels": [
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64
+                ]
+            }
+        }
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "checkerboard",
+        "reverse_mask": true,
+        "num_u_channels": 0,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "resnet",
+                "hidden_channels": [
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64
+                ]
+            }
+        }
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "checkerboard",
+        "reverse_mask": false,
+        "num_u_channels": 0,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "resnet",
+                "hidden_channels": [
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64
+                ]
+            }
+        }
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    },
+    {
+        "type": "acl",
+        "mask_type": "checkerboard",
+        "reverse_mask": true,
+        "num_u_channels": 0,
+        "coupler": {
+            "independent_nets": false,
+            "shift_log_scale_net": {
+                "type": "resnet",
+                "hidden_channels": [
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64,
+                    64
+                ]
+            }
+        }
+    },
+    {
+        "type": "batch-norm",
+        "per_channel": true,
+        "momentum": 0.1,
+        "apply_affine": true
+    }
+]

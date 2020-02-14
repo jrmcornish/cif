@@ -3,20 +3,24 @@ def get_schema(config):
 
     if config["pure_cond_affine"]:
         assert config["use_cond_affine"]
-        schema = remove_non_batch_norm_layers(schema=schema)
+        schema = remove_non_normalise_layers(schema=schema)
 
     if config["use_cond_affine"]:
         assert config["num_u_channels"] > 0
-        schema = add_cond_affine_before_each_batch_norm(schema=schema, config=config)
+        schema = add_cond_affine_before_each_normalise(schema=schema, config=config)
 
     schema = apply_pq_coupler_config_settings(schema=schema, config=config)
 
     schema = get_preproc_schema(config=config) + schema
 
+    assert not (config["batch_norm"] and config["act_norm"])
+
     if config["batch_norm"]:
-        schema = apply_batch_norm_config_settings(schema=schema, config=config)
+        schema = replace_normalise_with_batch_norm(schema=schema, config=config)
+    elif config["act_norm"]:
+        schema = replace_normalise_with_act_norm(schema=schema)
     else:
-        schema = remove_batch_norm_layers(schema=schema)
+        schema = remove_normalise_layers(schema=schema)
 
     return schema
 
@@ -27,16 +31,16 @@ def get_preproc_schema(config):
     else:
         schema = []
 
-    if "logit_tf_lambda" in config and "logit_tf_scale" in config:
-        assert "rescale_tf_scale" not in config
+    if config.get("logit_tf_lambda") is not None and config.get("logit_tf_scale") is not None:
+        assert config.get("rescale_tf_scale") is None
         schema += get_logit_tf_schema(
             lam=config["logit_tf_lambda"],
             scale=config["logit_tf_scale"]
         )
 
-    elif "centering_tf_scale" in config:
-        assert "logit_tf_lambda" not in config
-        assert "logit_tf_scale" not in config
+    elif config.get("centering_tf_scale") is not None:
+        assert config.get("logit_tf_lambda") is None
+        assert config.get("logit_tf_scale") is None
         schema += get_centering_tf_schema(
             scale=config["centering_tf_scale"]
         )
@@ -106,22 +110,25 @@ def get_base_schema(config):
     elif ty == "affine":
         return get_affine_schema(config=config)
 
-    elif ty == "resflow":
-        return get_resflow_schema(config=config)
+    elif ty == "flat-resflow":
+        return get_flat_resflow_schema(config=config)
+
+    elif ty == "multiscale-resflow":
+        return get_multiscale_resflow_schema(config=config)
 
     else:
         assert False, f"Invalid schema type `{ty}'"
 
 
-def remove_non_batch_norm_layers(schema):
-    return [layer for layer in schema if layer["type"] == "batch-norm"]
+def remove_non_normalise_layers(schema):
+    return [layer for layer in schema if layer["type"] == "normalise"]
 
 
-def remove_batch_norm_layers(schema):
-    return [layer for layer in schema if layer["type"] != "batch-norm"]
+def remove_normalise_layers(schema):
+    return [layer for layer in schema if layer["type"] != "normalise"]
 
 
-def apply_batch_norm_config_settings(schema, config):
+def replace_normalise_with_batch_norm(schema, config):
     if config["batch_norm_use_running_averages"]:
         new_schema = []
         momentum = config["batch_norm_momentum"]
@@ -140,9 +147,10 @@ def apply_batch_norm_config_settings(schema, config):
     apply_affine = config["batch_norm_apply_affine"]
 
     for layer in schema:
-        if layer["type"] == "batch-norm":
+        if layer["type"] == "normalise":
             new_schema.append({
-                **layer,
+                "type": "batch-norm",
+                "per_channel": True, # Hard coded for now; seems always to do better
                 "momentum": momentum,
                 "apply_affine": config["batch_norm_apply_affine"]
             })
@@ -153,11 +161,27 @@ def apply_batch_norm_config_settings(schema, config):
     return new_schema
 
 
-def add_cond_affine_before_each_batch_norm(schema, config):
+def replace_normalise_with_act_norm(schema):
     new_schema = []
+
     for layer in schema:
-        if layer["type"] == "batch-norm":
-            new_schema.append(get_cond_affine_layer(config))
+        if layer["type"] == "normalise":
+            new_schema.append({"type": "act-norm"})
+
+        else:
+            new_schema.append(layer)
+
+    return new_schema
+
+
+def add_cond_affine_before_each_normalise(schema, config):
+    new_schema = []
+    flattened = False
+    for layer in schema:
+        if layer["type"] == "flatten":
+            flattened = True
+        elif layer["type"] == "normalise":
+            new_schema.append(get_cond_affine_layer(config, flattened))
 
         new_schema.append(layer)
 
@@ -166,12 +190,16 @@ def add_cond_affine_before_each_batch_norm(schema, config):
 
 def apply_pq_coupler_config_settings(schema, config):
     new_schema = []
+    flattened = False
     for layer in schema:
+        if layer["type"] == "flatten":
+            flattened = True
+
         if layer.get("num_u_channels", 0) > 0:
             layer = {
                 **layer,
-                "p_coupler": get_p_coupler_config(config),
-                "q_coupler": get_q_coupler_config(config)
+                "p_coupler": get_p_coupler_config(config, flattened),
+                "q_coupler": get_q_coupler_config(config, flattened)
             }
 
         new_schema.append(layer)
@@ -183,7 +211,7 @@ def get_logit_tf_schema(lam, scale):
     return [
         {"type": "scalar-mult", "value": (1 - 2*lam) / scale},
         {"type": "scalar-add", "value": lam},
-        {"type": "logit", "lambda": 0., "scale": 1.}
+        {"type": "logit"}
     ]
 
 
@@ -194,29 +222,33 @@ def get_centering_tf_schema(scale):
     ]
 
 
-def get_cond_affine_layer(config):
+def get_cond_affine_layer(config, flattened):
     return {
         "type": "cond-affine",
         "num_u_channels": config["num_u_channels"],
-        "st_coupler": get_st_coupler_config(config),
+        "st_coupler": get_st_coupler_config(config, flattened),
     }
 
 
-def get_st_coupler_config(config):
-    return get_coupler_config("t", "s", "st", config)
+def get_st_coupler_config(config, flattened):
+    return get_coupler_config("t", "s", "st", config, flattened)
 
 
-def get_p_coupler_config(config):
-    return get_coupler_config("p_mu", "p_sigma", "p", config)
+def get_p_coupler_config(config, flattened):
+    return get_coupler_config("p_mu", "p_sigma", "p", config, flattened)
 
 
-def get_q_coupler_config(config):
-    return get_coupler_config("q_mu", "q_sigma", "q", config)
+def get_q_coupler_config(config, flattened):
+    return get_coupler_config("q_mu", "q_sigma", "q", config, flattened)
 
 
-def get_coupler_config(shift_prefix, log_scale_prefix, shift_log_scale_prefix, config):
-    schema_type = config["schema_type"]
-
+def get_coupler_config(
+        shift_prefix,
+        log_scale_prefix,
+        shift_log_scale_prefix,
+        config,
+        flattened
+):
     shift_key = f"{shift_prefix}_nets"
     log_scale_key = f"{log_scale_prefix}_nets"
     shift_log_scale_key = f"{shift_log_scale_prefix}_nets"
@@ -225,8 +257,8 @@ def get_coupler_config(shift_prefix, log_scale_prefix, shift_log_scale_prefix, c
         assert shift_log_scale_key not in config, "Over-specified coupler config"
         return {
             "independent_nets": True,
-            "shift_net": get_coupler_net_config(config[shift_key], schema_type),
-            "log_scale_net": get_coupler_net_config(config[log_scale_key], schema_type)
+            "shift_net": get_coupler_net_config(config[shift_key], flattened),
+            "log_scale_net": get_coupler_net_config(config[log_scale_key], flattened)
         }
 
     elif shift_log_scale_key in config:
@@ -234,14 +266,14 @@ def get_coupler_config(shift_prefix, log_scale_prefix, shift_log_scale_prefix, c
                 "Over-specified coupler config"
         return {
             "independent_nets": False,
-            "shift_log_scale_net": get_coupler_net_config(config[shift_log_scale_key], schema_type)
+            "shift_log_scale_net": get_coupler_net_config(config[shift_log_scale_key], flattened)
         }
 
     else:
         assert False, f"Must specify either `{shift_log_scale_key}', or both `{shift_key}' and `{log_scale_key}'"
 
 
-def get_coupler_net_config(net_spec, schema_type):
+def get_coupler_net_config(net_spec, flattened):
     if net_spec in ["fixed-constant", "learned-constant"]:
         return {
             "type": "constant",
@@ -255,34 +287,32 @@ def get_coupler_net_config(net_spec, schema_type):
         }
 
     elif isinstance(net_spec, list):
-        if schema_type == "multiscale-realnvp":
-            return {
-                "type": "resnet",
-                "hidden_channels": net_spec
-            }
-
-        elif schema_type in [
-            "maf", "flat-realnvp", "sos", "nsf", "bnaf",
-            "planar", "ffjord", "cond-affine", "resflow"
-        ]:
+        if flattened:
             return {
                 "type": "mlp",
                 "activation": "tanh",
                 "hidden_channels": net_spec
             }
-
         else:
-            assert False, f"Invalid schema type {schema_type} for net specification {net_spec}"
-
-    elif isinstance(net_spec, int):
-        if schema_type == "glow":
             return {
-                "type": "glow-cnn",
-                "num_hidden_channels": net_spec
+                "type": "resnet",
+                "hidden_channels": net_spec
             }
 
+    elif isinstance(net_spec, int):
+        if flattened:
+            return {
+                "type": "mlp",
+                "activation": "tanh",
+                # Multiply by 2 to match the 2 hidden layers of the glow-cnns
+                "hidden_channels": [net_spec] * 2
+            }
         else:
-            assert False, f"Invalid schema type {schema_type} for net specification {net_spec}"
+            return {
+                "type": "glow-cnn",
+                "num_hidden_channels": net_spec,
+                "zero_init_output": True
+            }
 
     else:
         assert False, f"Invalid net specifier {net_spec}"
@@ -320,8 +350,7 @@ def get_multiscale_realnvp_schema(coupler_hidden_channels):
                     }
                 },
                 {
-                    "type": "batch-norm",
-                    "per_channel": True
+                    "type": "normalise"
                 }
             ]
 
@@ -347,8 +376,7 @@ def get_glow_schema(
         for _ in range(num_steps_per_scale):
             schema += [
                 {
-                    "type": "batch-norm",
-                    "per_channel": True
+                    "type": "normalise"
                 },
                 {
                     "type": "invconv",
@@ -362,7 +390,8 @@ def get_glow_schema(
                         "independent_nets": False,
                         "shift_log_scale_net": {
                             "type": "glow-cnn",
-                            "num_hidden_channels": coupler_num_hidden_channels
+                            "num_hidden_channels": coupler_num_hidden_channels,
+                            "zero_init_output": True
                         }
                     },
                     "num_u_channels": 0
@@ -410,8 +439,7 @@ def get_flat_realnvp_schema(config):
                 "num_u_channels": 0
             },
             {
-                "type": "batch-norm",
-                "per_channel": False
+                "type": "normalise"
             }
         ]
 
@@ -435,8 +463,7 @@ def get_maf_schema(
                 "activation": "tanh"
             },
             {
-                "type": "batch-norm",
-                "per_channel": False
+                "type": "normalise"
             }
         ]
 
@@ -465,8 +492,7 @@ def get_sos_schema(
                 "polynomial_degree": polynomial_degree
             },
             {
-                "type": "batch-norm",
-                "per_channel": False
+                "type": "normalise"
             }
         ]
 
@@ -501,9 +527,7 @@ def get_nsf_schema(
 
         result.append(
             {
-                "type": "batch-norm",
-                "per_channel": False,
-                "apply_affine": True
+                "type": "normalise"
             }
         )
 
@@ -536,8 +560,7 @@ def get_bnaf_schema(
                 "residual": i < num_density_layers - 1
             },
             {
-                "type": "batch-norm",
-                "per_channel": False
+                "type": "normalise"
             }
         ]
 
@@ -579,7 +602,7 @@ def get_planar_schema(config):
 
     result = [
         layer,
-        {"type": "batch-norm", "per_channel": False}
+        {"type": "normalise"}
     ] * config["num_density_layers"]
 
     return [{"type": "flatten"}] + result
@@ -588,7 +611,7 @@ def get_planar_schema(config):
 def get_cond_affine_schema(config):
     return (
         [{"type": "flatten"}] +
-        [{"type": "batch-norm", "per_channel": False}] * config["num_density_layers"]
+        [{"type": "normalise"}] * config["num_density_layers"]
     )
 
 
@@ -600,15 +623,97 @@ def get_affine_schema(config):
     )
 
 
-def get_resflow_schema(config):
+# TODO: Should have actnorm rather than batchnorm
+def get_flat_resflow_schema(config):
     result = [{"type": "flatten"}]
     for _ in range(config["num_density_layers"]):
         result += [
             {
-                "type": "resflow",
-                "hidden_channels": config["hidden_channels"],
-                "lipschitz_constant": config["lipschitz_constant"]
+                "type": "resblock",
+                "net": {
+                    "type": "mlp",
+                    "hidden_channels": config["hidden_channels"]
+                }
             },
-            {"type": "batch-norm", "per_channel": False}
+            {
+                "type": "normalise"
+            }
         ]
+
+    add_lipschitz_config_to_resblocks(result, config)
+
     return result
+
+
+def get_multiscale_resflow_schema(config):
+    result = []
+
+    for i, num_blocks in enumerate(config["scales"]):
+        if i == 0:
+            result.append(
+                {
+                    "type": "normalise"
+                }
+            )
+
+        else:
+            result.append(
+                {
+                    "type": "squeeze",
+                    "factor": 2
+                }
+            )
+
+        for j in range(num_blocks):
+            result += [
+                {
+                    "type": "resblock",
+                    "net": {
+                        "type": "cnn",
+                        "num_hidden_channels":  config["num_hidden_channels"]
+                    }
+                },
+                {
+                    "type": "normalise"
+                }
+            ]
+
+    result.append(
+        {
+            "type": "flatten"
+        }
+    )
+
+    for _ in range(config["num_output_fc_blocks"]):
+        result += [
+            {
+                "type": "resblock",
+                "net": {
+                    "type": "mlp",
+                    "hidden_channels": config["output_fc_hidden_channels"]
+                }
+            },
+            {
+                "type": "normalise"
+            }
+        ]
+
+    add_lipschitz_config_to_resblocks(result, config)
+
+    return result
+
+
+def add_lipschitz_config_to_resblocks(schema, config):
+    net_keys_to_copy = [
+        "lipschitz_constant",
+        "max_train_lipschitz_iters",
+        "max_test_lipschitz_iters",
+        "lipschitz_tolerance"
+    ]
+
+    for layer in schema:
+        if layer["type"] == "resblock":
+            for key in net_keys_to_copy:
+                layer["net"][key] = config[key]
+
+            layer["reduce_memory"] = config["reduce_memory"]

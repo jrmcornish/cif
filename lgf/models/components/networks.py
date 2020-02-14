@@ -1,6 +1,19 @@
+import sys
+from pathlib import Path
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+sys.path.insert(0, str(Path(__file__).parents[3] / "gitmodules"))
+try:
+    from residual_flows.lib.layers.base import (
+        Swish,
+        InducedNormLinear,
+        InducedNormConv2d
+    )
+finally:
+    sys.path.pop(0)
 
 
 class ConstantNetwork(nn.Module):
@@ -18,19 +31,18 @@ class ConstantNetwork(nn.Module):
 class ResidualBlock(nn.Module):
     def __init__(self, num_channels):
         super().__init__()
-        self.conv1 = self._get_conv3x3(num_channels)
         self.bn1 = nn.BatchNorm2d(num_channels)
-        self.conv2 = self._get_conv3x3(num_channels)
+        self.conv1 = self._get_conv3x3(num_channels)
         self.bn2 = nn.BatchNorm2d(num_channels)
-        self.relu = nn.ReLU()
+        self.conv2 = self._get_conv3x3(num_channels)
 
     def forward(self, inputs):
         out = self.bn1(inputs)
-        out = self.relu(out)
+        out = torch.relu(out)
         out = self.conv1(out)
 
         out = self.bn2(out)
-        out = self.relu(out)
+        out = torch.relu(out)
         out = self.conv2(out)
 
         out = out + inputs
@@ -44,20 +56,24 @@ class ResidualBlock(nn.Module):
             kernel_size=3,
             stride=1,
             padding=1,
+
+            # We don't add a bias here since any subsequent ResidualBlock
+            # will begin with a batch norm. However, we add a bias at the
+            # output of the whole network.
             bias=False
         )
 
 
-# TODO: Add a bias
 class ScaledTanh2dModule(nn.Module):
     def __init__(self, module, num_channels):
         super().__init__()
         self.module = module
         self.weights = nn.Parameter(torch.ones(num_channels, 1, 1))
+        self.bias = nn.Parameter(torch.zeros(num_channels, 1, 1))
 
     def forward(self, inputs):
         out = self.module(inputs)
-        out = self.weights * torch.tanh(out)
+        out = self.weights * torch.tanh(out) + self.bias
         return out
 
 
@@ -68,11 +84,13 @@ def get_resnet(
 ):
     num_hidden_channels = hidden_channels[0] if hidden_channels else num_output_channels
 
+    # TODO: Should we have an input batch norm?
     layers = [
         nn.Conv2d(
             in_channels=num_input_channels,
             out_channels=num_hidden_channels,
             kernel_size=3,
+            stride=1,
             padding=1,
             bias=False
         )
@@ -87,9 +105,13 @@ def get_resnet(
         nn.Conv2d(
             in_channels=num_hidden_channels,
             out_channels=num_output_channels,
-            kernel_size=1
+            kernel_size=1,
+            padding=0,
+            bias=True
         )
     ]
+
+    # TODO: Should we have an output batch norm?
 
     return ScaledTanh2dModule(
         module=nn.Sequential(*layers),
@@ -97,7 +119,12 @@ def get_resnet(
     )
 
 
-def get_glow_cnn(num_input_channels, num_hidden_channels, num_output_channels):
+def get_glow_cnn(
+        num_input_channels,
+        num_hidden_channels,
+        num_output_channels,
+        zero_init_output
+):
     conv1 = nn.Conv2d(
         in_channels=num_input_channels,
         out_channels=num_hidden_channels,
@@ -112,6 +139,7 @@ def get_glow_cnn(num_input_channels, num_hidden_channels, num_output_channels):
         in_channels=num_hidden_channels,
         out_channels=num_hidden_channels,
         kernel_size=1,
+        padding=0,
         bias=False
     )
 
@@ -123,8 +151,10 @@ def get_glow_cnn(num_input_channels, num_hidden_channels, num_output_channels):
         kernel_size=3,
         padding=1
     )
-    conv3.weight.data.zero_()
-    conv3.bias.data.zero_()
+
+    if zero_init_output:
+        conv3.weight.data.zero_()
+        conv3.bias.data.zero_()
 
     relu = nn.ReLU()
 
@@ -214,3 +244,239 @@ class AutoregressiveMLP(nn.Module):
         result = self.flat_ar_mlp(inputs)
         result = result.view(inputs.shape[0], self.num_output_heads, self.num_input_channels)
         return result
+
+
+class LipschitzNetwork(nn.Module):
+    _MODULES_TO_UPDATE = (InducedNormConv2d, InducedNormLinear)
+
+    def __init__(
+            self,
+            layers,
+            max_train_lipschitz_iters,
+            max_eval_lipschitz_iters,
+            lipschitz_tolerance
+    ):
+        super().__init__()
+
+        self.layers = layers
+        self.net = nn.Sequential(*layers)
+
+        self.max_train_lipschitz_iters = max_train_lipschitz_iters
+        self.max_eval_lipschitz_iters = max_eval_lipschitz_iters
+        self.lipschitz_tolerance = lipschitz_tolerance
+
+        self.register_backward_hook(self._queue_lipschitz_update)
+
+        self._requires_train_lipschitz_update = True
+        self._requires_eval_lipschitz_update = True
+
+    def forward(self, inputs):
+        return self.net(inputs)
+
+    def _queue_lipschitz_update(self, *args, **kwargs):
+        self._requires_train_lipschitz_update = True
+        self._requires_eval_lipschitz_update = True
+
+    def update_lipschitz_constant(self):
+        if self.training:
+            if self._requires_train_lipschitz_update:
+                self._update_lipschitz(max_iterations=self.max_train_lipschitz_iters)
+                self._requires_train_lipschitz_update = False
+
+        else:
+            if self._requires_eval_lipschitz_update:
+                self._update_lipschitz(max_iterations=self.max_eval_lipschitz_iters)
+                self._requires_eval_lipschitz_update = False
+                self._requires_train_lipschitz_update = False
+
+    def _update_lipschitz(self, max_iterations):
+        for m in self._modules_to_update():
+            m.compute_weight(
+                # Updates the estimate of the operator norm, i.e.
+                # \tilde{\sigma}_i in (2) in the original iResNet paper
+                update=True,
+
+                # Maximum number of power iterations to use. Must specify
+                # this or `(atol, rtol)` below.
+                n_iterations=max_iterations,
+
+                # Tolerances to use for adaptive number of power iterations
+                # as described in Appendix E of ResFlow paper.
+                atol=self.lipschitz_tolerance,
+                rtol=self.lipschitz_tolerance
+
+                # NOTE: If both `n_iterations` and `(atol, rtol)` are specified,
+                # then power iterations are stopped when the first condition is met.
+            )
+
+    def _modules_to_update(self):
+        # XXX: We only do a shallow update (i.e. don't use self.net.modules()) since
+        # we should not have nested InducedNorm modules
+        for m in self.layers:
+            if isinstance(m, self._MODULES_TO_UPDATE):
+                yield m
+
+
+def get_lipschitz_mlp(
+        num_input_channels,
+        hidden_channels,
+        num_output_channels,
+        lipschitz_constant,
+        max_train_lipschitz_iters,
+        max_eval_lipschitz_iters,
+        lipschitz_tolerance
+):
+    layers = []
+    prev_num_channels = num_input_channels
+    for i, num_channels in enumerate(hidden_channels + [num_output_channels]):
+        layers += [
+            # We use separate Swish's because each has a parameter (beta)
+            Swish(),
+            _get_lipschitz_linear_layer(
+                num_input_channels=prev_num_channels,
+                num_output_channels=num_channels,
+
+                lipschitz_constant=lipschitz_constant,
+                max_lipschitz_iters=max_eval_lipschitz_iters,
+                lipschitz_tolerance=lipschitz_tolerance,
+
+                # Zero the weight matrix of the final layer. Done to align with
+                # `train_toy.py`.
+                zero_init=(i == len(hidden_channels))
+            )
+        ]
+
+        prev_num_channels = num_channels
+
+    return LipschitzNetwork(
+        layers=layers,
+        max_train_lipschitz_iters=max_train_lipschitz_iters,
+        max_eval_lipschitz_iters=max_eval_lipschitz_iters,
+        lipschitz_tolerance=lipschitz_tolerance
+    )
+
+
+def _get_lipschitz_linear_layer(
+        num_input_channels,
+        num_output_channels,
+        lipschitz_constant,
+        max_lipschitz_iters,
+        lipschitz_tolerance,
+        zero_init
+):
+    return InducedNormLinear(
+        in_features=num_input_channels,
+        out_features=num_output_channels,
+
+        # Corresponds to kappa in "Residual Flows" paper or c in original iResNet paper
+        coeff=lipschitz_constant,
+
+        # p-norms to use for the domain and codomain when enforcing Lipschitz constraint.
+        # We set these to 2 for simplicity in line with the discussion in Appendix D of 
+        # ResFlows paper.
+        domain=2,
+        codomain=2,
+
+        # TODO: Document why we add here
+        n_iterations=max_lipschitz_iters,
+        atol=lipschitz_tolerance,
+        rtol=lipschitz_tolerance,
+
+        # (Approximately) zeros the weight matrix
+        zero_init=zero_init
+    )
+
+
+def get_lipschitz_cnn(
+        input_shape,
+        num_hidden_channels,
+        num_output_channels,
+        lipschitz_constant,
+        max_train_lipschitz_iters,
+        max_eval_lipschitz_iters,
+        lipschitz_tolerance
+):
+    assert len(input_shape) == 3
+    num_input_channels = input_shape[0]
+
+    conv1 = _get_lipschitz_conv_layer(
+        num_input_channels=num_input_channels,
+        num_output_channels=num_hidden_channels,
+        kernel_size=3,
+        padding=1,
+        lipschitz_constant=lipschitz_constant,
+        max_lipschitz_iters=max_eval_lipschitz_iters,
+        lipschitz_tolerance=lipschitz_tolerance
+    )
+
+    conv2 = _get_lipschitz_conv_layer(
+        num_input_channels=num_hidden_channels,
+        num_output_channels=num_hidden_channels,
+        kernel_size=1,
+        padding=0,
+        lipschitz_constant=lipschitz_constant,
+        max_lipschitz_iters=max_eval_lipschitz_iters,
+        lipschitz_tolerance=lipschitz_tolerance
+    )
+
+    conv3 = _get_lipschitz_conv_layer(
+        num_input_channels=num_hidden_channels,
+        num_output_channels=num_output_channels,
+        kernel_size=3,
+        padding=1,
+        lipschitz_constant=lipschitz_constant,
+        max_lipschitz_iters=max_eval_lipschitz_iters,
+        lipschitz_tolerance=lipschitz_tolerance
+    )
+
+    # We use separate Swish's because each has a parameter (beta)
+    layers = [Swish(), conv1, Swish(), conv2, Swish(), conv3]
+
+    # It is necessary to pass inputs through the convs because the
+    # spatial dimensions (which are required for the Lipschitz iterations)
+    # are inferred dynamically by the InducedNormConv2d layers.
+    dummy_inputs = torch.empty(1, *input_shape)
+    nn.Sequential(*layers)(dummy_inputs)
+
+    return LipschitzNetwork(
+        layers=layers,
+        max_train_lipschitz_iters=max_train_lipschitz_iters,
+        max_eval_lipschitz_iters=max_eval_lipschitz_iters,
+        lipschitz_tolerance=lipschitz_tolerance
+    )
+
+
+def _get_lipschitz_conv_layer(
+        num_input_channels,
+        num_output_channels,
+        kernel_size,
+        padding,
+        lipschitz_constant,
+        max_lipschitz_iters,
+        lipschitz_tolerance
+):
+    assert max_lipschitz_iters is not None or lipschitz_tolerance is not None
+
+    return InducedNormConv2d(
+        in_channels=num_input_channels,
+        out_channels=num_output_channels,
+
+        kernel_size=kernel_size,
+        stride=1,
+        padding=padding,
+
+        # We always add bias since we don't use batch norm in our Lipschitz CNNs
+        bias=True,
+
+        # See note in `_get_lipschitz_linear_layer`
+        coeff=lipschitz_constant,
+
+        # See note in `_get_lipschitz_linear_layer`
+        domain=2,
+        codomain=2,
+
+        # TODO: Document why we add here
+        n_iterations=max_lipschitz_iters,
+        atol=lipschitz_tolerance,
+        rtol=lipschitz_tolerance
+    )

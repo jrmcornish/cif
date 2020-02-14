@@ -12,6 +12,7 @@ from tensorboardX import SummaryWriter
 import tqdm
 
 from lgf.experiment import load_run, num_params
+from lgf.metrics import metrics
 from config_grouping_functions import differing_keys, get_config_values
 
 root = sys.argv[1]
@@ -30,7 +31,8 @@ for path in tqdm.tqdm(glob.glob(f"{root}/*")):
     try:
         density, train_loader, valid_loader, test_loader, config, checkpoint = load_run(
             run_dir=path,
-            device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+            data_parallel=torch.cuda.device_count() > 1
         )
     except KeyError as e:
         import ipdb; ipdb.set_trace()
@@ -40,13 +42,15 @@ for path in tqdm.tqdm(glob.glob(f"{root}/*")):
 
     density.eval()
     sum_log_prob = 0.
+    sum_bpd = 0.
     sum_elbo_gap = 0.
 
     with torch.no_grad():
         for (x, _) in tqdm.tqdm(test_loader):
             try:
-                all_metrics = density.metrics(x, num_elbo_samples=num_elbo_samples)
+                all_metrics = metrics(density, x, num_elbo_samples)
                 sum_log_prob += all_metrics["log-prob"].sum().item()
+                sum_bpd += all_metrics["bpd"].sum().item()
                 sum_elbo_gap += all_metrics["elbo-gap"].sum().item()
             except Exception as e:
                 import ipdb; ipdb.set_trace()
@@ -54,6 +58,7 @@ for path in tqdm.tqdm(glob.glob(f"{root}/*")):
 
     points_in_test = test_loader.dataset.x.shape[0]
     metrics = {
+        "bpd": sum_bpd / points_in_test,
         "log-prob": sum_log_prob / points_in_test,
         "elbo-gap": sum_elbo_gap / points_in_test,
         "epoch": checkpoint["epoch"],

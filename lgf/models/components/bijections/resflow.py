@@ -6,14 +6,6 @@ import torch
 sys.path.insert(0, str(Path(__file__).parents[4] / "gitmodules"))
 try:
     from residual_flows.lib.layers import iResBlock
-    from residual_flows.lib.layers.base import (
-        Swish,
-        get_linear,
-        SpectralNormConv2d,
-        SpectralNormLinear,
-        InducedNormConv2d,
-        InducedNormLinear
-    )
 finally:
     sys.path.pop(0)
 
@@ -24,100 +16,66 @@ from .bijection import Bijection
 class ResidualFlowBijection(Bijection):
     def __init__(
             self,
-            num_input_channels,
-            hidden_channels,
-            lipschitz_constant
+            x_shape,
+            lipschitz_net,
+            reduce_memory
     ):
-        super().__init__(
-            x_shape=(num_input_channels,),
-            z_shape=(num_input_channels,)
-        )
+        super().__init__(x_shape=x_shape, z_shape=x_shape)
 
-        dims = [num_input_channels] + hidden_channels + [num_input_channels]
-
-        self.layer = iResBlock(
-            self._build_nnet(dims, lipschitz_constant),
-            n_dist="geometric",
-
-            # NOTE: this is the default from train_toy.py
-            n_power_series=None,
-
-            # NOTE: All settings are the defaults from train_toy.py
-            exact_trace=False,
-            brute_force=False,
-            n_samples=1,
-            neumann_grad=False,
-            grad_in_forward=False,
-        )
-
-        self.register_forward_pre_hook(self._update_lipschitz_forward_hook)
-        self.register_backward_hook(self._queue_lipschitz_update_backward_hook)
-
-        self._requires_train_lipschitz_update = True
-        self._requires_eval_lipschitz_update = True
+        self.block = self._get_iresblock(net=lipschitz_net, reduce_memory=reduce_memory)
 
     def _x_to_z(self, x, **kwargs):
-        z, neg_log_jac = self.layer(x, x.new_zeros((x.shape[0], 1)))
+        z, neg_log_jac = self.block(x=x, logpx=0.)
         return {"z": z, "log-jac": -neg_log_jac}
 
     def _z_to_x(self, z, **kwargs):
-        x, neg_log_jac = self.layer.inverse(z, z.new_zeros((z.shape[0], 1)))
+        x, neg_log_jac = self.block.inverse(y=z, logpy=0.)
         return {"x": x, "log-jac": -neg_log_jac}
 
-    def _queue_lipschitz_update_backward_hook(self, *args, **kwargs):
-        self._requires_train_lipschitz_update = True
-        self._requires_eval_lipschitz_update = True
+    def _get_iresblock(self, net, reduce_memory):
+        return iResBlock(
+            nnet=net,
 
-    def _update_lipschitz_forward_hook(self, *args, **kwargs):
-        # NOTE: Numbers of iterations from defaults in train_toy.py
+            # NOTE: All settings below are the defaults from train_toy.py
 
-        if self.training:
-            if self._requires_train_lipschitz_update:
-                self._update_lipschitz(num_iterations=5)
-                self._requires_train_lipschitz_update = False
+            # Compute the log Jacobian determinant directly via brute force.
+            # Only implemented for 2D inputs.
+            brute_force=False,
 
-        else:
-            if self._requires_eval_lipschitz_update:
-                self._update_lipschitz(num_iterations=200)
-                self._requires_eval_lipschitz_update = False
-                self._requires_train_lipschitz_update = False
+            # If not None, uses a truncated approximation (as in the original iResNet
+            # paper) to the log Jacobian determinant with `n_power_series` terms
+            n_power_series=None,
 
-    def _update_lipschitz(self, num_iterations):
-        modules_to_update = (
-            SpectralNormConv2d,
-            SpectralNormLinear,
-            InducedNormConv2d,
-            InducedNormLinear
+            # Use the Neumann series estimator for the gradient of the log Jacobian (8)
+            # instead of the estimator (6). Reduces memory, but may give different
+            # behaviour because not equivalent to the standard estimator.
+            neumann_grad=reduce_memory,
+
+            # Distribution of N to use in Russian Roulette estimator (6) or (8). Can be
+            # either "geometric" or "poisson"
+            n_dist="geometric",
+
+            # Parameter of N if n_dist == "geometric"
+            geom_p=0.5,
+
+            # Parameter of N if n_dist == "poisson". Ignored since
+            # `n_dist == "geometric"`
+            lamb=-1.,
+
+            # Shifts the distribution of N in (6) or (8) to the right by the amount
+            # specified. This means more terms in the expectations are computed exactly,
+            # which reduces variance, but with more computational cost.
+            n_exact_terms=2,
+
+            # Number of Monte Carlo samples of (n, v) to use when estimating (6) or (8)
+            n_samples=1,
+
+            # Estimate the log Jacobian determinant using the exact trace, rather than
+            # the Hutchinson's estimator as in (6) or (8)
+            exact_trace=False,
+
+            # Use the decomposition of the gradient of the loss (9) to allow computing
+            # gradients during the forward pass in order to save memory. Should not
+            # change behaviour of algorithm.
+            grad_in_forward=reduce_memory
         )
-        for m in self.layer.modules():
-            if isinstance(m, modules_to_update):
-                m.compute_weight(update=True, n_iterations=num_iterations)
-
-    def _build_nnet(self, dims, lipschitz_constant):
-        layers = []
-        for i, (in_dim, out_dim) in enumerate(zip(dims[:-1], dims[1:])):
-            layers += [
-                # TODO: Copied from train_toy.py, but should not apply for first layer?
-                Swish(),
-
-                get_linear(
-                    in_dim,
-                    out_dim,
-                    coeff=lipschitz_constant,
-
-                    # NOTE: settings all taken from defaults in train_toy.py
-                    domain=2,
-                    codomain=2,
-
-                    # NOTE: All set to None because we specify these manually at each call
-                    # to compute_weight()
-                    n_iterations=None,
-                    atol=None,
-                    rtol=None,
-
-                    # TODO: Copied from train_toy.py, but should only apply to last layer?
-                    zero_init=(out_dim == 2),
-                )
-            ]
-
-        return torch.nn.Sequential(*layers)

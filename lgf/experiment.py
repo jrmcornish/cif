@@ -8,12 +8,14 @@ import numpy as np
 
 import torch
 import torch.optim as optim
+import torch.nn as nn
 
 from .trainer import Trainer
 from .datasets import get_loaders
 from .visualizer import DummyDensityVisualizer, ImageDensityVisualizer, TwoDimensionalDensityVisualizer
 from .models import get_density
 from .writer import Writer, DummyWriter
+from .metrics import metrics
 
 from config import get_schema
 
@@ -38,17 +40,39 @@ def train(config, resume_dir):
     trainer.train()
 
 
+def print_test_metrics(config, resume_dir):
+    _, trainer, _ = setup_experiment(
+        config={**config, "write_to_disk": False},
+        resume_dir=resume_dir
+    )
+
+    with torch.no_grad():
+        test_metrics = trainer.test()
+
+    test_metrics = {k: v.item() for k, v in test_metrics.items()}
+
+    print(json.dumps(test_metrics, indent=4))
+
+
 def print_model(config):
-    density, _, _, _ = setup_density_and_loaders(config, torch.device("cpu"))
+    density, _, _, _ = setup_density_and_loaders(
+        config={**config, "write_to_disk": False},
+        device=torch.device("cpu"),
+        data_parallel=False
+    )
     print(density)
 
 
 def print_num_params(config):
-    density, _, _, _ = setup_density_and_loaders(config, torch.device("cpu"))
+    density, _, _, _ = setup_density_and_loaders(
+        config={**config, "write_to_disk": False},
+        device=torch.device("cpu"),
+        data_parallel=False
+    )
     print(f"Number of parameters: {num_params(density):,}")
 
 
-def setup_density_and_loaders(config, device):
+def setup_density_and_loaders(config, device, data_parallel):
     train_loader, valid_loader, test_loader = get_loaders(
         dataset=config["dataset"],
         device=device,
@@ -61,21 +85,27 @@ def setup_density_and_loaders(config, device):
 
     density = get_density(
         schema=get_schema(config=config),
-        x_train=train_loader.dataset.x
-    ).to(device)
+        x_train=train_loader.dataset.x,
+        data_parallel=data_parallel
+    )
+
+    # TODO: Could do lazily inside Trainer
+    density.to(device)
 
     return density, train_loader, valid_loader, test_loader
 
 
-def load_run(run_dir, device):
+def load_run(run_dir, device, data_parallel):
     run_dir = Path(run_dir)
 
     with open(run_dir / "config.json", "r") as f:
         config = json.load(f)
-        if config["num_u_channels"] > 0:
-            config["test_batch_size"] = 100
 
-    density, train_loader, valid_loader, test_loader = setup_density_and_loaders(config, device)
+    density, train_loader, valid_loader, test_loader = setup_density_and_loaders(
+        config=config,
+        device=device,
+        data_parallel=data_parallel
+    )
 
     try:
         checkpoint = torch.load(run_dir / "checkpoints" / "best_valid.pt", map_location=device)
@@ -98,7 +128,8 @@ def setup_experiment(config, resume_dir):
 
     density, train_loader, valid_loader, test_loader = setup_density_and_loaders(
         config=config,
-        device=device
+        device=device,
+        data_parallel=True
     )
 
     if config["opt"] == "sgd":
@@ -140,7 +171,7 @@ def setup_experiment(config, resume_dir):
 
         writer = Writer(logdir=logdir, make_subdir=make_subdir, tag_group=config["dataset"])
     else:
-        writer = DummyWriter()
+        writer = DummyWriter(logdir=resume_dir)
 
     if config["dataset"] in ["cifar10", "svhn", "fashion-mnist", "mnist"]:
         visualizer = ImageDensityVisualizer(writer=writer)
@@ -156,7 +187,7 @@ def setup_experiment(config, resume_dir):
 
     if config["schema_type"] == "ffjord":
         def train_metrics(density, x):
-            train_info = density.elbo(x)
+            train_info = density("elbo", x)
             loss = -train_info["elbo"].mean()
 
             nfes = torch.tensor(0.)
@@ -167,10 +198,14 @@ def setup_experiment(config, resume_dir):
             return {"loss": loss, "nfes": nfes}
 
     else:
-        train_metrics = lambda density, x: {"loss": -density.elbo(x)["elbo"].mean()}
+        def train_metrics(density, x):
+            return {"loss": -density("elbo", x)["elbo"].mean()}
 
-    valid_loss = lambda density, x: -density.metrics(x, config["num_valid_elbo_samples"])["log-prob"]
-    test_metrics = lambda density, x: density.metrics(x, config["num_test_elbo_samples"])
+    def valid_loss(density, x):
+        return -metrics(density, x, config["num_valid_elbo_samples"])["log-prob"]
+
+    def test_metrics(density, x):
+        return metrics(density, x, config["num_test_elbo_samples"])
 
     trainer = Trainer(
         module=density,
