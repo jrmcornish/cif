@@ -8,7 +8,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from lgf.models.components.bijections import (
+from cif.models.components.bijections import (
     CompositeBijection,
     FlipBijection,
     ViewBijection,
@@ -30,8 +30,8 @@ from lgf.models.components.bijections import (
     PlanarBijection,
     ResidualFlowBijection
 )
-from lgf.models.components.networks import get_lipschitz_mlp
-from lgf.models.factory import get_coupler
+from cif.models.components.networks import get_lipschitz_mlp
+from cif.models.factory import get_coupler
 
 
 class _TestBijection:

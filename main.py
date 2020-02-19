@@ -20,7 +20,7 @@ parser.add_argument("--resume", help="Directory of run to resume. Ignores other 
 
 parser.add_argument("--model", choices=get_models())
 parser.add_argument("--dataset", choices=get_datasets())
-parser.add_argument("--baseline", action="store_true", help="Run baseline flow instead of LGF")
+parser.add_argument("--baseline", action="store_true", help="Run baseline flow instead of CIF")
 parser.add_argument("--num-seeds", type=int, default=1, help="Number of random seeds to use.")
 parser.add_argument("--checkpoints", choices=["best-valid", "latest", "both", "none"], default="both", help="Type of checkpoints to save (default: %(default)s)")
 parser.add_argument("--nosave", action="store_true", help="Don't save anything to disk")
@@ -103,13 +103,13 @@ if args.print_config:
 grid = expand_grid(config)
 
 if args.print_model:
-    from lgf.experiment import print_model
+    from cif.experiment import print_model
     for c in grid:
         print_model(c)
     should_train = False
 
 if args.print_num_params:
-    from lgf.experiment import print_num_params
+    from cif.experiment import print_num_params
     for c in grid:
         print_num_params(c)
     should_train = False
@@ -127,7 +127,7 @@ if args.print_schema:
     should_train = False
 
 if should_train or args.test:
-    from lgf.experiment import train, print_test_metrics
+    from cif.experiment import train, print_test_metrics
     with contextlib.suppress(KeyboardInterrupt):
         for c in grid:
             for _ in range(args.num_seeds):

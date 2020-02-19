@@ -1,4 +1,4 @@
-name: lgf
+name: cif
 channels:
   - pytorch
   - conda-forge

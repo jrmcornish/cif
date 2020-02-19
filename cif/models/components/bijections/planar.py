@@ -13,7 +13,7 @@ def _batch_dot(t1, t2):
 
 # NOTE: The notation here follows (Rezende & Mohamed, 2015).
 # In particular, u does not refer to the conditioning variable
-# used by LGFs.
+# used by CIFs.
 def planar_map(z, u, w, b):
     assert len(z.shape) == 2
 

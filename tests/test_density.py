@@ -6,16 +6,16 @@ import scipy.stats as stats
 import torch
 import torch.nn as nn
 
-from lgf.models.components.densities import (
+from cif.models.components.densities import (
     DiagonalGaussianDensity,
     DiagonalGaussianConditionalDensity,
     ELBODensity,
     ConcreteConditionalDensity
 )
-from lgf.models.components.couplers import ChunkedSharedCoupler
-from lgf.models.components.networks import get_mlp
-from lgf.models.components.bijections import ConditionalAffineBijection
-from lgf.models.factory import get_coupler
+from cif.models.components.couplers import ChunkedSharedCoupler
+from cif.models.components.networks import get_mlp
+from cif.models.components.bijections import ConditionalAffineBijection
+from cif.models.factory import get_coupler
 
 
 class TestDiagonalGaussianDensity(unittest.TestCase):

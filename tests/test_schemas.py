@@ -16,22 +16,8 @@ def test_baseline_multiscale_realnvp_schema():
     assert schema == true_schema
 
 
-def test_lgf_multiscale_realnvp_schema():
+def test_cif_multiscale_realnvp_schema():
     config = get_config(dataset="mnist", model="realnvp", use_baseline=False)
     schema = get_schema(config)
-    true_schema = load_schema("lgf_realnvp_schema")
-    assert schema == true_schema
-
-
-def test_baseline_glow_schema():
-    config = get_config(dataset="cifar10", model="glow", use_baseline=True)
-    schema = get_schema(config)
-    true_schema = load_schema("glow_schema")
-    assert schema == true_schema
-
-
-def test_lgf_glow_schema():
-    config = get_config(dataset="cifar10", model="glow", use_baseline=False)
-    schema = get_schema(config)
-    true_schema = load_schema("lgf_glow_schema")
+    true_schema = load_schema("cif_realnvp_schema")
     assert schema == true_schema

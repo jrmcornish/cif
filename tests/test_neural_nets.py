@@ -8,7 +8,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from lgf.models.components.networks import get_resnet, get_glow_cnn, AutoregressiveMLP
+from cif.models.components.networks import get_resnet, get_glow_cnn, AutoregressiveMLP
 
 
 class TestGetResnet(unittest.TestCase):
