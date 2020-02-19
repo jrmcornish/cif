@@ -19,26 +19,26 @@ def normalize_raw_data(data, mu, s):
     return (data - mu)/s
 
 
-def make_UCI_train_valid_split(data, frac):
+def make_tabular_train_valid_split(data, frac):
     n_valid = int(frac*data.shape[0])
     valid_data = data[-n_valid:]
     train_data = data[0:-n_valid]
     return train_data, valid_data
 
 
-def make_UCI_train_valid_test_split(data, frac):
+def make_tabular_train_valid_test_split(data, frac):
     n_test = int(frac*data.shape[0])
     test_data = data[-n_test:]
     data = data[0:-n_test]
 
-    train_data, valid_data = make_UCI_train_valid_split(data, frac)
+    train_data, valid_data = make_tabular_train_valid_split(data, frac)
     return train_data, valid_data, test_data
 
 
 def get_miniboone_raw(data_root):
     data = np.load(os.path.join(data_root, "miniboone/data.npy"))
 
-    train_raw, valid_raw, test_raw = make_UCI_train_valid_test_split(data, 0.1)
+    train_raw, valid_raw, test_raw = make_tabular_train_valid_test_split(data, 0.1)
 
     data_stack = np.vstack((train_raw, valid_raw))
     mu = data_stack.mean(axis=0)
@@ -72,7 +72,7 @@ def get_gas_raw(data_root):
         B = get_gas_correlation_numbers(data)
 
     data = normalize_raw_data(data, data.mean(), data.std()).to_numpy()
-    return make_UCI_train_valid_test_split(data, 0.1)
+    return make_tabular_train_valid_test_split(data, 0.1)
 
 
 def get_hepmass_raw(data_root):
@@ -105,7 +105,7 @@ def get_hepmass_raw(data_root):
     train_raw = train_raw[:, np.array([i for i in range(train_raw.shape[1]) if i not in features_to_remove])]
     test_raw = test_raw[:, np.array([i for i in range(test_raw.shape[1]) if i not in features_to_remove])]
 
-    train_raw, valid_raw = make_UCI_train_valid_split(train_raw, 0.1)
+    train_raw, valid_raw = make_tabular_train_valid_split(train_raw, 0.1)
     return train_raw, valid_raw, test_raw
 
 
@@ -125,7 +125,7 @@ def get_power_raw(data_root):
     noise = np.hstack((gap_noise, voltage_noise, sm_noise, time_noise))
     data = data + noise
 
-    train_raw, valid_raw, test_raw = make_UCI_train_valid_test_split(data, 0.1)
+    train_raw, valid_raw, test_raw = make_tabular_train_valid_test_split(data, 0.1)
 
     train_and_valid = np.vstack((train_raw, valid_raw))
     mu = train_and_valid.mean(axis=0)
@@ -146,7 +146,7 @@ def get_bsds300_raw(data_root):
     return train_raw, valid_raw, test_raw
 
 
-def get_raw_UCI_datasets(name, data_root):
+def get_raw_tabular_datasets(name, data_root):
     if name == "miniboone":
         data_fn = get_miniboone_raw
     elif name == "gas":
@@ -163,8 +163,8 @@ def get_raw_UCI_datasets(name, data_root):
     return data_fn(data_root)
 
 
-def get_UCI_datasets(name, data_root):
-    train_raw, valid_raw, test_raw = get_raw_UCI_datasets(name, data_root)
+def get_tabular_datasets(name, data_root):
+    train_raw, valid_raw, test_raw = get_raw_tabular_datasets(name, data_root)
 
     train_dset = SupervisedDataset(name, "train",
         torch.tensor(train_raw, dtype=torch.get_default_dtype()))

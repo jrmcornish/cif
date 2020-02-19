@@ -2,7 +2,7 @@ from .dsl import group, base, provides, GridParams
 
 
 group(
-    "uci",
+    "tabular",
     [
         "gas",
         "hepmass",
