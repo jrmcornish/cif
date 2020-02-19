@@ -32,7 +32,7 @@ for path in tqdm.tqdm(glob.glob(f"{root}/*")):
         density, train_loader, valid_loader, test_loader, config, checkpoint = load_run(
             run_dir=path,
             device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
-            data_parallel=torch.cuda.device_count() > 1
+            data_parallel=True
         )
     except KeyError as e:
         import ipdb; ipdb.set_trace()
@@ -67,7 +67,7 @@ for path in tqdm.tqdm(glob.glob(f"{root}/*")):
     }
     with open(metrics_path, "w") as f:
         json.dump(metrics, f, indent=4)
-    
+
     metrics = {f"hparams/{k}": v for k, v in metrics.items()}
 
     writer = SummaryWriter(logdir=path)
