@@ -1,6 +1,8 @@
 # README
 
-ICML code release for _Relaxing Bijectivity Constraints with Continuously Indexed Normalising Flows_ paper.
+This is the code we used to produce the experiments in our paper [Relaxing Bijectivity Constraints with Continuously Indexed Normalising Flows](https://arxiv.org/abs/1909.13833) (ICML 2020). It is a fork of our original codebase, which was previously maintained at https://github.com/jrmcornish/lgf.
+
+This code may be useful to anyone interested in CIFs, as well as normalising flows more generally. In particular, this code allows specifying a large variety of different common architectures -- including various primitive flow steps and multi-scale configurations -- via an intuitive intermediate representation, which is then converted into an actual flow object. Please see `config/schemas.py` and `cif/models/factory.py` for more details.
 
 ## Setup
 
@@ -49,3 +51,14 @@ will override the default config value for `scales` set in `config/images.py` (w
 For comparison purposes, for each model we also provide a standard baseline flow with roughly the same number of parameters. To run these, simply add the `--baseline` option when running `main.py`.
 
 To inspect the model (either CIF or baseline) used for a given dataset, add the `--print-schema` argument to show a high-level schema of the model that is used, and the `--print-model` argument to see the actual PyTorch object created. To see the number of parameters used by the model, add `--print-num-params`.
+
+## Bibtex
+
+    @misc{cornish2019relaxing,
+        title={Relaxing Bijectivity Constraints with Continuously Indexed Normalising Flows},
+        author={Rob Cornish and Anthony L. Caterini and George Deligiannidis and Arnaud Doucet},
+        year={2019},
+        eprint={1909.13833},
+        archivePrefix={arXiv},
+        primaryClass={stat.ML}
+    }
