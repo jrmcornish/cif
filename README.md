@@ -6,7 +6,12 @@ This code may be useful to anyone interested in CIFs, as well as normalising flo
 
 ## Setup
 
-First, install dependencies. If you use `conda`, the following will create an environment called `cif`:
+First, install submodules:
+
+    $ git submodule init
+    $ git submodule update
+
+Next, install dependencies. If you use `conda`, the following will create an environment called `cif`:
 
     conda env create -f environment.yml
 
