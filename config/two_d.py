@@ -28,6 +28,7 @@ def config(dataset, use_baseline):
         "dequantize": False,
 
         "batch_norm": False,
+        "act_norm": False,
 
         "max_epochs": 2000,
         "max_grad_norm": None,
@@ -59,6 +60,7 @@ def resflow(dataset, model, use_baseline):
         "max_train_lipschitz_iters": 5,
         "max_test_lipschitz_iters": 200,
         "lipschitz_tolerance": None,
+        "reduce_memory": True,
 
         "st_nets": [10] * 2,
         "p_nets": [10] * 2,
