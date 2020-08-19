@@ -43,7 +43,7 @@ class ImageDensityVisualizer(DensityVisualizer):
 
 
 class TwoDimensionalDensityVisualizer(DensityVisualizer):
-    _GRID_SIZE = 300
+    _GRID_SIZE = 150
     _CONTOUR_LEVELS = 50
     _NUM_TRAIN_POINTS_TO_SHOW = 500
     _PADDING = .2
@@ -105,3 +105,5 @@ class TwoDimensionalDensityVisualizer(DensityVisualizer):
         plt.scatter(x[:, 0], x[:, 1], c="k", marker=".", s=7, linewidth=0.5, alpha=0.5)
 
         self._writer.write_figure("density", plt.gcf(), epoch)
+
+        plt.close()

@@ -23,6 +23,10 @@ class Tee:
         return self.primary_file.fileno()
 
     def write(self, data):
+        # We get problems with ipdb if we don't do this:
+        if isinstance(data, bytes):
+            data = data.decode()
+
         self.primary_file.write(data)
         self.secondary_file.write(data)
 

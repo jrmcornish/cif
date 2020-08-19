@@ -486,7 +486,7 @@ def get_coupler_net(input_shape, num_output_channels, net_config):
         )
 
     elif net_config["type"] == "constant":
-        value = torch.full((num_output_channels, *input_shape[1:]), net_config["value"])
+        value = torch.full((num_output_channels, *input_shape[1:]), net_config["value"], dtype=torch.get_default_dtype())
         return ConstantNetwork(value=value, fixed=net_config["fixed"])
 
     elif net_config["type"] == "identity":
