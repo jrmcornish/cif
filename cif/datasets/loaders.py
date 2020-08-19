@@ -5,8 +5,10 @@ import torch
 from .two_d import get_2d_datasets
 from .image import get_image_datasets
 from .tabular import get_tabular_datasets
+from .gaussian import get_linear_gaussian_datasets
 
 
+# TODO: Put this into SupervisedDataset
 def get_loader(dset, device, batch_size, drop_last):
     return torch.utils.data.DataLoader(
         dset.to(device),
@@ -35,6 +37,10 @@ def get_loaders(
     elif dataset in ["miniboone", "hepmass", "power", "gas", "bsds300"]:
         # TODO: Make make_valid_loader apply here too
         train_dset, valid_dset, test_dset = get_tabular_datasets(dataset, data_root)
+
+    elif dataset == "linear-gaussian":
+        # TODO: Make make_valid_loader apply here too
+        train_dset, valid_dset, test_dset = get_linear_gaussian_datasets()
 
     else:
         # TODO: Make make_valid_loader apply here too

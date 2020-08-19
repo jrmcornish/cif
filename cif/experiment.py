@@ -15,7 +15,7 @@ from .datasets import get_loaders
 from .visualizer import DummyDensityVisualizer, ImageDensityVisualizer, TwoDimensionalDensityVisualizer
 from .models import get_density
 from .writer import Writer, DummyWriter
-from .metrics import metrics
+from .metrics import metrics, ml_ll_ss
 
 from config import get_schema
 
@@ -185,21 +185,7 @@ def setup_experiment(config, resume_dir):
     else:
         visualizer = DummyDensityVisualizer(writer=writer)
 
-    if config["schema_type"] == "ffjord":
-        def train_metrics(density, x):
-            train_info = density("elbo", x)
-            loss = -train_info["elbo"].mean()
-
-            nfes = torch.tensor(0.)
-            while "prior-dict" in train_info:
-                nfes += train_info["bijection-info"].get("nfes", torch.tensor(0.))
-                train_info = train_info["prior-dict"]
-
-            return {"loss": loss, "nfes": nfes}
-
-    else:
-        def train_metrics(density, x):
-            return {"loss": -density("elbo", x)["elbo"].mean()}
+    train_metrics = get_train_metrics(config)
 
     def valid_loss(density, x):
         return -metrics(density, x, config["num_valid_elbo_samples"])["log-prob"]
@@ -230,6 +216,34 @@ def setup_experiment(config, resume_dir):
     )
 
     return density, trainer, writer
+
+
+def get_train_metrics(config):
+    if config["train_objective"] == "elbo":
+        if config["schema_type"] == "ffjord":
+            def train_metrics(density, x):
+                train_info = density("elbo", x)
+                loss = -train_info["elbo"].mean()
+
+                nfes = torch.tensor(0.)
+                while "prior-dict" in train_info:
+                    nfes += train_info["bijection-info"].get("nfes", torch.tensor(0.))
+                    train_info = train_info["prior-dict"]
+
+                return {"loss": loss, "nfes": nfes}
+
+        else:
+            def train_metrics(density, x):
+                return {"loss": -density("elbo", x)["elbo"].mean()}
+
+    elif config["train_objective"] == "ml-ll-ss":
+        def train_metrics(density, x):
+            return ml_ll_ss(density, x, config["ml_ll_geom_prob"])
+
+    else:
+        assert False, f"Invalid training objective `{train_objective}'"
+
+    return train_metrics
 
 
 def num_params(module):

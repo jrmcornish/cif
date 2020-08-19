@@ -1,4 +1,4 @@
-name: cif
+name: mlll
 channels:
   - pytorch
   - conda-forge

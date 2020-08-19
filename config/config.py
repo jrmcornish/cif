@@ -2,7 +2,7 @@ import json
 
 from .dsl import CONFIG_GROUPS, CURRENT_CONFIG_GROUP, GridParams
 
-from . import two_d, tabular, images
+from . import two_d, tabular, images, gaussian
 
 
 def get_config_group(dataset):
