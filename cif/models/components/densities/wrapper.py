@@ -62,10 +62,8 @@ class UpdateLipschitzBeforeForwardDensity(WrapperDensity):
 
 
 class DataParallelDensity(nn.DataParallel):
-    def elbo(self, x):
-        # TODO: Implement - need to account for reparam
-        raise NotImplementedError
-        return self("elbo", x)
+    def elbo(self, x, reparam=True):
+        return self("elbo", x, reparam)
 
     def sample(self, num_samples):
         # Bypass DataParallel
