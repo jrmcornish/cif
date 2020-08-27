@@ -48,13 +48,22 @@ It may be necessary to change `CUDA_VISIBLE_DEVICES=0` depending on the availabi
 > (This in turn helps with keeping `state_dict`s uniform and easy to save/load.)
 > As such, `./main.py` will default to running on all available CUDA devices, even for small datasets for which this is inefficient.
 
-By default, this will create a directory `runs/`, which will contain Tensorboard logs giving various information about the training run, including 2-D density plots in this case. To inspect this, ensure you have `tensorboard` installed (e.g. `pip install tensorboard`), and run in a new terminal:
+By default, this will create a directory inside `runs/` that contains
+
+- Configuration info for the run
+- Version control info for the point at which the run was started
+- Checkpoints created by the run
+
+This allows easily resuming a previous run via the `--resume` flag, which takes as argument the directory of the run that should be resumed.
+To avoid creating this directory, use the `--nosave` flag.
+
+The `runs/` directory also contain Tensorboard logs giving various information about the training run, including 2-D density plots in this case. To inspect this, ensure you have `tensorboard` installed (e.g. `pip install tensorboard`), and run in a new terminal:
 
     tensorboard --logdir runs/ --port=8008
 
 Keep this running, and navigate to http://localhost:8008, where the results should be visible.
 For 2D datasets, the "Images" tab shows the learned density, and for image datasets, the "Images" tab shows samples from the model over training.
-The "Text" tab shows the config used to produce each run, which is also stored (alongside various other information like version control info) in the directory inside `runs/` that was created.
+The "Text" tab also shows the config used to produce each run.
 
 Each dataset has a default configuration set up for it that is described in the paper and specified in the appropriate file `two_d.py`, `tabular.py`, or `images.py` in `config/`. To try out alternative configurations, either modify these files directly, or use the `--config` argument to `main.py` to override the value specified by the config file. E.g.
 
