@@ -20,11 +20,13 @@ class BijectionDensity(Density):
         fixed_prior = self.prior.fix_u(u=u)
         return BijectionDensity(bijection=self.bijection, prior=fixed_prior)
 
-    def _elbo(self, x):
+    def _elbo(self, x, reparam):
         result = self.bijection.x_to_z(x)
-        prior_dict = self.prior.elbo(result["z"])
+        prior_dict = self.prior.elbo(result["z"], reparam=reparam)
         return {
             "elbo": prior_dict["elbo"] + result["log-jac"],
+            "log_p_u": prior_dict["log_p_u"] + result["log-jac"],
+            "log_q_u": prior_dict["log_q_u"],
             "bijection-info": result,
             "prior-dict": prior_dict
         }
@@ -47,6 +49,8 @@ class BijectionMixtureDensity(Density):
         self.weight_map = weight_map
 
     def _elbo(self, x):
+        # TODO: Implement reparam and log_p_u, log_q_u outputs
+        raise NotImplementedError
         K = len(self.bijections)
 
         results = [b.x_to_z(x) for b in self.bijections]

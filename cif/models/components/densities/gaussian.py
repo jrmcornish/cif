@@ -23,16 +23,7 @@ def diagonal_gaussian_log_prob(w, means, stddevs):
 
 
 def diagonal_gaussian_sample(means, stddevs):
-    epsilon = torch.randn_like(means)
-    samples = stddevs*epsilon + means
-
-    flat_epsilon = epsilon.flatten(start_dim=1)
-    flat_stddevs = stddevs.flatten(start_dim=1)
-    _, dim = flat_epsilon.shape
-    epsilon_log_probs = -.5*dim*np.log(2*np.pi) - .5*torch.sum(flat_epsilon**2, dim=1, keepdim=True)
-    log_probs = -torch.sum(torch.log(flat_stddevs), dim=1, keepdim=True) + epsilon_log_probs
-
-    return samples, log_probs
+    return stddevs*torch.randn_like(means) + means
 
 
 def diagonal_gaussian_entropy(stddevs):
@@ -62,7 +53,7 @@ class DiagonalGaussianDensity(Density):
         assert not u
         return self
 
-    def _elbo(self, z):
+    def _elbo(self, z, reparam):
         log_prob = diagonal_gaussian_log_prob(
             z,
             self.mean.expand_as(z),
@@ -70,15 +61,16 @@ class DiagonalGaussianDensity(Density):
         )
         return {
             "elbo": log_prob,
+            "log_p_u": log_prob,
+            "log_q_u": 0.,
             "z": z
         }
 
     def _sample(self, num_samples):
-        samples, _ = diagonal_gaussian_sample(
+        return diagonal_gaussian_sample(
             self.mean.expand(num_samples, *self.shape),
             self.stddev.expand(num_samples, *self.shape)
         )
-        return samples
 
     def _fixed_sample(self, noise):
         return noise if noise is not None else self._fixed_samples
@@ -105,8 +97,8 @@ class DiagonalGaussianConditionalDensity(nn.Module):
     def log_prob(self, inputs, cond_inputs):
         return self("log-prob", inputs, cond_inputs)
 
-    def sample(self, cond_inputs):
-        return self("sample", cond_inputs)
+    def sample(self, cond_inputs, detach=False):
+        return self("sample", cond_inputs, detach)
 
     def _log_prob(self, inputs, cond_inputs):
         means, stddevs = self._means_and_stddevs(cond_inputs)
@@ -114,12 +106,20 @@ class DiagonalGaussianConditionalDensity(nn.Module):
             "log-prob": diagonal_gaussian_log_prob(inputs, means, stddevs)
         }
 
-    def _sample(self, cond_inputs):
+    def _sample(self, cond_inputs, detach):
         means, stddevs = self._means_and_stddevs(cond_inputs)
-        samples, log_probs = diagonal_gaussian_sample(means, stddevs)
+        samples = diagonal_gaussian_sample(means, stddevs)
+
+        if detach:
+            samples = samples.detach()
+
+        log_probs = diagonal_gaussian_log_prob(samples, means, stddevs)
+
         return {
-            "log-prob": log_probs,
-            "sample": samples
+            "sample": samples,
+            # We return in addition to samples so that we can avoid two forward
+            # passes through self.coupler
+            "log-prob": log_probs
         }
 
     def entropy(self, cond_inputs):

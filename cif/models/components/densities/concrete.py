@@ -57,6 +57,8 @@ class ConcreteConditionalDensity(nn.Module):
         return self("log-prob", inputs, cond_inputs)
 
     def sample(self, cond_inputs):
+        # TODO: Implement reparam
+        raise NotImplementedError
         return self("sample", cond_inputs)
 
     def _log_prob(self, inputs, cond_inputs):

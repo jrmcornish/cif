@@ -16,8 +16,8 @@ class ELBODensity(Density):
         self.p_u_density = p_u_density
         self.q_u_density = q_u_density
 
-    def _elbo(self, x):
-        result = self.q_u_density.sample(x)
+    def _elbo(self, x, reparam):
+        result = self.q_u_density.sample(x, detach=not reparam)
         u = result["sample"]
         log_q_u = result["log-prob"]
 
@@ -28,9 +28,11 @@ class ELBODensity(Density):
 
         log_p_u = self.p_u_density.log_prob(u, z)["log-prob"]
 
-        prior_dict = self.prior.elbo(z)
+        prior_dict = self.prior.elbo(z, reparam=reparam)
 
         return {
+            "log_p_u": log_jac + log_p_u + prior_dict["log_p_u"],
+            "log_q_u": log_q_u + prior_dict["log_q_u"],
             "elbo": log_jac + log_p_u - log_q_u + prior_dict["elbo"],
             "bijection-info": result,
             "prior-dict": prior_dict

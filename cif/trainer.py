@@ -109,6 +109,7 @@ class Trainer:
         self._trainer = Engine(self._train_batch)
 
         AverageMetric().attach(self._trainer)
+        # TODO: This is wrong in general now that we are allowing multiple losses
         ProgressBar(persist=True).attach(self._trainer, ["loss"])
 
         self._trainer.add_event_handler(Events.ITERATION_COMPLETED, TerminateOnNan())
@@ -159,8 +160,21 @@ class Trainer:
 
         self._opt.zero_grad()
 
-        train_metrics = self._train_metrics(self._module, x)
-        loss = train_metrics["loss"]
+        # TODO: Rename _train_metrics
+        all_values = self._train_metrics(self._module, x)
+
+        losses = all_values["losses"]
+
+        if "metrics" in all_values:
+            metrics = all_values["metrics"]
+
+            shared_keys = set(losses.keys()).intersection(metrics.keys())
+            assert not shared_keys, f"Shared metrics and losses keys: {shared_keys}"
+
+        else:
+            metrics = {}
+
+        loss = sum(losses.values())
         loss.backward()
 
         if self._max_grad_norm is not None:
@@ -170,7 +184,7 @@ class Trainer:
 
         self._lr_scheduler.step()
 
-        return {"metrics": train_metrics}
+        return {"metrics": {**metrics, **losses}}
 
     def test(self):
         self._module.eval()

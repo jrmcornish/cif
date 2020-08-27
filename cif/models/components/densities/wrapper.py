@@ -11,6 +11,8 @@ class WrapperDensity(Density):
         self.density = density
 
     def _elbo(self, x):
+        # TODO: implement reparam
+        raise NotImplementedError
         return self.density.elbo(x)
 
     def _sample(self, num_samples):
@@ -22,6 +24,8 @@ class WrapperDensity(Density):
 
 class DequantizationDensity(WrapperDensity):
     def _elbo(self, x):
+        # TODO: implement reparam
+        raise NotImplementedError
         return super()._elbo(x.add_(torch.rand_like(x)))
 
 
@@ -37,6 +41,8 @@ class PassthroughBeforeEvalDensity(WrapperDensity):
     # recursively by modules containing this one.
     # TODO: Could do with hooks
     def train(self, train_mode=True):
+        # TODO: Implement - need to account for reparam
+        raise NotImplementedError
         if not train_mode:
             self.training = True
             with torch.no_grad():
@@ -57,6 +63,8 @@ class UpdateLipschitzBeforeForwardDensity(WrapperDensity):
 
 class DataParallelDensity(nn.DataParallel):
     def elbo(self, x):
+        # TODO: Implement - need to account for reparam
+        raise NotImplementedError
         return self("elbo", x)
 
     def sample(self, num_samples):

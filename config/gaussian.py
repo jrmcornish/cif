@@ -28,6 +28,14 @@ def config(dataset, use_baseline):
         "train_objective": "ml-ll-ss",
         "ml_ll_geom_prob": 0.65,
 
+        # Other possible training objectives:
+        #
+        # "train_objective": "iwae",
+        # "iwae_num_importance_samples": 10,
+        #
+        # "train_objective": "rws",
+        # "rws_num_importance_samples": 10,
+
         "max_epochs": 2000,
         "max_grad_norm": None,
         "early_stopping": True,
@@ -56,13 +64,12 @@ def linear_gaussian(dataset, model, use_baseline):
         "p_nets": "fixed-constant",
 
         # # Well-specified for 1D latent and 2D data
-        "q_mu_nets": [],
-        "q_sigma_nets": "learned-constant",
+        # "q_mu_nets": [],
+        # "q_sigma_nets": "learned-constant",
 
         # "q_nets": [10, 10],
 
-        # "q_sigma_nets": "fixed-constant",
-        # "q_mu_nets": "fixed-constant"
+        "q_nets": "fixed-constant"
     }
 
 

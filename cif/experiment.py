@@ -15,7 +15,7 @@ from .datasets import get_loaders
 from .visualizer import DummyDensityVisualizer, ImageDensityVisualizer, TwoDimensionalDensityVisualizer
 from .models import get_density
 from .writer import Writer, DummyWriter
-from .metrics import metrics, ml_ll_ss
+from .metrics import metrics, ml_ll_ss, rws, iwae
 
 from config import get_schema
 
@@ -230,15 +230,40 @@ def get_train_metrics(config):
                     nfes += train_info["bijection-info"].get("nfes", torch.tensor(0.))
                     train_info = train_info["prior-dict"]
 
-                return {"loss": loss, "nfes": nfes}
+                return {
+                    "losses": {
+                        "elbo": loss,
+                    },
+                    "metrics": {
+                        "nfes": nfes
+                    }
+                }
 
         else:
             def train_metrics(density, x):
-                return {"loss": -density("elbo", x)["elbo"].mean()}
+                return {
+                    "losses": {
+                        "elbo": -density("elbo", x)["elbo"].mean()
+                    }
+                }
+
+    elif config["train_objective"] == "rws":
+        def train_metrics(density, x):
+            return {
+                "losses": rws(density, x, config["rws_num_importance_samples"])
+            }
+
+    elif config["train_objective"] == "iwae":
+        def train_metrics(density, x):
+            return {
+                "losses": iwae(density, x, config["iwae_num_importance_samples"])
+            }
 
     elif config["train_objective"] == "ml-ll-ss":
         def train_metrics(density, x):
-            return ml_ll_ss(density, x, config["ml_ll_geom_prob"])
+            return {
+                "losses": ml_ll_ss(density, x, config["ml_ll_geom_prob"])
+            }
 
     else:
         assert False, f"Invalid training objective `{train_objective}'"

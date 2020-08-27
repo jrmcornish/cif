@@ -12,6 +12,8 @@ class SplitDensity(Density):
         self.dim = dim
 
     def _elbo(self, x):
+        # TODO: Implement reparam and log_p_u, log_q_u outputs
+        raise NotImplementedError
         x1, x2 = torch.chunk(x, chunks=2, dim=self.dim)
         elbo1 = self.density_1.elbo(x1)["elbo"]
         elbo2 = self.density_2.elbo(x2)["elbo"]
