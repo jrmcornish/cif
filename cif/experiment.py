@@ -57,8 +57,7 @@ def print_test_metrics(config, resume_dir):
 def print_model(config):
     density, _, _, _ = setup_density_and_loaders(
         config={**config, "write_to_disk": False},
-        device=torch.device("cpu"),
-        data_parallel=False
+        device=torch.device("cpu")
     )
     print(density)
 
@@ -66,13 +65,12 @@ def print_model(config):
 def print_num_params(config):
     density, _, _, _ = setup_density_and_loaders(
         config={**config, "write_to_disk": False},
-        device=torch.device("cpu"),
-        data_parallel=False
+        device=torch.device("cpu")
     )
     print(f"Number of parameters: {num_params(density):,}")
 
 
-def setup_density_and_loaders(config, device, data_parallel):
+def setup_density_and_loaders(config, device):
     train_loader, valid_loader, test_loader = get_loaders(
         dataset=config["dataset"],
         device=device,
@@ -85,8 +83,7 @@ def setup_density_and_loaders(config, device, data_parallel):
 
     density = get_density(
         schema=get_schema(config=config),
-        x_train=train_loader.dataset.x,
-        data_parallel=data_parallel
+        x_train=train_loader.dataset.x
     )
 
     # TODO: Could do lazily inside Trainer
@@ -95,7 +92,7 @@ def setup_density_and_loaders(config, device, data_parallel):
     return density, train_loader, valid_loader, test_loader
 
 
-def load_run(run_dir, device, data_parallel):
+def load_run(run_dir, device):
     run_dir = Path(run_dir)
 
     with open(run_dir / "config.json", "r") as f:
@@ -103,8 +100,7 @@ def load_run(run_dir, device, data_parallel):
 
     density, train_loader, valid_loader, test_loader = setup_density_and_loaders(
         config=config,
-        device=device,
-        data_parallel=data_parallel
+        device=device
     )
 
     try:
@@ -128,8 +124,7 @@ def setup_experiment(config, resume_dir):
 
     density, train_loader, valid_loader, test_loader = setup_density_and_loaders(
         config=config,
-        device=device,
-        data_parallel=True
+        device=device
     )
 
     if config["opt"] == "sgd":
