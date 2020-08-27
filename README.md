@@ -65,7 +65,7 @@ To inspect the model (either CIF or baseline) used for a given dataset, add the 
 
 Config files are contained within config/ in the root directory.
 They are specified as Python code - see e.g. config/gaussian.py for a working example using ML-LL-SS for a linear Gaussian target.
-There's a small DSL powering this (it's self-contained within config/) - basically, each config is named (e.g. `resflow`) and is attached to a group (e.g. `2d`) which can handle a set of datasets (e.g. `2uniforms`).
+There's a small DSL powering this (it's self-contained within config/) - basically, each config is _named_ (e.g. `resflow`) and is attached to a _group_ (e.g. `2d`) which can handle a set of _datasets_ (e.g. `2uniforms`).
 Each group requires a `@base` config, which is shared globally across the group.
 Each config then can override specific settings in the base config as desired.
 (It is then possible to add manual overrides via the `--config` option as described above.)
