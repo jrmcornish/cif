@@ -26,13 +26,13 @@ def metrics(density, x, num_elbo_samples):
 
 
 def iwae(density, x, num_importance_samples, stl):
-    # TODO: Dry this bit
-    x_samples = x.repeat_interleave(num_importance_samples, dim=0)
-
-    result = density.elbo(x_samples, detach_q_params=stl, detach_q_samples=False)
-
-    log_p_u = result["log_p_u"].view(x.shape[0], num_importance_samples, 1)
-    log_q_u = result["log_q_u"].view(x.shape[0], num_importance_samples, 1)
+    log_p_u, log_q_u = _elbo(
+        density=density,
+        x=x,
+        num_importance_samples=num_importance_samples,
+        detach_q_params=stl,
+        detach_q_samples=False
+    )
 
     loss = -(log_p_u - log_q_u).logsumexp(dim=1).mean()
 
@@ -40,12 +40,13 @@ def iwae(density, x, num_importance_samples, stl):
 
 
 def iwae_dreg(density, x, num_importance_samples):
-    x_samples = x.repeat_interleave(num_importance_samples, dim=0)
-
-    result = density.elbo(x_samples, detach_q_params=True, detach_q_samples=False)
-
-    log_p_u = result["log_p_u"].view(x.shape[0], num_importance_samples, 1)
-    log_q_u = result["log_q_u"].view(x.shape[0], num_importance_samples, 1)
+    log_p_u, log_q_u = _elbo(
+        density=density,
+        x=x,
+        num_importance_samples=num_importance_samples,
+        detach_q_params=True,
+        detach_q_samples=False
+    )
 
     p_loss = -(log_p_u - log_q_u.detach()).logsumexp(dim=1).mean()
 
@@ -61,12 +62,13 @@ def iwae_dreg(density, x, num_importance_samples):
 
 
 def rws(density, x, num_importance_samples):
-    x_samples = x.repeat_interleave(num_importance_samples, dim=0)
-
-    result = density.elbo(x_samples, detach_q_params=False, detach_q_samples=True)
-
-    log_p_u = result["log_p_u"].view(x.shape[0], num_importance_samples, 1)
-    log_q_u = result["log_q_u"].view(x.shape[0], num_importance_samples, 1)
+    log_p_u, log_q_u = _elbo(
+        density=density,
+        x=x,
+        num_importance_samples=num_importance_samples,
+        detach_q_params=False,
+        detach_q_samples=True
+    )
 
     p_loss = -(log_p_u - log_q_u.detach()).logsumexp(dim=1).mean()
     q_loss = (log_p_u.detach() - log_q_u).logsumexp(dim=1).mean()
@@ -98,6 +100,7 @@ def rws_dreg(density, x, num_importance_samples):
     }
 
 
+# TODO: This is broken now
 def ml_ll_ss(density, x, geom_prob):
     K_dist = stats.geom(p=geom_prob, loc=-1)
 
@@ -140,3 +143,16 @@ def _ml_ll_ss(log_p_u, log_q_u, K_dist, K):
     ml_ll_ss = log_I0 + (upper_level_term - lower_level_term) / K_dist.pmf(K)
 
     return ml_ll_ss.mean()
+
+
+def _elbo(density, x, num_importance_samples, detach_q_params=True, detach_q_samples=False):
+    x_samples = x.repeat_interleave(num_importance_samples, dim=0)
+
+    result = density.elbo(x_samples, detach_q_params=stl, detach_q_samples=False)
+
+    output_shape = (x.shape[0], num_importance_samples, 1)
+
+    log_p_u = result["log_p_u"].view(output_shape)
+    log_q_u = result["log_q_u"].view(output_shape)
+
+    return log_p_u, log_q_u
