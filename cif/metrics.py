@@ -145,10 +145,14 @@ def _ml_ll_ss(log_p_u, log_q_u, K_dist, K):
     return ml_ll_ss.mean()
 
 
-def _elbo(density, x, num_importance_samples, detach_q_params=True, detach_q_samples=False):
+def _elbo(density, x, num_importance_samples, detach_q_params, detach_q_samples):
     x_samples = x.repeat_interleave(num_importance_samples, dim=0)
 
-    result = density.elbo(x_samples, detach_q_params=stl, detach_q_samples=False)
+    result = density.elbo(
+        x_samples,
+        detach_q_params=detach_q_params,
+        detach_q_samples=detach_q_samples
+    )
 
     output_shape = (x.shape[0], num_importance_samples, 1)
 
