@@ -62,8 +62,13 @@ class UpdateLipschitzBeforeForwardDensity(WrapperDensity):
 
 
 class DataParallelDensity(nn.DataParallel):
-    def elbo(self, x, reparam=True):
-        return self("elbo", x, reparam)
+    def elbo(self, x, detach_q_params=False, detach_q_samples=False):
+        return self(
+            "elbo",
+            x,
+            detach_q_params=detach_q_params,
+            detach_q_samples=detach_q_samples
+        )
 
     def sample(self, num_samples):
         # Bypass DataParallel

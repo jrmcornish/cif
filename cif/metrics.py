@@ -25,10 +25,11 @@ def metrics(density, x, num_elbo_samples):
     }
 
 
-def iwae(density, x, num_importance_samples):
+def iwae(density, x, num_importance_samples, stl):
+    # TODO: Dry this bit
     x_samples = x.repeat_interleave(num_importance_samples, dim=0)
 
-    result = density.elbo(x_samples, reparam=True)
+    result = density.elbo(x_samples, detach_q_params=stl, detach_q_samples=False)
 
     log_p_u = result["log_p_u"].view(x.shape[0], num_importance_samples, 1)
     log_q_u = result["log_q_u"].view(x.shape[0], num_importance_samples, 1)
@@ -38,16 +39,58 @@ def iwae(density, x, num_importance_samples):
     return {"loss": loss}
 
 
+def iwae_dreg(density, x, num_importance_samples):
+    x_samples = x.repeat_interleave(num_importance_samples, dim=0)
+
+    result = density.elbo(x_samples, detach_q_params=True, detach_q_samples=False)
+
+    log_p_u = result["log_p_u"].view(x.shape[0], num_importance_samples, 1)
+    log_q_u = result["log_q_u"].view(x.shape[0], num_importance_samples, 1)
+
+    p_loss = -(log_p_u - log_q_u.detach()).logsumexp(dim=1).mean()
+
+    log_w = log_p_u.detach() - log_q_u
+    log_Z = log_w.logsumexp(dim=1).view(x.shape[0], 1, 1)
+    grad_weight = (log_w - log_Z).exp().detach()
+    q_loss = -(grad_weight**2 * log_w).sum(dim=1).mean()
+
+    return {
+        "p_loss": p_loss,
+        "q_loss": q_loss
+    }
+
+
 def rws(density, x, num_importance_samples):
     x_samples = x.repeat_interleave(num_importance_samples, dim=0)
 
-    result = density.elbo(x_samples, reparam=False)
+    result = density.elbo(x_samples, detach_q_params=False, detach_q_samples=True)
 
     log_p_u = result["log_p_u"].view(x.shape[0], num_importance_samples, 1)
     log_q_u = result["log_q_u"].view(x.shape[0], num_importance_samples, 1)
 
     p_loss = -(log_p_u - log_q_u.detach()).logsumexp(dim=1).mean()
     q_loss = (log_p_u.detach() - log_q_u).logsumexp(dim=1).mean()
+
+    return {
+        "p_loss": p_loss,
+        "q_loss": q_loss
+    }
+
+
+def rws_dreg(density, x, num_importance_samples):
+    x_samples = x.repeat_interleave(num_importance_samples, dim=0)
+
+    result = density.elbo(x_samples, detach_q_params=True, detach_q_samples=False)
+
+    log_p_u = result["log_p_u"].view(x.shape[0], num_importance_samples, 1)
+    log_q_u = result["log_q_u"].view(x.shape[0], num_importance_samples, 1)
+
+    p_loss = -(log_p_u - log_q_u.detach()).logsumexp(dim=1).mean()
+
+    log_w = log_p_u.detach() - log_q_u
+    log_Z = log_w.logsumexp(dim=1).view(x.shape[0], 1, 1)
+    grad_weight = (log_w - log_Z).exp().detach()
+    q_loss = -((grad_weight - grad_weight**2) * log_w).sum(dim=1).mean()
 
     return {
         "p_loss": p_loss,

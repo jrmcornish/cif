@@ -5,15 +5,15 @@ import torch.nn as nn
 
 
 class Density(nn.Module):
-    def forward(self, mode, *args):
+    def forward(self, mode, *args, **kwargs):
         if mode == "elbo":
-            return self._elbo(*args)
+            return self._elbo(*args, **kwargs)
 
         elif mode == "sample":
-            return self._sample(*args)
+            return self._sample(*args, **kwargs)
 
         elif mode == "fixed-sample":
-            return self._fixed_sample(*args)
+            return self._fixed_sample(*args, **kwargs)
 
         else:
             assert False, f"Invalid mode {mode}"
@@ -25,8 +25,13 @@ class Density(nn.Module):
     def fix_u(self, u):
         raise NotImplementedError
 
-    def elbo(self, x, reparam=True):
-        return self("elbo", x, reparam)
+    def elbo(self, x, detach_q_params=False, detach_q_samples=False):
+        return self(
+            "elbo",
+            x,
+            detach_q_params=detach_q_params,
+            detach_q_samples=detach_q_samples
+        )
 
     def sample(self, num_samples):
         return self("sample", num_samples)
@@ -37,7 +42,7 @@ class Density(nn.Module):
     def _fix_random_u(self):
         raise NotImplementedError
 
-    def _elbo(self, x, reparam):
+    def _elbo(self, x, detach_q_params, detach_q_samples):
         raise NotImplementedError
 
     def _sample(self, num_samples):

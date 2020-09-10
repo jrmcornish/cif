@@ -15,7 +15,7 @@ from .datasets import get_loaders
 from .visualizer import DummyDensityVisualizer, ImageDensityVisualizer, TwoDimensionalDensityVisualizer
 from .models import get_density
 from .writer import Writer, DummyWriter
-from .metrics import metrics, ml_ll_ss, rws, iwae
+from .metrics import metrics, ml_ll_ss, rws, iwae, iwae_dreg, rws_dreg
 
 from config import get_schema
 
@@ -214,7 +214,9 @@ def setup_experiment(config, resume_dir):
 
 
 def get_train_metrics(config):
-    if config["train_objective"] == "elbo":
+    train_objective = config["train_objective"]
+
+    if train_objective == "elbo":
         if config["schema_type"] == "ffjord":
             def train_metrics(density, x):
                 train_info = density("elbo", x)
@@ -242,23 +244,41 @@ def get_train_metrics(config):
                     }
                 }
 
-    elif config["train_objective"] == "rws":
+    elif train_objective == "rws":
         def train_metrics(density, x):
             return {
-                "losses": rws(density, x, config["rws_num_importance_samples"])
+                "losses": rws(density, x, config["num_importance_samples"])
             }
 
-    elif config["train_objective"] == "iwae":
+    elif train_objective == "rws-dreg":
         def train_metrics(density, x):
             return {
-                "losses": iwae(density, x, config["iwae_num_importance_samples"])
+                "losses": rws_dreg(density, x, config["num_importance_samples"])
             }
 
-    elif config["train_objective"] == "ml-ll-ss":
+    elif train_objective in ["iwae", "iwae-stl"]:
+        def train_metrics(density, x):
+            return {
+                "losses": iwae(
+                    density,
+                    x,
+                    num_importance_samples=config["num_importance_samples"],
+                    stl=train_objective == "iwae-stl"
+                )
+            }
+
+    elif train_objective == "iwae-dreg":
+        def train_metrics(density, x):
+            return {
+                "losses": iwae_dreg(density, x, config["num_importance_samples"])
+            }
+
+    elif train_objective == "ml-ll-ss":
         def train_metrics(density, x):
             return {
                 "losses": ml_ll_ss(density, x, config["ml_ll_geom_prob"])
             }
+
 
     else:
         assert False, f"Invalid training objective `{train_objective}'"
