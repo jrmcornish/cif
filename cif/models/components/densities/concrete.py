@@ -54,6 +54,8 @@ class ConcreteConditionalDensity(nn.Module):
             assert False, f"Invalid mode {mode}"
 
     def log_prob(self, inputs, cond_inputs):
+        # TODO: Implement detach_params
+        raise NotImplementedError
         return self("log-prob", inputs, cond_inputs)
 
     def sample(self, cond_inputs):

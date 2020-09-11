@@ -20,11 +20,12 @@ class BijectionDensity(Density):
         fixed_prior = self.prior.fix_u(u=u)
         return BijectionDensity(bijection=self.bijection, prior=fixed_prior)
 
-    def _elbo(self, x, detach_q_params, detach_q_samples):
+    def _elbo(self, x, detach_p_params, detach_q_params, detach_q_samples):
         result = self.bijection.x_to_z(x)
 
         prior_dict = self.prior.elbo(
             result["z"],
+            detach_p_params=detach_p_params,
             detach_q_params=detach_q_params,
             detach_q_samples=detach_q_samples
         )

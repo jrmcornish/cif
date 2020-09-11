@@ -15,7 +15,7 @@ from .datasets import get_loaders
 from .visualizer import DummyDensityVisualizer, ImageDensityVisualizer, TwoDimensionalDensityVisualizer
 from .models import get_density
 from .writer import Writer, DummyWriter
-from .metrics import metrics, ml_ll_ss, rws, iwae, iwae_dreg, rws_dreg
+from .metrics import metrics, ml_ll_ss, rws, iwae, rws_dreg, iwae_alt
 
 from config import get_schema
 
@@ -256,7 +256,7 @@ def get_train_metrics(config):
                 "losses": rws_dreg(density, x, config["num_importance_samples"])
             }
 
-    elif train_objective in ["iwae", "iwae-stl"]:
+    elif train_objective == "iwae":
         def train_metrics(density, x):
             return {
                 "losses": iwae(
@@ -267,10 +267,15 @@ def get_train_metrics(config):
                 )
             }
 
-    elif train_objective == "iwae-dreg":
+    elif train_objective in ["iwae-stl", "iwae-dreg"]:
         def train_metrics(density, x):
             return {
-                "losses": iwae_dreg(density, x, config["num_importance_samples"])
+                "losses": iwae_alt(
+                    density,
+                    x,
+                    num_importance_samples=config["num_importance_samples"],
+                    grad_weight_pow=1 if train_objective == "iwae-stl" else 2
+                )
             }
 
     elif train_objective == "ml-ll-ss":

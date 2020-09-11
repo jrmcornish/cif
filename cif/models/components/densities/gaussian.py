@@ -53,7 +53,7 @@ class DiagonalGaussianDensity(Density):
         assert not u
         return self
 
-    def _elbo(self, z, detach_q_params, detach_q_samples):
+    def _elbo(self, z, detach_p_params, detach_q_params, detach_q_samples):
         log_prob = diagonal_gaussian_log_prob(
             z,
             self.mean.expand_as(z),
@@ -95,8 +95,8 @@ class DiagonalGaussianConditionalDensity(nn.Module):
         else:
             assert False, f"Invalid mode {mode}"
 
-    def log_prob(self, inputs, cond_inputs):
-        return self("log-prob", inputs, cond_inputs)
+    def log_prob(self, inputs, cond_inputs, detach_params=False):
+        return self("log-prob", inputs, cond_inputs, detach_params=detach_params)
 
     def sample(self, cond_inputs, detach_params=False, detach_samples=False):
         return self(
@@ -106,8 +106,13 @@ class DiagonalGaussianConditionalDensity(nn.Module):
             detach_samples=detach_samples
         )
 
-    def _log_prob(self, inputs, cond_inputs):
+    def _log_prob(self, inputs, cond_inputs, detach_params):
         means, stddevs = self._means_and_stddevs(cond_inputs)
+
+        if detach_params:
+            means = means.detach()
+            stddevs = stddevs.detach()
+
         return {
             "log-prob": diagonal_gaussian_log_prob(inputs, means, stddevs)
         }

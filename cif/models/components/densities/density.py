@@ -25,10 +25,11 @@ class Density(nn.Module):
     def fix_u(self, u):
         raise NotImplementedError
 
-    def elbo(self, x, detach_q_params=False, detach_q_samples=False):
+    def elbo(self, x, detach_p_params=False, detach_q_params=False, detach_q_samples=False):
         return self(
             "elbo",
             x,
+            detach_p_params=detach_p_params,
             detach_q_params=detach_q_params,
             detach_q_samples=detach_q_samples
         )
