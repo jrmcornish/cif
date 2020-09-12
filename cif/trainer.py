@@ -293,11 +293,11 @@ class Trainer:
             "opt_state_dicts": {
                 param_name: opt.state_dict() for param_name, opt in self._opts.items()
             },
-            "best_valid_loss": self._best_valid_loss,
-            "num_bad_valid_epochs": self._num_bad_valid_epochs,
-            "lr_scheduler_state_dict": {
+            "lr_scheduler_state_dicts": {
                 param_name: lr_scheduler.state_dict() for param_name, lr_scheduler in self._lr_schedulers.items()
-            }
+            },
+            "best_valid_loss": self._best_valid_loss,
+            "num_bad_valid_epochs": self._num_bad_valid_epochs
         }
 
         self._writer.write_checkpoint(tag, checkpoint)
@@ -305,21 +305,20 @@ class Trainer:
     def _load_checkpoint(self, tag):
         checkpoint = self._writer.load_checkpoint(tag, device=self._device)
 
-        # TODO: Update for new multi-optimizer setup
-        raise NotImplementedError
-
         @self._trainer.on(Events.STARTED)
         def resume_trainer_state(engine):
             engine.state.epoch = checkpoint["epoch"]
             engine.state.iteration = checkpoint["iteration"]
 
         self._module.load_state_dict(checkpoint["module_state_dict"])
-        self._opt.load_state_dict(checkpoint["opt_state_dict"])
+
+        for param_name, state_dict in checkpoint["opt_state_dicts"].items():
+            self._opts[param_name].load_state_dict(state_dict)
+
+        for param_name, state_dict in checkpoint["lr_scheduler_state_dicts"].items():
+            self._lr_schedulers[param_name].load_state_dict(state_dict)
+
         self._best_valid_loss = checkpoint["best_valid_loss"]
         self._num_bad_valid_epochs = checkpoint["num_bad_valid_epochs"]
-        try:
-            self._lr_scheduler.load_state_dict(checkpoint["lr_scheduler_state_dict"])
-        except KeyError:
-            print("No lr scheduler in saved checkpoint")
 
         print(f"Loaded checkpoint `{tag}' after epoch {checkpoint['epoch']}", file=sys.stderr)
