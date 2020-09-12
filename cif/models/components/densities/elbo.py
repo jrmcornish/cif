@@ -1,3 +1,5 @@
+from itertools import chain
+
 from .density import Density
 from .exact import BijectionDensity
 
@@ -16,7 +18,20 @@ class ELBODensity(Density):
         self.p_u_density = p_u_density
         self.q_u_density = q_u_density
 
-    def _elbo(self, x, detach_p_params, detach_q_params, detach_q_samples):
+    def p_parameters(self):
+        return chain(
+            self.bijection.parameters(),
+            self.p_u_density.parameters(),
+            self.prior.p_parameters()
+        )
+
+    def q_parameters(self):
+        # TODO: This will fail silently if we stack multiple ELBO densities.
+        # But we can't recurse naively either, because in this case
+        # subsequent q's will depend on the bijection used here
+        return self.q_u_density.parameters()
+
+    def _elbo(self, x, detach_q_params, detach_q_samples):
         result = self.q_u_density.sample(
             cond_inputs=x,
             detach_params=detach_q_params,
@@ -30,11 +45,7 @@ class ELBODensity(Density):
 
         log_jac = result["log-jac"]
 
-        result = self.p_u_density.log_prob(
-            inputs=u,
-            cond_inputs=z,
-            detach_params=detach_p_params
-        )
+        result = self.p_u_density.log_prob(inputs=u, cond_inputs=z)
         log_p_u = result["log-prob"]
 
         prior_dict = self.prior.elbo(
@@ -44,9 +55,8 @@ class ELBODensity(Density):
         )
 
         return {
-            # TODO: Rename log_._u -> log-.-u
-            "log_p_u": log_jac + log_p_u + prior_dict["log_p_u"],
-            "log_q_u": log_q_u + prior_dict["log_q_u"],
+            "log-p": log_jac + log_p_u + prior_dict["log-p"],
+            "log-q": log_q_u + prior_dict["log-q"],
             "elbo": log_jac + log_p_u - log_q_u + prior_dict["elbo"],
             "bijection-info": result,
             "prior-dict": prior_dict

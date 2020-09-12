@@ -127,35 +127,6 @@ def setup_experiment(config, resume_dir):
         device=device
     )
 
-    if config["opt"] == "sgd":
-        opt_class = optim.SGD
-    elif config["opt"] == "adam":
-        opt_class = optim.Adam
-    elif config["opt"] == "adamax":
-        opt_class = optim.Adamax
-    else:
-        assert False, f"Invalid optimiser type {config['opt']}"
-
-    opt = opt_class(
-        density.parameters(),
-        lr=config["lr"],
-        weight_decay=config["weight_decay"]
-    )
-
-    if config["lr_schedule"] == "cosine":
-        lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer=opt,
-            T_max=config["max_epochs"]*len(train_loader),
-            eta_min=0.
-        )
-    elif config["lr_schedule"] == "none":
-        lr_scheduler = torch.optim.lr_scheduler.LambdaLR(
-            optimizer=opt,
-            lr_lambda=lambda epoch: 1.
-        )
-    else:
-        assert False, f"Invalid learning rate schedule `{config['lr_schedule']}'"
-
     if config["write_to_disk"]:
         if resume_dir is None:
             logdir = config["logdir_root"]
@@ -180,7 +151,11 @@ def setup_experiment(config, resume_dir):
     else:
         visualizer = DummyDensityVisualizer(writer=writer)
 
-    train_metrics = get_train_metrics(config)
+    train_metrics, opts = get_training_components(density, config)
+
+    lr_schedulers = {
+        param_name: get_lr_scheduler(opt, config) for param_name, opt in opts.items()
+    }
 
     def valid_loss(density, x):
         return -metrics(density, x, config["num_valid_elbo_samples"])["log-prob"]
@@ -196,8 +171,8 @@ def setup_experiment(config, resume_dir):
         train_loader=train_loader,
         valid_loader=valid_loader,
         test_loader=test_loader,
-        opt=opt,
-        lr_scheduler=lr_scheduler,
+        opts=opts,
+        lr_schedulers=lr_schedulers,
         max_epochs=config["max_epochs"],
         max_grad_norm=config["max_grad_norm"],
         early_stopping=config["early_stopping"],
@@ -213,82 +188,80 @@ def setup_experiment(config, resume_dir):
     return density, trainer, writer
 
 
-def get_train_metrics(config):
+def get_opt(parameters, config):
+    if config["opt"] == "sgd":
+        opt_class = optim.SGD
+    elif config["opt"] == "adam":
+        opt_class = optim.Adam
+    elif config["opt"] == "adamax":
+        opt_class = optim.Adamax
+    else:
+        assert False, f"Invalid optimiser type {config['opt']}"
+
+    return opt_class(
+        parameters,
+        lr=config["lr"],
+        weight_decay=config["weight_decay"]
+    )
+
+
+def get_lr_scheduler(opt, config):
+    if config["lr_schedule"] == "cosine":
+        return torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer=opt,
+            T_max=config["max_epochs"]*len(train_loader),
+            eta_min=0.
+        )
+    elif config["lr_schedule"] == "none":
+        return torch.optim.lr_scheduler.LambdaLR(
+            optimizer=opt,
+            lr_lambda=lambda epoch: 1.
+        )
+    else:
+        assert False, f"Invalid learning rate schedule `{config['lr_schedule']}'"
+
+
+def get_training_components(density, config):
+    if config["train_objective"] == "iwae":
+        train_metric = lambda density, x: {
+            "losses": {
+                "pq": iwae(density, x, config["num_importance_samples"], detach_q=False)
+            }
+        }
+        opt = get_opt(density.parameters(), config)
+        return train_metric, {"pq": opt}
+
+    else:
+        q_loss = get_q_loss(config)
+
+        train_metrics = lambda density, x: {
+            "losses": {
+                "p": iwae(density, x, config["num_importance_samples"], detach_q=True),
+                "q": q_loss(density, x)
+            }
+        }
+
+        p_opt = get_opt(density.p_parameters(), config)
+        q_opt = get_opt(density.q_parameters(), config)
+
+        return train_metrics, {"p": p_opt, "q": q_opt}
+
+
+def get_q_loss(config):
     train_objective = config["train_objective"]
 
-    if train_objective == "elbo":
-        if config["schema_type"] == "ffjord":
-            def train_metrics(density, x):
-                train_info = density("elbo", x)
-                loss = -train_info["elbo"].mean()
-
-                nfes = torch.tensor(0.)
-                while "prior-dict" in train_info:
-                    nfes += train_info["bijection-info"].get("nfes", torch.tensor(0.))
-                    train_info = train_info["prior-dict"]
-
-                return {
-                    "losses": {
-                        "elbo": loss,
-                    },
-                    "metrics": {
-                        "nfes": nfes
-                    }
-                }
-
-        else:
-            def train_metrics(density, x):
-                return {
-                    "losses": {
-                        "elbo": -density("elbo", x)["elbo"].mean()
-                    }
-                }
-
-    elif train_objective == "rws":
-        def train_metrics(density, x):
-            return {
-                "losses": rws(density, x, config["num_importance_samples"])
-            }
+    if train_objective == "rws":
+        return lambda density, x: rws(density, x, config["num_importance_samples"])
 
     elif train_objective == "rws-dreg":
-        def train_metrics(density, x):
-            return {
-                "losses": rws_dreg(density, x, config["num_importance_samples"])
-            }
-
-    elif train_objective == "iwae":
-        def train_metrics(density, x):
-            return {
-                "losses": iwae(
-                    density,
-                    x,
-                    num_importance_samples=config["num_importance_samples"],
-                    stl=train_objective == "iwae-stl"
-                )
-            }
+        return lambda density, x: rws_dreg(density, x, config["num_importance_samples"])
 
     elif train_objective in ["iwae-stl", "iwae-dreg"]:
-        def train_metrics(density, x):
-            return {
-                "losses": iwae_alt(
-                    density,
-                    x,
-                    num_importance_samples=config["num_importance_samples"],
-                    grad_weight_pow=1 if train_objective == "iwae-stl" else 2
-                )
-            }
-
-    elif train_objective == "ml-ll-ss":
-        def train_metrics(density, x):
-            return {
-                "losses": ml_ll_ss(density, x, config["ml_ll_geom_prob"])
-            }
-
+        grad_weight_pow = 1 if train_objective == "iwae-stl" else 2
+        return lambda density, x: iwae_alt(density, x, config["num_importance_samples"], grad_weight_pow)
 
     else:
         assert False, f"Invalid training objective `{train_objective}'"
-
-    return train_metrics
 
 
 def num_params(module):

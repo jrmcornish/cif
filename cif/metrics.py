@@ -25,90 +25,58 @@ def metrics(density, x, num_elbo_samples):
     }
 
 
-def iwae(density, x, num_importance_samples):
-    log_p_u, log_q_u = _elbo(
+def iwae(density, x, num_importance_samples, detach_q):
+    log_w = _elbo(
         density=density,
         x=x,
         num_importance_samples=num_importance_samples,
-        detach_p_params=False,
-        detach_q_params=False,
-        detach_q_samples=False
+        detach_q_params=detach_q,
+        detach_q_samples=detach_q
     )
 
-    loss = -(log_p_u - log_q_u).logsumexp(dim=1).mean()
-
-    return {"loss": loss}
+    return -log_w.logsumexp(dim=1).mean()
 
 
 def iwae_alt(density, x, num_importance_samples, grad_weight_pow):
-    # TODO: Could pull this out altogether and have these all just return
-    # q_loss
-    p_loss = _iwae_p_loss(density, x, num_importance_samples)
-
-    log_p_u, log_q_u = _elbo(
+    log_w = _elbo(
         density=density,
         x=x,
         num_importance_samples=num_importance_samples,
-        detach_p_params=True,
         detach_q_params=True,
         detach_q_samples=False
     )
 
-    log_w = log_p_u - log_q_u
     log_Z = log_w.logsumexp(dim=1).view(x.shape[0], 1, 1)
     grad_weight = (log_w - log_Z).exp() ** grad_weight_pow
-    q_loss = -(grad_weight.detach() * log_w).sum(dim=1).mean()
-
-    return {
-        "p_loss": p_loss,
-        "q_loss": q_loss
-    }
+    return -(grad_weight.detach() * log_w).sum(dim=1).mean()
 
 
 def rws(density, x, num_importance_samples):
-    p_loss = _iwae_p_loss(density, x, num_importance_samples)
-
-    log_p_u, log_q_u = _elbo(
+    log_w = _elbo(
         density=density,
         x=x,
         num_importance_samples=num_importance_samples,
-        detach_p_params=True,
         detach_q_params=False,
         detach_q_samples=True
     )
 
-    log_w = log_p_u.detach() - log_q_u
     log_Z = log_w.logsumexp(dim=1).view(x.shape[0], 1, 1)
     grad_weight = (log_w - log_Z).exp()
-    q_loss = (grad_weight.detach() * log_w).sum(dim=1).mean()
-
-    return {
-        "p_loss": p_loss,
-        "q_loss": q_loss
-    }
+    return (grad_weight.detach() * log_w).sum(dim=1).mean()
 
 
 def rws_dreg(density, x, num_importance_samples):
-    p_loss = _iwae_p_loss(density, x, num_importance_samples)
-
-    log_p_u, log_q_u = _elbo(
+    log_w = _elbo(
         density=density,
         x=x,
         num_importance_samples=num_importance_samples,
-        detach_p_params=True,
         detach_q_params=True,
         detach_q_samples=False
     )
 
-    log_w = log_p_u - log_q_u
     log_Z = log_w.logsumexp(dim=1).view(x.shape[0], 1, 1)
     grad_weight = (log_w - log_Z).exp().detach()
-    q_loss = -((grad_weight - grad_weight**2) * log_w).sum(dim=1).mean()
-
-    return {
-        "p_loss": p_loss,
-        "q_loss": q_loss
-    }
+    return -((grad_weight - grad_weight**2) * log_w).sum(dim=1).mean()
 
 
 # TODO: This is broken now
@@ -156,32 +124,18 @@ def _ml_ll_ss(log_p_u, log_q_u, K_dist, K):
     return ml_ll_ss.mean()
 
 
-def _iwae_p_loss(density, x, num_importance_samples):
-    log_p_u, log_q_u = _elbo(
-        density=density,
-        x=x,
-        num_importance_samples=num_importance_samples,
-        detach_p_params=False,
-        detach_q_params=True,
-        detach_q_samples=True
-    )
-
-    return -(log_p_u - log_q_u).logsumexp(dim=1).mean()
-
-
-def _elbo(density, x, num_importance_samples, detach_p_params, detach_q_params, detach_q_samples):
+def _elbo(density, x, num_importance_samples, detach_q_params, detach_q_samples):
     x_samples = x.repeat_interleave(num_importance_samples, dim=0)
 
     result = density.elbo(
         x_samples,
-        detach_p_params=detach_p_params,
         detach_q_params=detach_q_params,
         detach_q_samples=detach_q_samples
     )
 
     output_shape = (x.shape[0], num_importance_samples, 1)
 
-    log_p_u = result["log_p_u"].view(output_shape)
-    log_q_u = result["log_q_u"].view(output_shape)
+    log_p = result["log-p"].view(output_shape)
+    log_q = result["log-q"].view(output_shape)
 
-    return log_p_u, log_q_u
+    return log_p - log_q

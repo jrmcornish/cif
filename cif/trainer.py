@@ -58,8 +58,8 @@ class Trainer:
 
             train_metrics,
             train_loader,
-            opt,
-            lr_scheduler,
+            opts,
+            lr_schedulers,
             max_epochs,
             max_grad_norm,
 
@@ -84,8 +84,8 @@ class Trainer:
 
         self._train_metrics = train_metrics
         self._train_loader = train_loader
-        self._opt = opt
-        self._lr_scheduler = lr_scheduler
+        self._opts = opts
+        self._lr_schedulers = lr_schedulers
         self._max_epochs = max_epochs
         self._max_grad_norm = max_grad_norm
 
@@ -152,43 +152,55 @@ class Trainer:
     def train(self):
         self._trainer.run(data=self._train_loader, max_epochs=self._max_epochs)
 
+    def test(self):
+        self._module.eval()
+        return self._tester.run(data=self._test_loader).metrics
+
     def _train_batch(self, engine, batch):
         self._module.train()
 
         x, _ = batch # TODO: Potentially pass y also for genericity
         x = x.to(self._device)
 
-        self._opt.zero_grad()
+        for param_name, opt in self._opts.items():
+            self._set_requires_grad(param_name, True)
+            opt.zero_grad()
 
-        # TODO: Rename _train_metrics
         all_values = self._train_metrics(self._module, x)
 
-        losses = all_values["losses"]
+        for param_name, loss in all_values["losses"].items():
+            self._isolate_params(param_name)
+            loss.backward()
+            self._clip_grad_norms(param_name)
 
-        if "metrics" in all_values:
-            metrics = all_values["metrics"]
+        for param_name, opt in self._opts.items():
+            opt.step()
+            self._lr_schedulers[param_name].step()
 
-            shared_keys = set(losses.keys()).intersection(metrics.keys())
-            assert not shared_keys, f"Shared metrics and losses keys: {shared_keys}"
+        return {"metrics": all_values["losses"]}
 
-        else:
-            metrics = {}
+    def _isolate_params(self, param_name):
+        found = False
+        for other_param_name in self._opts:
+            requires_grad = other_param_name == param_name
+            found = found or requires_grad
+            self._set_requires_grad(other_param_name, requires_grad)
 
-        loss = sum(losses.values())
-        loss.backward()
+        assert found, f"Did not find parameters named `{param_name}'"
 
+    def _set_requires_grad(self, param_name, requires_grad):
+        for param in self._iter_params(param_name):
+            param.requires_grad = requires_grad
+
+    def _clip_grad_norms(self, param_name):
         if self._max_grad_norm is not None:
-            torch.nn.utils.clip_grad_norm_(self._module.parameters(), self._max_grad_norm)
+            for param in self._iter_params(param_name):
+                torch.nn.utils.clip_grad_norm_(param, self._max_grad_norm)
 
-        self._opt.step()
-
-        self._lr_scheduler.step()
-
-        return {"metrics": {**metrics, **losses}}
-
-    def test(self):
-        self._module.eval()
-        return self._tester.run(data=self._test_loader).metrics
+    def _iter_params(self, param_name):
+        for group in self._opts[param_name].param_groups:
+            for param in group["params"]:
+                yield param
 
     @torch.no_grad()
     def _test_and_log(self, engine):
@@ -246,26 +258,29 @@ class Trainer:
 
         if i % self._STEPS_PER_LOSS_WRITE == 0:
             for k, v in engine.state.output["metrics"].items():
-                self._writer.write_scalar("train/" + k, v, global_step=i)
+                self._writer.write_scalar(f"train/{k}", v, global_step=i)
 
         # TODO: Inefficient to recompute this if we are doing gradient clipping
         if i % self._STEPS_PER_GRAD_WRITE == 0:
-            self._writer.write_scalar("train/grad-norm", self._get_grad_norm(), global_step=i)
+            for param_name in self._opts:
+                self._writer.write_scalar(f"train/grad-norm-{param_name}", self._get_grad_norm(param_name), global_step=i)
 
         # TODO: We should do this _before_ calling self._lr_scheduler.step(), since
         # we will not correspond to the learning rate used at iteration i otherwise
         if i % self._STEPS_PER_LR_WRITE == 0:
-            self._writer.write_scalar("train/lr", self._get_lr(), global_step=i)
+            for param_name in self._opts:
+                self._writer.write_scalar(f"train/lr-{param_name}", self._get_lr(param_name), global_step=i)
 
-    def _get_grad_norm(self):
+    def _get_grad_norm(self, param_name):
         norm = 0
-        for param in self._module.parameters():
+        for param in self._iter_params(param_name):
             if param.grad is not None:
                 norm += param.grad.norm().item()**2
         return np.sqrt(norm)
 
-    def _get_lr(self):
-        param_group, = self._opt.param_groups
+    def _get_lr(self, param_name):
+        # NOTE: Assumes a single param group (will fail otherwise)
+        param_group, = self._opts[param_name].param_groups
         return param_group["lr"]
 
     def _save_checkpoint(self, tag):
@@ -275,16 +290,23 @@ class Trainer:
             "epoch": self._trainer.state.epoch,
             "iteration": self._trainer.state.iteration,
             "module_state_dict": self._module.state_dict(),
-            "opt_state_dict": self._opt.state_dict(),
+            "opt_state_dicts": {
+                param_name: opt.state_dict() for param_name, opt in self._opts.items()
+            },
             "best_valid_loss": self._best_valid_loss,
             "num_bad_valid_epochs": self._num_bad_valid_epochs,
-            "lr_scheduler_state_dict": self._lr_scheduler.state_dict()
+            "lr_scheduler_state_dict": {
+                param_name: lr_scheduler.state_dict() for param_name, lr_scheduler in self._lr_schedulers.items()
+            }
         }
 
         self._writer.write_checkpoint(tag, checkpoint)
 
     def _load_checkpoint(self, tag):
         checkpoint = self._writer.load_checkpoint(tag, device=self._device)
+
+        # TODO: Update for new multi-optimizer setup
+        raise NotImplementedError
 
         @self._trainer.on(Events.STARTED)
         def resume_trainer_state(engine):
