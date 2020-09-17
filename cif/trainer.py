@@ -180,13 +180,11 @@ class Trainer:
         return {"metrics": all_values["losses"]}
 
     def _isolate_params(self, param_name):
-        found = False
         for other_param_name in self._opts:
-            requires_grad = other_param_name == param_name
-            found = found or requires_grad
-            self._set_requires_grad(other_param_name, requires_grad)
+            self._set_requires_grad(other_param_name, False)
 
-        assert found, f"Did not find parameters named `{param_name}'"
+        # Do this last in case parameters appear in multiple groups
+        self._set_requires_grad(param_name, True)
 
     def _set_requires_grad(self, param_name, requires_grad):
         for param in self._iter_params(param_name):
