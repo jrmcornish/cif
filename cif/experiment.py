@@ -154,7 +154,8 @@ def setup_experiment(config, resume_dir):
     train_metrics, opts = get_training_components(density, config)
 
     lr_schedulers = {
-        param_name: get_lr_scheduler(opt, config) for param_name, opt in opts.items()
+        param_name: get_lr_scheduler(opt, len(train_loader), config)
+        for param_name, opt in opts.items()
     }
 
     def valid_loss(density, x):
@@ -188,28 +189,11 @@ def setup_experiment(config, resume_dir):
     return density, trainer, writer
 
 
-def get_opt(parameters, config):
-    if config["opt"] == "sgd":
-        opt_class = optim.SGD
-    elif config["opt"] == "adam":
-        opt_class = optim.Adam
-    elif config["opt"] == "adamax":
-        opt_class = optim.Adamax
-    else:
-        assert False, f"Invalid optimiser type {config['opt']}"
-
-    return opt_class(
-        parameters,
-        lr=config["lr"],
-        weight_decay=config["weight_decay"]
-    )
-
-
-def get_lr_scheduler(opt, config):
+def get_lr_scheduler(opt, num_train_batches, config):
     if config["lr_schedule"] == "cosine":
         return torch.optim.lr_scheduler.CosineAnnealingLR(
             optimizer=opt,
-            T_max=config["max_epochs"]*len(train_loader),
+            T_max=config["max_epochs"]*num_train_batches,
             eta_min=0.
         )
     elif config["lr_schedule"] == "none":
@@ -262,6 +246,23 @@ def get_q_loss(config):
 
     else:
         assert False, f"Invalid training objective `{train_objective}'"
+
+
+def get_opt(parameters, config):
+    if config["opt"] == "sgd":
+        opt_class = optim.SGD
+    elif config["opt"] == "adam":
+        opt_class = optim.Adam
+    elif config["opt"] == "adamax":
+        opt_class = optim.Adamax
+    else:
+        assert False, f"Invalid optimiser type {config['opt']}"
+
+    return opt_class(
+        parameters,
+        lr=config["lr"],
+        weight_decay=config["weight_decay"]
+    )
 
 
 def num_params(module):
