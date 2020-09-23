@@ -8,8 +8,10 @@ import torch.nn as nn
 
 from cif.models.components.densities import (
     DiagonalGaussianDensity,
+    ELBODensity
+)
+from cif.models.components.conditional_densities import (
     DiagonalGaussianConditionalDensity,
-    ELBODensity,
     ConcreteConditionalDensity
 )
 from cif.models.components.couplers import ChunkedSharedCoupler

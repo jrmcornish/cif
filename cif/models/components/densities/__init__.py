@@ -6,7 +6,6 @@ from .wrapper import (
 )
 
 from .split import SplitDensity
-from .gaussian import DiagonalGaussianDensity, DiagonalGaussianConditionalDensity
+from .gaussian import DiagonalGaussianDensity
 from .exact import BijectionDensity
 from .elbo import ELBODensity
-from .concrete import ConcreteConditionalDensity

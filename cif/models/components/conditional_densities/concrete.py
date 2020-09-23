@@ -3,8 +3,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from .density import Density
-
 
 def concrete_log_prob(u, alphas, lam):
     assert alphas.shape == u.shape

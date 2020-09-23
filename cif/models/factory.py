@@ -33,9 +33,11 @@ from .components.bijections import (
     ResidualFlowBijection,
     ActNormBijection
 )
+
+from .components.conditional_densities import DiagonalGaussianConditionalDensity
+
 from .components.densities import (
     DiagonalGaussianDensity,
-    DiagonalGaussianConditionalDensity,
     ELBODensity,
     BijectionDensity,
     SplitDensity,
@@ -44,7 +46,9 @@ from .components.densities import (
     UpdateLipschitzBeforeForwardDensity,
     DataParallelDensity
 )
+
 from .components.couplers import IndependentCoupler, ChunkedSharedCoupler
+
 from .components.networks import (
     ConstantNetwork,
     get_mlp,
