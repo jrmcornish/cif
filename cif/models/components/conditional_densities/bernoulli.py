@@ -2,34 +2,16 @@ import torch
 import torch.nn as nn
 import torch.distributions as dist
 
+from .conditional_density import ConditionalDensity
 
-class BernoulliConditionalDensity(nn.Module):
+
+class BernoulliConditionalDensity(ConditionalDensity):
     def __init__(
             self,
             logit_net
     ):
         super().__init__()
         self.logit_net = logit_net
-
-    # TODO: DRY
-    def forward(self, mode, *args, **kwargs):
-        if mode == "log-prob":
-            return self._log_prob(*args, **kwargs)
-        elif mode == "sample":
-            return self._sample(*args, **kwargs)
-        else:
-            assert False, f"Invalid mode {mode}"
-
-    def log_prob(self, inputs, cond_inputs):
-        return self("log-prob", inputs, cond_inputs)
-
-    def sample(self, cond_inputs, detach_params=False, detach_samples=False):
-        return self(
-            "sample",
-            cond_inputs=cond_inputs,
-            detach_params=detach_params,
-            detach_samples=detach_samples
-        )
 
     def _log_prob(self, inputs, cond_inputs):
         logits = self.logit_net(cond_inputs)
@@ -53,7 +35,6 @@ class BernoulliConditionalDensity(nn.Module):
         if detach_samples:
             samples = samples.detach()
 
-        # TODO: DRY
         log_probs = bernoulli.log_prob(samples).flatten(start_dim=1).sum(dim=1, keepdim=True)
 
         return {

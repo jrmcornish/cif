@@ -1,37 +1,17 @@
 import torch
 import torch.nn as nn
 
+from .conditional_density import ConditionalDensity
 from ..densities.gaussian import diagonal_gaussian_log_prob, diagonal_gaussian_sample, diagonal_gaussian_entropy
 
 
-class DiagonalGaussianConditionalDensity(nn.Module):
+class DiagonalGaussianConditionalDensity(ConditionalDensity):
     def __init__(
             self,
             coupler
     ):
         super().__init__()
         self.coupler = coupler
-
-    def forward(self, mode, *args, **kwargs):
-        if mode == "log-prob":
-            return self._log_prob(*args, **kwargs)
-        elif mode == "sample":
-            return self._sample(*args, **kwargs)
-        elif mode == "entropy":
-            return self._entropy(*args, **kwargs)
-        else:
-            assert False, f"Invalid mode {mode}"
-
-    def log_prob(self, inputs, cond_inputs):
-        return self("log-prob", inputs, cond_inputs)
-
-    def sample(self, cond_inputs, detach_params=False, detach_samples=False):
-        return self(
-            "sample",
-            cond_inputs,
-            detach_params=detach_params,
-            detach_samples=detach_samples
-        )
 
     def _log_prob(self, inputs, cond_inputs):
         means, stddevs = self._means_and_stddevs(cond_inputs)
@@ -58,10 +38,6 @@ class DiagonalGaussianConditionalDensity(nn.Module):
             # passes through self.coupler
             "log-prob": log_probs
         }
-
-    def entropy(self, cond_inputs):
-        _, stddevs = self._means_and_stddevs(cond_inputs)
-        return diagonal_gaussian_entropy(stddevs)
 
     def _means_and_stddevs(self, cond_inputs):
         result = self.coupler(cond_inputs)

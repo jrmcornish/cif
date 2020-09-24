@@ -1,12 +1,17 @@
 from itertools import chain
 
+from ..conditional_densities.conditional_density import ConditionalDensity
 from .density import Density
 from .exact import BijectionDensity
 
 
 class MarginalDensity(Density):
-    # TODO: Add type annotations
-    def __init__(self, prior, likelihood, approx_posterior):
+    def __init__(
+            self,
+            prior: Density,
+            likelihood: ConditionalDensity,
+            approx_posterior: ConditionalDensity
+    ):
         super().__init__()
         self.prior = prior
         self.likelihood = likelihood
