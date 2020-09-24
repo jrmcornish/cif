@@ -39,6 +39,28 @@ def config(dataset, use_baseline):
     }
 
 
+@provides("bernoulli-vae")
+def bernoulli_vae(dataset, model, use_baseline):
+    assert not use_baseline
+    return {
+        "schema_type": "bernoulli-vae",
+
+        "dequantize": False,
+        "binarize_scale": 256,
+
+        "logit_net": [200]*2,
+        "q_nets": [200]*2,
+        "num_z_channels": 50,
+
+        "train_batch_size": 100,
+        "valid_batch_size": 500,
+        "test_batch_size": 500,
+        "opt": "adam",
+        "lr": 1e-4,
+        "weight_decay": 0.
+    }
+
+
 @provides("realnvp")
 def realnvp(dataset, model, use_baseline):
     config = {

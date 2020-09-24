@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.distributions as dist
 
 from .density import Density
 from ..networks import LipschitzNetwork
@@ -10,10 +11,18 @@ class WrapperDensity(Density):
         super().__init__()
         self.density = density
 
-    def _elbo(self, x):
-        # TODO: implement reparam
-        raise NotImplementedError
-        return self.density.elbo(x)
+    def p_parameters(self):
+        return self.density.p_parameters()
+
+    def q_parameters(self):
+        return self.density.q_parameters()
+
+    def _elbo(self, x, detach_q_params, detach_q_samples):
+        return self.density.elbo(
+            x,
+            detach_q_params=detach_q_params,
+            detach_q_samples=detach_q_samples
+        )
 
     def _sample(self, num_samples):
         return self.density.sample(num_samples)
@@ -27,6 +36,20 @@ class DequantizationDensity(WrapperDensity):
         # TODO: implement reparam
         raise NotImplementedError
         return super()._elbo(x.add_(torch.rand_like(x)))
+
+
+class BinarizationDensity(WrapperDensity):
+    def __init__(self, density, scale):
+        super().__init__(density)
+        self.scale = scale
+
+    def _elbo(self, x, detach_q_params, detach_q_samples):
+        bernoulli = dist.bernoulli.Bernoulli(probs=x / self.scale)
+        return super()._elbo(
+            bernoulli.sample(),
+            detach_q_params=detach_q_params,
+            detach_q_samples=detach_q_samples
+        )
 
 
 class PassthroughBeforeEvalDensity(WrapperDensity):
@@ -61,6 +84,7 @@ class UpdateLipschitzBeforeForwardDensity(WrapperDensity):
                 m.update_lipschitz_constant()
 
 
+# TODO: Should be in own file
 class DataParallelDensity(nn.DataParallel):
     def elbo(self, x, detach_q_params=False, detach_q_samples=False):
         return self(

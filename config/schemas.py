@@ -31,8 +31,14 @@ def get_preproc_schema(config):
     else:
         schema = []
 
+    # We use `dict.get(key) is not None` instead of `key in dict`
+    # to allow overriding shared config values in our config framework
+
+    if config.get("binarize_scale") is not None:
+        schema += get_binarize_schema(config["binarize_scale"])
+
     if config.get("logit_tf_lambda") is not None and config.get("logit_tf_scale") is not None:
-        assert config.get("rescale_tf_scale") is None
+        assert config.get("centering_tf_scale") is None
         schema += get_logit_tf_schema(
             lam=config["logit_tf_lambda"],
             scale=config["logit_tf_scale"]
@@ -115,6 +121,9 @@ def get_base_schema(config):
 
     elif ty == "multiscale-resflow":
         return get_multiscale_resflow_schema(config=config)
+
+    elif ty == "bernoulli-vae":
+        return get_bernoulli_vae_schema(config=config)
 
     else:
         assert False, f"Invalid schema type `{ty}'"
@@ -205,6 +214,12 @@ def apply_pq_coupler_config_settings(schema, config):
         new_schema.append(layer)
 
     return new_schema
+
+
+def get_binarize_schema(scale):
+    return [
+        {"type": "binarize", "scale": scale}
+    ]
 
 
 def get_logit_tf_schema(lam, scale):
@@ -717,3 +732,19 @@ def add_lipschitz_config_to_resblocks(schema, config):
                 layer["net"][key] = config[key]
 
             layer["reduce_memory"] = config["reduce_memory"]
+
+
+def get_bernoulli_vae_schema(config):
+    return [
+        {"type": "flatten"},
+        {
+            "type": "bernoulli",
+            "num_z_channels": config["num_z_channels"],
+            "logit_net": {
+                "type": "mlp",
+                "activation": "tanh",
+                "hidden_channels": config["logit_net"]
+            },
+            "q_coupler": get_q_coupler_config(config, flattened=True)
+        }
+    ]
