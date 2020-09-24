@@ -125,6 +125,9 @@ def get_base_schema(config):
     elif ty == "bernoulli-vae":
         return get_bernoulli_vae_schema(config=config)
 
+    elif ty == "gaussian-vae":
+        return get_gaussian_vae_schema(config=config)
+
     else:
         assert False, f"Invalid schema type `{ty}'"
 
@@ -738,13 +741,25 @@ def get_bernoulli_vae_schema(config):
     return [
         {"type": "flatten"},
         {
-            "type": "bernoulli",
+            "type": "bernoulli-likelihood",
             "num_z_channels": config["num_z_channels"],
             "logit_net": {
                 "type": "mlp",
                 "activation": "tanh",
                 "hidden_channels": config["logit_net"]
             },
+            "q_coupler": get_q_coupler_config(config, flattened=True)
+        }
+    ]
+
+
+def get_gaussian_vae_schema(config):
+    return [
+        {"type": "flatten"},
+        {
+            "type": "gaussian-likelihood",
+            "num_z_channels": config["num_z_channels"],
+            "p_coupler": get_p_coupler_config(config, flattened=True),
             "q_coupler": get_q_coupler_config(config, flattened=True)
         }
     ]

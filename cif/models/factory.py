@@ -143,8 +143,8 @@ def get_density_recursive(
     elif layer_config["type"] == "passthrough-before-eval":
         assert False, "`passthrough-before-eval` must occur as the first item in a schema"
 
-    elif layer_config["type"] == "bernoulli":
-        return get_bernoulli_marginal_density(
+    elif layer_config["type"] in ["bernoulli-likelihood", "gaussian-likelihood"]:
+        return get_marginal_density(
             layer_config=layer_config,
             schema_tail=schema_tail,
             x_shape=x_shape
@@ -158,26 +158,47 @@ def get_density_recursive(
         )
 
 
-def get_bernoulli_marginal_density(layer_config, schema_tail, x_shape):
+def get_marginal_density(layer_config, schema_tail, x_shape):
+    likelihood, z_shape = get_likelihood(layer_config, schema_tail, x_shape)
+
+    prior = get_density_recursive(schema_tail, z_shape)
+
+    approx_posterior = DiagonalGaussianConditionalDensity(
+        coupler=get_coupler(
+            input_shape=x_shape,
+            num_channels_per_output=layer_config["num_z_channels"],
+            config=layer_config["q_coupler"]
+        )
+    )
+
+    return MarginalDensity(prior=prior, likelihood=likelihood, approx_posterior=approx_posterior)
+
+
+def get_likelihood(layer_config, schema_tail, x_shape):
     z_shape = (layer_config["num_z_channels"], *x_shape[1:])
 
-    return MarginalDensity(
-        prior=get_density_recursive(schema_tail, z_shape),
-        likelihood=BernoulliConditionalDensity(
+    if layer_config["type"] == "gaussian-likelihood":
+        likelihood = DiagonalGaussianConditionalDensity(
+            coupler=get_coupler(
+                input_shape=z_shape,
+                num_channels_per_output=x_shape[0],
+                config=layer_config["p_coupler"]
+            )
+        )
+
+    elif layer_config["type"] == "bernoulli-likelihood":
+        likelihood = BernoulliConditionalDensity(
             logit_net=get_net(
                 input_shape=z_shape,
                 num_output_channels=x_shape[0],
                 net_config=layer_config["logit_net"]
             )
-        ),
-        approx_posterior=DiagonalGaussianConditionalDensity(
-            coupler=get_coupler(
-                input_shape=x_shape,
-                num_channels_per_output=layer_config["num_z_channels"],
-                config=layer_config["q_coupler"]
-            )
         )
-    )
+
+    else:
+        assert False, f"Invalid layer type `{layer_config['type']}'"
+
+    return likelihood, z_shape
 
 
 def get_bijection_density(layer_config, schema_tail, x_shape):
@@ -388,7 +409,7 @@ def get_bijection(
         )
 
     else:
-        assert False, f"Invalid layer type {layer_config['type']}"
+        assert False, f"Invalid layer type `{layer_config['type']}'"
 
 
 def get_acl_bijection(config, x_shape):

@@ -71,11 +71,6 @@ if args.resume is None:
 
     config = {**config, **dict(parse_config_arg(kv) for kv in args.config)}
 
-    if args.baseline:
-        assert config["num_u_channels"] == 0
-    else:
-        assert config["num_u_channels"] > 0
-
     config = {
         **config,
         "should_checkpoint_best_valid": args.checkpoints in ["best-valid", "both"],
