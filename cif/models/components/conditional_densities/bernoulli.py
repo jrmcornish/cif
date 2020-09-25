@@ -22,15 +22,13 @@ class BernoulliConditionalDensity(ConditionalDensity):
 
     def _sample(self, cond_inputs, detach_params, detach_samples):
         logits = self.logit_net(cond_inputs)
+        bernoulli = dist.bernoulli.Bernoulli(logits=logits)
+        samples = bernoulli.sample()
 
         # Doesn't really make sense to do this for Bernoullis, but also
         # no harm done
         if detach_params:
             logits = logits.detach()
-
-        bernoulli = dist.bernoulli.Bernoulli(logits=logits)
-
-        samples = bernoulli.sample()
 
         if detach_samples:
             samples = samples.detach()

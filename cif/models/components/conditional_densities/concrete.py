@@ -48,13 +48,19 @@ class ConcreteConditionalDensity(ConditionalDensity):
             "log-prob": concrete_log_prob(inputs, self._alphas(cond_inputs), self.lam)
         }
 
-    def _sample(self, cond_inputs):
-        # TODO: Implement detaching
-        raise NotImplementedError
-
+    def _sample(self, cond_inputs, detach_params, detach_samples):
         alphas = self._alphas(cond_inputs)
         samples = concrete_sample(alphas, self.lam)
+
+        if detach_params:
+            # NOTE: We assume self.lam is not a parameter
+            alphas = alphas.detach()
+
+        if detach_samples:
+            samples = samples.detach()
+
         log_probs = concrete_log_prob(samples, alphas, self.lam)
+
         return {
             "log-prob": log_probs,
             "sample": samples
