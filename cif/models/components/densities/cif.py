@@ -1,5 +1,5 @@
 from .density import Density
-from .exact import BijectionDensity
+from .flow import FlowDensity
 
 
 # TODO: We could subsume this and the ExactDensities as special cases of
@@ -76,12 +76,12 @@ class CIFDensity(Density):
         u = self.p_u_density.sample(z)["sample"]
         fixed_bijection = self.bijection.condition(u.squeeze(0))
         new_z = fixed_bijection.z_to_x(z)["x"].squeeze(0)
-        return BijectionDensity(prior=fixed_prior, bijection=fixed_bijection), new_z
+        return FlowDensity(prior=fixed_prior, bijection=fixed_bijection), new_z
 
     def fix_u(self, u):
         fixed_prior = self.prior.fix_u(u=u[1:])
         fixed_bijection = self.bijection.condition(u[0])
-        return BijectionDensity(prior=fixed_prior, bijection=fixed_bijection)
+        return FlowDensity(prior=fixed_prior, bijection=fixed_bijection)
 
     def _sample(self, num_samples):
         z = self.prior.sample(num_samples)

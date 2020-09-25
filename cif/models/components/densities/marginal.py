@@ -2,7 +2,6 @@ from itertools import chain
 
 from ..conditional_densities.conditional_density import ConditionalDensity
 from .density import Density
-from .exact import BijectionDensity
 
 
 class MarginalDensity(Density):

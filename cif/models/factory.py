@@ -42,7 +42,7 @@ from .components.conditional_densities import (
 from .components.densities import (
     DiagonalGaussianDensity,
     CIFDensity,
-    BijectionDensity,
+    FlowDensity,
     SplitDensity,
     DequantizationDensity,
     PassthroughBeforeEvalDensity,
@@ -210,7 +210,7 @@ def get_bijection_density(layer_config, schema_tail, x_shape):
     )
 
     if layer_config.get("num_u_channels", 0) == 0:
-        return BijectionDensity(bijection=bijection, prior=prior)
+        return FlowDensity(bijection=bijection, prior=prior)
 
     else:
         return CIFDensity(
@@ -230,7 +230,7 @@ def get_bijection_density(layer_config, schema_tail, x_shape):
 
 
 def get_uniform_density(x_shape):
-    return BijectionDensity(
+    return FlowDensity(
         bijection=LogitBijection(x_shape=x_shape).inverse(),
         prior=UniformDensity(x_shape)
     )
