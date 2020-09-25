@@ -32,10 +32,12 @@ class WrapperDensity(Density):
 
 
 class DequantizationDensity(WrapperDensity):
-    def _elbo(self, x):
-        # TODO: implement reparam
-        raise NotImplementedError
-        return super()._elbo(x.add_(torch.rand_like(x)))
+    def _elbo(self, x, detach_q_params, detach_q_samples):
+        return super()._elbo(
+            x.add_(torch.rand_like(x)),
+            detach_q_params=detach_q_params,
+            detach_q_samples=detach_q_samples
+        )
 
 
 class BinarizationDensity(WrapperDensity):
