@@ -46,7 +46,7 @@ def bernoulli_vae(dataset, model, use_baseline):
         "schema_type": "bernoulli-vae",
 
         "dequantize": False,
-        "binarize_scale": 256,
+        "binarize_scale": 255,
 
         "logit_net": [200]*2,
         "q_nets": [200]*2,
