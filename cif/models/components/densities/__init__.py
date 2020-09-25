@@ -9,5 +9,5 @@ from .data_parallel import DataParallelDensity
 from .split import SplitDensity
 from .gaussian import DiagonalGaussianDensity
 from .exact import BijectionDensity
-from .elbo import ELBODensity
+from .cif import CIFDensity
 from .marginal import MarginalDensity

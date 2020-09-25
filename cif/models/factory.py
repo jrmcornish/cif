@@ -41,7 +41,7 @@ from .components.conditional_densities import (
 
 from .components.densities import (
     DiagonalGaussianDensity,
-    ELBODensity,
+    CIFDensity,
     BijectionDensity,
     SplitDensity,
     DequantizationDensity,
@@ -213,7 +213,7 @@ def get_bijection_density(layer_config, schema_tail, x_shape):
         return BijectionDensity(bijection=bijection, prior=prior)
 
     else:
-        return ELBODensity(
+        return CIFDensity(
             bijection=bijection,
             prior=prior,
             p_u_density=get_conditional_density(

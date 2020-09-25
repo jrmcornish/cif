@@ -5,7 +5,7 @@ from .exact import BijectionDensity
 # TODO: We could subsume this and the ExactDensities as special cases of
 # MarginalDensity by thinking of the prior for MarginalDensity as jointly
 # over (z, u) here
-class ELBODensity(Density):
+class CIFDensity(Density):
     def __init__(
             self,
             prior,
