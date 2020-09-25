@@ -1,5 +1,3 @@
-from itertools import chain
-
 import torch
 import torch.nn as nn
 from torch.distributions.categorical import Categorical
@@ -14,7 +12,10 @@ class BijectionDensity(Density):
         self.prior = prior
 
     def p_parameters(self):
-        return chain(self.bijection.parameters(), self.prior.p_parameters())
+        return [
+            *self.bijection.parameters(),
+            *self.prior.p_parameters()
+        ]
 
     def q_parameters(self):
         return self.prior.q_parameters()

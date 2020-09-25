@@ -1,9 +1,10 @@
-from itertools import chain
-
 from .density import Density
 from .exact import BijectionDensity
 
 
+# TODO: We could subsume this and the ExactDensities as special cases of
+# MarginalDensity by thinking of the prior for MarginalDensity as jointly
+# over (z, u) here
 class ELBODensity(Density):
     def __init__(
             self,
@@ -19,17 +20,24 @@ class ELBODensity(Density):
         self.q_u_density = q_u_density
 
     def p_parameters(self):
-        return chain(
-            self.bijection.parameters(),
-            self.p_u_density.parameters(),
-            self.prior.p_parameters()
-        )
+        return [
+            *self.bijection.parameters(),
+            *self.p_u_density.parameters(),
+            *self.prior.p_parameters()
+        ]
 
     def q_parameters(self):
-        # TODO: This will fail silently if we stack multiple ELBO densities.
-        # But we can't recurse naively either, because in this case
-        # subsequent q's will depend on the bijection used here
-        return self.q_u_density.parameters()
+        result = list(self.q_u_density.parameters())
+
+        prior_q_params = list(self.prior.q_parameters())
+        result += prior_q_params
+
+        # If the prior doesn't have any q parameters, then the bijection here
+        # also isn't a part of q(u|x) (see equation (15) in the paper)
+        if prior_q_params:
+            result += list(self.bijection.parameters())
+
+        return result
 
     def _elbo(self, x, detach_q_params, detach_q_samples):
         result = self.q_u_density.sample(

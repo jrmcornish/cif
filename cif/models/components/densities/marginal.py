@@ -18,10 +18,13 @@ class MarginalDensity(Density):
         self.approx_posterior = approx_posterior
 
     def p_parameters(self):
-        return chain(self.prior.parameters(), self.likelihood.parameters())
+        return [*self.prior.parameters(), *self.likelihood.parameters()]
 
     def q_parameters(self):
-        return self.approx_posterior.parameters()
+        return [
+            *self.approx_posterior.parameters(),
+            *self.prior.q_parameters()
+        ]
 
     def _elbo(self, x, detach_q_params, detach_q_samples):
         approx_posterior = self.approx_posterior.sample(
