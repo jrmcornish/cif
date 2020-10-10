@@ -265,6 +265,7 @@ class LipschitzNetwork(nn.Module):
         self.max_eval_lipschitz_iters = max_eval_lipschitz_iters
         self.lipschitz_tolerance = lipschitz_tolerance
 
+        self.register_forward_pre_hook(self._update_lipschitz_constant)
         self.register_backward_hook(self._queue_lipschitz_update)
 
         self._requires_train_lipschitz_update = True
@@ -277,7 +278,7 @@ class LipschitzNetwork(nn.Module):
         self._requires_train_lipschitz_update = True
         self._requires_eval_lipschitz_update = True
 
-    def update_lipschitz_constant(self):
+    def _update_lipschitz_constant(self, *args, **kwargs):
         if self.training:
             if self._requires_train_lipschitz_update:
                 self._update_lipschitz(max_iterations=self.max_train_lipschitz_iters)

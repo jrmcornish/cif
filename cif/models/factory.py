@@ -46,8 +46,6 @@ from .components.densities import (
     SplitDensity,
     DequantizationDensity,
     PassthroughBeforeEvalDensity,
-    UpdateLipschitzBeforeForwardDensity,
-    DataParallelDensity,
     MarginalDensity,
     BinarizationDensity
 )
@@ -82,23 +80,8 @@ def get_density(schema, x_train):
             x=x_train[x_idxs]
         )
 
-    density = get_density_recursive(schema, x_shape)
-
-    # We always add this for generality. If data parallelism is not desired, then
-    # this can be controlled by manipulating CUDA_VISIBLE_DEVICES. But if we don't
-    # include this component, then we won't be able to save/load state dicts across
-    # different runs easily unless the runs always use the same number of GPUs
-    density = DataParallelDensity(density)
-
-    # We have to do this _after_ DataParallel because we need Lipschitz updates to
-    # happen globally, i.e. not be split on separate GPUs, or we will get autograd
-    # errors.
-    for layer in schema:
-        if layer["type"] == "resblock":
-            density = UpdateLipschitzBeforeForwardDensity(density)
-            break
-
-    return density
+    else:
+        return get_density_recursive(schema, x_shape)
 
 
 def get_density_recursive(

@@ -73,14 +73,3 @@ class PassthroughBeforeEvalDensity(WrapperDensity):
             with torch.no_grad():
                 self.elbo(self.x)
         super().train(train_mode)
-
-
-class UpdateLipschitzBeforeForwardDensity(WrapperDensity):
-    def __init__(self, density):
-        super().__init__(density)
-        self.register_forward_pre_hook(self._update_lipschitz)
-
-    def _update_lipschitz(self, *args, **kwargs):
-        for m in self.density.modules():
-            if isinstance(m, LipschitzNetwork):
-                m.update_lipschitz_constant()
