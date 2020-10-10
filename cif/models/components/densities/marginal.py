@@ -37,7 +37,8 @@ class MarginalDensity(Density):
             cond_inputs=approx_posterior["sample"]
         )
 
-        prior = self.prior.elbo(
+        prior = self.prior(
+            "elbo",
             approx_posterior["sample"],
             detach_q_params=detach_q_params,
             detach_q_samples=detach_q_samples

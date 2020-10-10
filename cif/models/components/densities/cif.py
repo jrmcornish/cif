@@ -56,7 +56,8 @@ class CIFDensity(Density):
         result = self.p_u_density.log_prob(inputs=u, cond_inputs=z)
         log_p_u = result["log-prob"]
 
-        prior_dict = self.prior.elbo(
+        prior_dict = self.prior(
+            "elbo",
             z,
             detach_q_params=detach_q_params,
             detach_q_samples=detach_q_samples

@@ -17,12 +17,16 @@ class WrapperDensity(Density):
     def q_parameters(self):
         return self.density.q_parameters()
 
-    def _elbo(self, x, detach_q_params, detach_q_samples):
+    def elbo(self, x, num_importance_samples, detach_q_params, detach_q_samples):
         return self.density.elbo(
             x,
+            num_importance_samples=num_importance_samples,
             detach_q_params=detach_q_params,
             detach_q_samples=detach_q_samples
         )
+
+    def _elbo(self, x, detach_q_params, detach_q_samples):
+        assert False, "Wrapper Densities should not be preceded by standard Density layers"
 
     def _sample(self, num_samples):
         return self.density.sample(num_samples)
@@ -32,9 +36,10 @@ class WrapperDensity(Density):
 
 
 class DequantizationDensity(WrapperDensity):
-    def _elbo(self, x, detach_q_params, detach_q_samples):
-        return super()._elbo(
+    def elbo(self, x, num_importance_samples, detach_q_params, detach_q_samples):
+        return super().elbo(
             x.add_(torch.rand_like(x)),
+            num_importance_samples=num_importance_samples,
             detach_q_params=detach_q_params,
             detach_q_samples=detach_q_samples
         )
@@ -45,10 +50,11 @@ class BinarizationDensity(WrapperDensity):
         super().__init__(density)
         self.scale = scale
 
-    def _elbo(self, x, detach_q_params, detach_q_samples):
+    def elbo(self, x, num_importance_samples, detach_q_params, detach_q_samples):
         bernoulli = dist.bernoulli.Bernoulli(probs=x / self.scale)
-        return super()._elbo(
+        return super().elbo(
             bernoulli.sample(),
+            num_importance_samples=num_importance_samples,
             detach_q_params=detach_q_params,
             detach_q_samples=detach_q_samples
         )

@@ -1,13 +1,13 @@
+import torch
+
 import numpy as np
 import scipy.stats as stats
 
 
 def metrics(density, x, num_elbo_samples):
-    x_samples = x.repeat_interleave(num_elbo_samples, dim=0)
+    result = density.elbo(x, num_elbo_samples, detach_q_params=False, detach_q_samples=False)
 
-    result = density.elbo(x_samples)
-
-    elbo_samples = result["elbo"].view(x.shape[0], num_elbo_samples, 1)
+    elbo_samples = result["log-w"]
     elbo = elbo_samples.mean(dim=1)
 
     log_prob = elbo_samples.logsumexp(dim=1) - np.log(num_elbo_samples)
@@ -26,25 +26,23 @@ def metrics(density, x, num_elbo_samples):
 
 
 def iwae(density, x, num_importance_samples, detach_q):
-    log_w = _elbo(
-        density=density,
+    log_w = density.elbo(
         x=x,
         num_importance_samples=num_importance_samples,
         detach_q_params=detach_q,
         detach_q_samples=detach_q
-    )
+    )["log-w"]
 
     return -log_w.logsumexp(dim=1).mean()
 
 
 def iwae_alt(density, x, num_importance_samples, grad_weight_pow):
-    log_w = _elbo(
-        density=density,
+    log_w = density.elbo(
         x=x,
         num_importance_samples=num_importance_samples,
         detach_q_params=True,
         detach_q_samples=False
-    )
+    )["log-w"]
 
     log_Z = log_w.logsumexp(dim=1).view(x.shape[0], 1, 1)
     grad_weight = (log_w - log_Z).exp() ** grad_weight_pow
@@ -52,13 +50,12 @@ def iwae_alt(density, x, num_importance_samples, grad_weight_pow):
 
 
 def rws(density, x, num_importance_samples):
-    log_w = _elbo(
-        density=density,
+    log_w = density.elbo(
         x=x,
         num_importance_samples=num_importance_samples,
         detach_q_params=False,
         detach_q_samples=True
-    )
+    )["log-w"]
 
     log_Z = log_w.logsumexp(dim=1).view(x.shape[0], 1, 1)
     grad_weight = (log_w - log_Z).exp()
@@ -66,13 +63,12 @@ def rws(density, x, num_importance_samples):
 
 
 def rws_dreg(density, x, num_importance_samples):
-    log_w = _elbo(
-        density=density,
+    log_w = density.elbo(
         x=x,
         num_importance_samples=num_importance_samples,
         detach_q_params=True,
         detach_q_samples=False
-    )
+    )["log-w"]
 
     log_Z = log_w.logsumexp(dim=1).view(x.shape[0], 1, 1)
     grad_weight = (log_w - log_Z).exp().detach()
@@ -122,20 +118,3 @@ def _ml_ll_ss(log_p_u, log_q_u, K_dist, K):
     ml_ll_ss = log_I0 + (upper_level_term - lower_level_term) / K_dist.pmf(K)
 
     return ml_ll_ss.mean()
-
-
-def _elbo(density, x, num_importance_samples, detach_q_params, detach_q_samples):
-    x_samples = x.repeat_interleave(num_importance_samples, dim=0)
-
-    result = density.elbo(
-        x_samples,
-        detach_q_params=detach_q_params,
-        detach_q_samples=detach_q_samples
-    )
-
-    output_shape = (x.shape[0], num_importance_samples, 1)
-
-    log_p = result["log-p"].view(output_shape)
-    log_q = result["log-q"].view(output_shape)
-
-    return log_p - log_q

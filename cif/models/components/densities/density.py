@@ -31,13 +31,21 @@ class Density(nn.Module):
     def fix_u(self, u):
         raise NotImplementedError
 
-    def elbo(self, x, detach_q_params=False, detach_q_samples=False):
-        return self(
+    def elbo(self, x, num_importance_samples, detach_q_params=False, detach_q_samples=False):
+        result = self(
             "elbo",
-            x,
+            x.repeat_interleave(num_importance_samples, dim=0),
             detach_q_params=detach_q_params,
             detach_q_samples=detach_q_samples
         )
+
+        output_shape = (x.shape[0], num_importance_samples, 1)
+
+        log_p = result["log-p"].view(output_shape)
+        log_q = result["log-q"].view(output_shape)
+        log_w = log_p - log_q
+
+        return {"log-p": log_p, "log-q": log_q, "log-w": log_w}
 
     def sample(self, num_samples):
         return self("sample", num_samples)
