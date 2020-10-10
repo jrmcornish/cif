@@ -121,7 +121,7 @@ if args.print_schema:
             print(json.dumps(get_schema(c), indent=4))
     should_train = False
 
-if should_train or args.test:
+if should_train:
     from cif.experiment import train, print_test_metrics
     with contextlib.suppress(KeyboardInterrupt):
         for c in grid:
