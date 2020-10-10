@@ -76,7 +76,8 @@ class Trainer:
 
             writer,
             should_checkpoint_latest,
-            should_checkpoint_best_valid
+            should_checkpoint_best_valid,
+            checkpoint_to_load
     ):
         self._module = module
 
@@ -140,14 +141,9 @@ class Trainer:
             self._trainer.add_event_handler(Events.EPOCH_COMPLETED, lambda _: self._save_checkpoint("latest"))
 
         try:
-            self._load_checkpoint("latest")
+            self._load_checkpoint(checkpoint_to_load)
         except FileNotFoundError:
-            print("Did not find `latest' checkpoint.", file=sys.stderr)
-
-            try:
-                self._load_checkpoint("best_valid")
-            except FileNotFoundError:
-                print("Did not find `best_valid' checkpoint.", file=sys.stderr)
+            print(f"Did not find `{checkpoint_to_load}' checkpoint.", file=sys.stderr)
 
     def train(self):
         self._trainer.run(data=self._train_loader, max_epochs=self._max_epochs)

@@ -21,7 +21,11 @@ from config import get_schema
 
 
 def train(config, resume_dir):
-    density, trainer, writer = setup_experiment(config=config, resume_dir=resume_dir)
+    density, trainer, writer = setup_experiment(
+        config=config,
+        resume_dir=resume_dir,
+        checkpoint_to_load="latest"
+    )
 
     writer.write_json("config", config)
 
@@ -43,7 +47,8 @@ def train(config, resume_dir):
 def print_test_metrics(config, resume_dir):
     _, trainer, _ = setup_experiment(
         config={**config, "write_to_disk": False},
-        resume_dir=resume_dir
+        resume_dir=resume_dir,
+        checkpoint_to_load="best_valid"
     )
 
     with torch.no_grad():
@@ -115,7 +120,7 @@ def load_run(run_dir, device):
     return density, train_loader, valid_loader, test_loader, config, checkpoint
 
 
-def setup_experiment(config, resume_dir):
+def setup_experiment(config, resume_dir, checkpoint_to_load):
     torch.manual_seed(config["seed"])
     np.random.seed(config["seed"]+1)
     random.seed(config["seed"]+2)
@@ -183,6 +188,7 @@ def setup_experiment(config, resume_dir):
         epochs_per_test=config["epochs_per_test"],
         should_checkpoint_latest=config["should_checkpoint_latest"],
         should_checkpoint_best_valid=config["should_checkpoint_best_valid"],
+        checkpoint_to_load=checkpoint_to_load,
         device=device
     )
 
