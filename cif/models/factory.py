@@ -71,8 +71,6 @@ def get_density(schema, x_train):
     #       "x-to-z": [{"type": ...}, ...]
     #   }
     if schema[0]["type"] == "passthrough-before-eval":
-        assert not data_parallel, "Not yet supported due to possibly unexpected behaviour"
-
         num_points = schema[0]["num_passthrough_data_points"]
         x_idxs = torch.randperm(x_train.shape[0])[:num_points]
         return PassthroughBeforeEvalDensity(

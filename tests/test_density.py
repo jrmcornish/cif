@@ -33,14 +33,15 @@ class TestDiagonalGaussianDensity(unittest.TestCase):
 
     def test_elbo(self):
         batch_size = 1000
-        w = torch.rand(batch_size, *self.shape)
+        num_importance_samples = 1
+        noise = torch.rand(batch_size, *self.shape)
         with torch.no_grad():
-            log_prob = self.density.elbo(w)["elbo"]
+            log_prob = self.density.elbo(noise, num_importance_samples=num_importance_samples)["log-w"]
 
-        flat_w = w.flatten(start_dim=1).numpy()
-        scipy_log_prob = self.scipy_density.logpdf(flat_w).reshape(batch_size, 1)
+        flat_noise = noise.flatten(start_dim=1).numpy()
+        scipy_log_prob = self.scipy_density.logpdf(flat_noise).reshape(batch_size, 1, num_importance_samples)
 
-        self.assertEqual(log_prob.shape, (batch_size, 1))
+        self.assertEqual(log_prob.shape, scipy_log_prob.shape)
         self.assertLessEqual(abs((log_prob.numpy() - scipy_log_prob).max()), 1e-4)
 
     def test_samples(self):
@@ -145,6 +146,7 @@ class TestCIFDensity(unittest.TestCase):
         x_dim = 40
         input_shape = (x_dim,)
         u_dim = 15
+        num_importance_samples = 5
 
         prior = DiagonalGaussianDensity(
             mean=torch.zeros(input_shape),
@@ -179,9 +181,9 @@ class TestCIFDensity(unittest.TestCase):
         )
 
         x = torch.rand(batch_size, *input_shape)
-        elbo = density.elbo(x)["elbo"]
+        elbo = density.elbo(x, num_importance_samples=num_importance_samples)["log-w"]
 
-        self.assertEqual(elbo.shape, (batch_size, 1))
+        self.assertEqual(elbo.shape, (batch_size, num_importance_samples, 1))
 
     def _u_density(self, u_dim, x_dim):
         return DiagonalGaussianConditionalDensity(

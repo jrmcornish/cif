@@ -17,6 +17,7 @@ class WrapperDensity(Density):
     def q_parameters(self):
         return self.density.q_parameters()
 
+    # We override Density.elbo() to allow making changes e.g. before interleaving happens
     def elbo(self, x, num_importance_samples, detach_q_params, detach_q_samples):
         return self.density.elbo(
             x,
@@ -72,10 +73,8 @@ class PassthroughBeforeEvalDensity(WrapperDensity):
     # recursively by modules containing this one.
     # TODO: Could do with hooks
     def train(self, train_mode=True):
-        # TODO: Implement - need to account for reparam
-        raise NotImplementedError
         if not train_mode:
             self.training = True
             with torch.no_grad():
-                self.elbo(self.x)
+                self.elbo(self.x, num_importance_samples=1, detach_q_params=False, detach_q_samples=False)
         super().train(train_mode)

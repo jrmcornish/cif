@@ -40,7 +40,6 @@ class FlowDensity(Density):
         )
 
         return {
-            "elbo": prior_dict["elbo"] + result["log-jac"],
             "log-p": prior_dict["log-p"] + result["log-jac"],
             "log-q": prior_dict["log-q"],
             "bijection-info": result,

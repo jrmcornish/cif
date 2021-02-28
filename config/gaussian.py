@@ -20,17 +20,6 @@ def config(dataset, use_baseline):
         "batch_norm": False,
         "act_norm": False,
 
-        "train_objective": "ml-ll-ss",
-        "ml_ll_geom_prob": 0.65,
-
-        # Other possible training objectives:
-        #
-        # "train_objective": "iwae",
-        # "iwae_num_importance_samples": 10,
-        #
-        # "train_objective": "rws",
-        # "rws_num_importance_samples": 10,
-
         "max_epochs": 2000,
         "max_grad_norm": None,
         "early_stopping": True,
@@ -45,8 +34,11 @@ def config(dataset, use_baseline):
         "weight_decay": 0.,
         "epochs_per_test": 5,
 
-        "num_valid_elbo_samples": 10,
-        "num_test_elbo_samples": 100
+        "train_objective": "iwae",
+        # "train_objective": "rws",
+        "num_train_importance_samples": 10,
+        "num_valid_importance_samples": 10,
+        "num_test_importance_samples": 100
     }
 
 

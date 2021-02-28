@@ -34,8 +34,10 @@ def config(dataset, use_baseline):
         "epochs_per_test": 1,
         "early_stopping": True,
 
-        "num_valid_elbo_samples": 5,
-        "num_test_elbo_samples": 10
+        "train_objective": "iwae",
+        "num_train_importance_samples": 1,
+        "num_valid_importance_samples": 5,
+        "num_test_importance_samples": 10
     }
 
 

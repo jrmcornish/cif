@@ -1,7 +1,6 @@
-import os
-from contextlib import suppress
 from collections import Counter
 import sys
+import warnings
 
 import numpy as np
 
@@ -110,8 +109,10 @@ class Trainer:
         self._trainer = Engine(self._train_batch)
 
         AverageMetric().attach(self._trainer)
-        # TODO: This is wrong in general now that we are allowing multiple losses
-        ProgressBar(persist=True).attach(self._trainer, ["loss"])
+
+        # The keys of self._opts must correspond to the keys output by self._train_metrics,
+        # so we can use these here
+        ProgressBar(persist=True).attach(self._trainer, list(self._opts.keys()))
 
         self._trainer.add_event_handler(Events.ITERATION_COMPLETED, TerminateOnNan())
         self._trainer.add_event_handler(Events.ITERATION_COMPLETED, self._log_training_info)
@@ -287,14 +288,21 @@ class Trainer:
             "opt_state_dicts": {
                 param_name: opt.state_dict() for param_name, opt in self._opts.items()
             },
-            "lr_scheduler_state_dicts": {
-                param_name: lr_scheduler.state_dict() for param_name, lr_scheduler in self._lr_schedulers.items()
-            },
+            "lr_scheduler_state_dicts": self._get_lr_scheduler_state_dicts(),
             "best_valid_loss": self._best_valid_loss,
             "num_bad_valid_epochs": self._num_bad_valid_epochs
         }
 
         self._writer.write_checkpoint(tag, checkpoint)
+
+    def _get_lr_scheduler_state_dicts(self):
+        with warnings.catch_warnings():
+            # See https://github.com/pytorch/pytorch/pull/31125#issuecomment-673654283
+            warnings.filterwarnings("ignore", message="Please also save or load the state of the optimizer when saving or loading the scheduler.")
+
+            return {
+                param_name: lr_scheduler.state_dict() for param_name, lr_scheduler in self._lr_schedulers.items()
+            }
 
     def _load_checkpoint(self, tag):
         checkpoint = self._writer.load_checkpoint(tag, device=self._device)

@@ -50,8 +50,6 @@ class MarginalDensity(Density):
         return {
             "log-p": log_p,
             "log-q": log_q,
-            # TODO: Don't really need this any more
-            "elbo": log_p - log_q
         }
 
     def _sample(self, num_samples):

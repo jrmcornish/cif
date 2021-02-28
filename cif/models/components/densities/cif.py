@@ -66,7 +66,6 @@ class CIFDensity(Density):
         return {
             "log-p": log_jac + log_p_u + prior_dict["log-p"],
             "log-q": log_q_u + prior_dict["log-q"],
-            "elbo": log_jac + log_p_u - log_q_u + prior_dict["elbo"],
             "bijection-info": result,
             "prior-dict": prior_dict
         }

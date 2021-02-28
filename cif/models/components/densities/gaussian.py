@@ -67,7 +67,6 @@ class DiagonalGaussianDensity(Density):
         )
 
         return {
-            "elbo": log_prob,
             "log-p": log_prob,
             "log-q": z.new_zeros((z.shape[0], 1)),
             "z": z
