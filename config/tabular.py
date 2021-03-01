@@ -104,6 +104,7 @@ def cond_affine(dataset, model, use_baseline):
 @provides("linear-cond-affine-like-resflow")
 def linear_cond_affine_like_resflow(dataset, model, use_baseline):
     assert not use_baseline
+    assert dataset != "bsds300", "BSDS300 is not yet implemented"
 
     num_u_channels = {
         "miniboone": 43,
@@ -137,6 +138,7 @@ def linear_cond_affine_like_resflow(dataset, model, use_baseline):
 @provides("nonlinear-cond-affine-like-resflow")
 def nonlinear_cond_affine_like_resflow(dataset, model, use_baseline):
     assert not use_baseline
+    assert dataset != "bsds300", "BSDS300 is not yet implemented"
 
     num_u_channels = {
         "miniboone": 43,
