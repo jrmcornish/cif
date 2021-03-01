@@ -33,18 +33,25 @@ from .components.bijections import (
     ResidualFlowBijection,
     ActNormBijection
 )
+
+from .components.conditional_densities import (
+    DiagonalGaussianConditionalDensity,
+    BernoulliConditionalDensity
+)
+
 from .components.densities import (
     DiagonalGaussianDensity,
-    DiagonalGaussianConditionalDensity,
-    ELBODensity,
-    BijectionDensity,
+    CIFDensity,
+    FlowDensity,
     SplitDensity,
     DequantizationDensity,
     PassthroughBeforeEvalDensity,
-    UpdateLipschitzBeforeForwardDensity,
-    DataParallelDensity
+    MarginalDensity,
+    BinarizationDensity
 )
+
 from .components.couplers import IndependentCoupler, ChunkedSharedCoupler
+
 from .components.networks import (
     ConstantNetwork,
     get_mlp,
@@ -64,8 +71,6 @@ def get_density(schema, x_train):
     #       "x-to-z": [{"type": ...}, ...]
     #   }
     if schema[0]["type"] == "passthrough-before-eval":
-        assert not data_parallel, "Not yet supported due to possibly unexpected behaviour"
-
         num_points = schema[0]["num_passthrough_data_points"]
         x_idxs = torch.randperm(x_train.shape[0])[:num_points]
         return PassthroughBeforeEvalDensity(
@@ -73,23 +78,8 @@ def get_density(schema, x_train):
             x=x_train[x_idxs]
         )
 
-    density = get_density_recursive(schema, x_shape)
-
-    # We always add this for generality. If data parallelism is not desired, then
-    # this can be controlled by manipulating CUDA_VISIBLE_DEVICES. But if we don't
-    # include this component, then we won't be able to save/load state dicts across
-    # different runs easily unless the runs always use the same number of GPUs
-    density = DataParallelDensity(density)
-
-    # We have to do this _after_ DataParallel because we need Lipschitz updates to
-    # happen globally, i.e. not be split on separate GPUs, or we will get autograd
-    # errors.
-    for layer in schema:
-        if layer["type"] == "resblock":
-            density = UpdateLipschitzBeforeForwardDensity(density)
-            break
-
-    return density
+    else:
+        return get_density_recursive(schema, x_shape)
 
 
 def get_density_recursive(
@@ -111,6 +101,15 @@ def get_density_recursive(
             )
         )
 
+    elif layer_config["type"] == "binarize":
+        return BinarizationDensity(
+            density=get_density_recursive(
+                schema=schema_tail,
+                x_shape=x_shape
+            ),
+            scale=layer_config["scale"]
+        )
+
     elif layer_config["type"] == "split":
         split_x_shape = (x_shape[0] // 2, *x_shape[1:])
         return SplitDensity(
@@ -125,12 +124,62 @@ def get_density_recursive(
     elif layer_config["type"] == "passthrough-before-eval":
         assert False, "`passthrough-before-eval` must occur as the first item in a schema"
 
+    elif layer_config["type"] in ["bernoulli-likelihood", "gaussian-likelihood"]:
+        return get_marginal_density(
+            layer_config=layer_config,
+            schema_tail=schema_tail,
+            x_shape=x_shape
+        )
+
     else:
         return get_bijection_density(
             layer_config=layer_config,
             schema_tail=schema_tail,
             x_shape=x_shape
         )
+
+
+def get_marginal_density(layer_config, schema_tail, x_shape):
+    likelihood, z_shape = get_likelihood(layer_config, schema_tail, x_shape)
+
+    prior = get_density_recursive(schema_tail, z_shape)
+
+    approx_posterior = DiagonalGaussianConditionalDensity(
+        coupler=get_coupler(
+            input_shape=x_shape,
+            num_channels_per_output=layer_config["num_z_channels"],
+            config=layer_config["q_coupler"]
+        )
+    )
+
+    return MarginalDensity(prior=prior, likelihood=likelihood, approx_posterior=approx_posterior)
+
+
+def get_likelihood(layer_config, schema_tail, x_shape):
+    z_shape = (layer_config["num_z_channels"], *x_shape[1:])
+
+    if layer_config["type"] == "gaussian-likelihood":
+        likelihood = DiagonalGaussianConditionalDensity(
+            coupler=get_coupler(
+                input_shape=z_shape,
+                num_channels_per_output=x_shape[0],
+                config=layer_config["p_coupler"]
+            )
+        )
+
+    elif layer_config["type"] == "bernoulli-likelihood":
+        likelihood = BernoulliConditionalDensity(
+            logit_net=get_net(
+                input_shape=z_shape,
+                num_output_channels=x_shape[0],
+                net_config=layer_config["logit_net"]
+            )
+        )
+
+    else:
+        assert False, f"Invalid layer type `{layer_config['type']}'"
+
+    return likelihood, z_shape
 
 
 def get_bijection_density(layer_config, schema_tail, x_shape):
@@ -142,10 +191,10 @@ def get_bijection_density(layer_config, schema_tail, x_shape):
     )
 
     if layer_config.get("num_u_channels", 0) == 0:
-        return BijectionDensity(bijection=bijection, prior=prior)
+        return FlowDensity(bijection=bijection, prior=prior)
 
     else:
-        return ELBODensity(
+        return CIFDensity(
             bijection=bijection,
             prior=prior,
             p_u_density=get_conditional_density(
@@ -162,7 +211,7 @@ def get_bijection_density(layer_config, schema_tail, x_shape):
 
 
 def get_uniform_density(x_shape):
-    return BijectionDensity(
+    return FlowDensity(
         bijection=LogitBijection(x_shape=x_shape).inverse(),
         prior=UniformDensity(x_shape)
     )
@@ -341,7 +390,7 @@ def get_bijection(
         )
 
     else:
-        assert False, f"Invalid layer type {layer_config['type']}"
+        assert False, f"Invalid layer type `{layer_config['type']}'"
 
 
 def get_acl_bijection(config, x_shape):
@@ -426,7 +475,7 @@ def get_coupler_with_shared_net(
         net_config
 ):
     return ChunkedSharedCoupler(
-        shift_log_scale_net=get_coupler_net(
+        shift_log_scale_net=get_net(
             input_shape=input_shape,
             num_output_channels=2*num_channels_per_output,
             net_config=net_config
@@ -441,12 +490,12 @@ def get_coupler_with_independent_nets(
         log_scale_net_config
 ):
     return IndependentCoupler(
-        shift_net=get_coupler_net(
+        shift_net=get_net(
             input_shape=input_shape,
             num_output_channels=num_channels_per_output,
             net_config=shift_net_config
         ),
-        log_scale_net=get_coupler_net(
+        log_scale_net=get_net(
             input_shape=input_shape,
             num_output_channels=num_channels_per_output,
             net_config=log_scale_net_config
@@ -454,7 +503,7 @@ def get_coupler_with_independent_nets(
     )
 
 
-def get_coupler_net(input_shape, num_output_channels, net_config):
+def get_net(input_shape, num_output_channels, net_config):
     num_input_channels = input_shape[0]
 
     if net_config["type"] == "mlp":

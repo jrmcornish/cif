@@ -71,11 +71,6 @@ if args.resume is None:
 
     config = {**config, **dict(parse_config_arg(kv) for kv in args.config)}
 
-    if args.baseline:
-        assert config["num_u_channels"] == 0
-    else:
-        assert config["num_u_channels"] > 0
-
     config = {
         **config,
         "should_checkpoint_best_valid": args.checkpoints in ["best-valid", "both"],
@@ -126,7 +121,7 @@ if args.print_schema:
             print(json.dumps(get_schema(c), indent=4))
     should_train = False
 
-if should_train or args.test:
+if should_train:
     from cif.experiment import train, print_test_metrics
     with contextlib.suppress(KeyboardInterrupt):
         for c in grid:

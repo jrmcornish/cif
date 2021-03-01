@@ -1,12 +1,11 @@
 from .wrapper import (
     DequantizationDensity,
     PassthroughBeforeEvalDensity,
-    DataParallelDensity,
-    UpdateLipschitzBeforeForwardDensity
+    BinarizationDensity
 )
 
 from .split import SplitDensity
-from .gaussian import DiagonalGaussianDensity, DiagonalGaussianConditionalDensity
-from .exact import BijectionDensity
-from .elbo import ELBODensity
-from .concrete import ConcreteConditionalDensity
+from .gaussian import DiagonalGaussianDensity
+from .flow import FlowDensity
+from .cif import CIFDensity
+from .marginal import MarginalDensity

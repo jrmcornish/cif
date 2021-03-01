@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from .density import Density
+from .conditional_density import ConditionalDensity
 
 
 def concrete_log_prob(u, alphas, lam):
@@ -33,7 +33,7 @@ def concrete_sample(alphas, lam):
     return torch.exp(log_numerator - log_denominator)
 
 
-class ConcreteConditionalDensity(nn.Module):
+class ConcreteConditionalDensity(ConditionalDensity):
     def __init__(
             self,
             log_alpha_map,
@@ -43,38 +43,28 @@ class ConcreteConditionalDensity(nn.Module):
         self.log_alpha_map = log_alpha_map
         self.lam = lam
 
-    def forward(self, mode, *args):
-        if mode == "log-prob":
-            return self._log_prob(*args)
-        elif mode == "sample":
-            return self._sample(*args)
-        elif mode == "entropy":
-            return self._entropy(*args)
-        else:
-            assert False, f"Invalid mode {mode}"
-
-    def log_prob(self, inputs, cond_inputs):
-        return self("log-prob", inputs, cond_inputs)
-
-    def sample(self, cond_inputs):
-        return self("sample", cond_inputs)
-
     def _log_prob(self, inputs, cond_inputs):
         return {
             "log-prob": concrete_log_prob(inputs, self._alphas(cond_inputs), self.lam)
         }
 
-    def _sample(self, cond_inputs):
+    def _sample(self, cond_inputs, detach_params, detach_samples):
         alphas = self._alphas(cond_inputs)
         samples = concrete_sample(alphas, self.lam)
+
+        if detach_params:
+            # NOTE: We assume self.lam is not a parameter
+            alphas = alphas.detach()
+
+        if detach_samples:
+            samples = samples.detach()
+
         log_probs = concrete_log_prob(samples, alphas, self.lam)
+
         return {
             "log-prob": log_probs,
             "sample": samples
         }
-
-    def _entropy(self, cond_inputs):
-        raise NotImplementedError
 
     def _alphas(self, cond_inputs):
         return torch.exp(self.log_alpha_map(cond_inputs))

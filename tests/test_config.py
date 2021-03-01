@@ -47,8 +47,10 @@ def test_cif_realnvp_config():
         "max_grad_norm": None,
         "max_epochs": 1000,
         "epochs_per_test": 1,
-        "num_valid_elbo_samples": 5,
-        "num_test_elbo_samples": 10,
+        "train_objective": "iwae",
+        "num_train_importance_samples": 1,
+        "num_valid_importance_samples": 5,
+        "num_test_importance_samples": 10,
     }
 
     assert true_config == config
@@ -92,8 +94,10 @@ def test_baseline_realnvp_config():
         "max_grad_norm": None,
         "max_epochs": 1000,
         "epochs_per_test": 1,
-        "num_valid_elbo_samples": 1,
-        "num_test_elbo_samples": 1,
+        "train_objective": "iwae",
+        "num_train_importance_samples": 1,
+        "num_valid_importance_samples": 1,
+        "num_test_importance_samples": 1,
     }
 
     assert true_config == config

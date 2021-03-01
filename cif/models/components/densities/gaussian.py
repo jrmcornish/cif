@@ -23,16 +23,7 @@ def diagonal_gaussian_log_prob(w, means, stddevs):
 
 
 def diagonal_gaussian_sample(means, stddevs):
-    epsilon = torch.randn_like(means)
-    samples = stddevs*epsilon + means
-
-    flat_epsilon = epsilon.flatten(start_dim=1)
-    flat_stddevs = stddevs.flatten(start_dim=1)
-    _, dim = flat_epsilon.shape
-    epsilon_log_probs = -.5*dim*np.log(2*np.pi) - .5*torch.sum(flat_epsilon**2, dim=1, keepdim=True)
-    log_probs = -torch.sum(torch.log(flat_stddevs), dim=1, keepdim=True) + epsilon_log_probs
-
-    return samples, log_probs
+    return stddevs*torch.randn_like(means) + means
 
 
 def diagonal_gaussian_entropy(stddevs):
@@ -55,6 +46,12 @@ class DiagonalGaussianDensity(Density):
     def shape(self):
         return self.mean.shape
 
+    def p_parameters(self):
+        return []
+
+    def q_parameters(self):
+        return []
+
     def _fix_random_u(self):
         return self, self.sample(num_samples=1)[0]
 
@@ -62,70 +59,24 @@ class DiagonalGaussianDensity(Density):
         assert not u
         return self
 
-    def _elbo(self, z):
+    def _elbo(self, z, detach_q_params, detach_q_samples):
         log_prob = diagonal_gaussian_log_prob(
             z,
             self.mean.expand_as(z),
             self.stddev.expand_as(z),
         )
+
         return {
-            "elbo": log_prob,
+            "log-p": log_prob,
+            "log-q": z.new_zeros((z.shape[0], 1)),
             "z": z
         }
 
     def _sample(self, num_samples):
-        samples, _ = diagonal_gaussian_sample(
+        return diagonal_gaussian_sample(
             self.mean.expand(num_samples, *self.shape),
             self.stddev.expand(num_samples, *self.shape)
         )
-        return samples
 
     def _fixed_sample(self, noise):
         return noise if noise is not None else self._fixed_samples
-
-
-class DiagonalGaussianConditionalDensity(nn.Module):
-    def __init__(
-            self,
-            coupler
-    ):
-        super().__init__()
-        self.coupler = coupler
-
-    def forward(self, mode, *args):
-        if mode == "log-prob":
-            return self._log_prob(*args)
-        elif mode == "sample":
-            return self._sample(*args)
-        elif mode == "entropy":
-            return self._entropy(*args)
-        else:
-            assert False, f"Invalid mode {mode}"
-
-    def log_prob(self, inputs, cond_inputs):
-        return self("log-prob", inputs, cond_inputs)
-
-    def sample(self, cond_inputs):
-        return self("sample", cond_inputs)
-
-    def _log_prob(self, inputs, cond_inputs):
-        means, stddevs = self._means_and_stddevs(cond_inputs)
-        return {
-            "log-prob": diagonal_gaussian_log_prob(inputs, means, stddevs)
-        }
-
-    def _sample(self, cond_inputs):
-        means, stddevs = self._means_and_stddevs(cond_inputs)
-        samples, log_probs = diagonal_gaussian_sample(means, stddevs)
-        return {
-            "log-prob": log_probs,
-            "sample": samples
-        }
-
-    def entropy(self, cond_inputs):
-        _, stddevs = self._means_and_stddevs(cond_inputs)
-        return diagonal_gaussian_entropy(stddevs)
-
-    def _means_and_stddevs(self, cond_inputs):
-        result = self.coupler(cond_inputs)
-        return result["shift"], torch.exp(result["log-scale"])

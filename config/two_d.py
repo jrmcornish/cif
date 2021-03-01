@@ -44,8 +44,10 @@ def config(dataset, use_baseline):
         "weight_decay": 0.,
         "epochs_per_test": 5,
 
-        "num_valid_elbo_samples": 10,
-        "num_test_elbo_samples": 100
+        "train_objective": "iwae",
+        "num_train_importance_samples": 1,
+        "num_valid_importance_samples": 10,
+        "num_test_importance_samples": 100
     }
 
 

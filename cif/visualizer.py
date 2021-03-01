@@ -49,7 +49,7 @@ class TwoDimensionalDensityVisualizer(DensityVisualizer):
     _PADDING = .2
     _BATCH_SIZE = 1000
 
-    def __init__(self, writer, x_train, num_elbo_samples, device):
+    def __init__(self, writer, x_train, num_importance_samples, device):
         super().__init__(writer=writer)
 
         self._x = x_train
@@ -57,7 +57,7 @@ class TwoDimensionalDensityVisualizer(DensityVisualizer):
         self._x1_lims = self._lims(self._x[:, 0])
         self._x2_lims = self._lims(self._x[:, 1])
 
-        self._num_elbo_samples = num_elbo_samples
+        self._num_importance_samples = num_importance_samples
 
         self._device = device
 
@@ -87,7 +87,8 @@ class TwoDimensionalDensityVisualizer(DensityVisualizer):
         probs = []
         for x1_x2_batch, in tqdm.tqdm(loader, leave=False, desc="Plotting"):
             with torch.no_grad():
-                log_prob = metrics(density, x1_x2_batch, self._num_elbo_samples)["log-prob"]
+                key = f"iwae-{self._num_importance_samples}"
+                log_prob = metrics(density, x1_x2_batch, self._num_importance_samples)[key]
             probs.append(torch.exp(log_prob))
 
         probs = torch.cat(probs, dim=0).view(*grid_x1.shape).cpu()

@@ -8,8 +8,10 @@ import torch.nn as nn
 
 from cif.models.components.densities import (
     DiagonalGaussianDensity,
+    CIFDensity
+)
+from cif.models.components.conditional_densities import (
     DiagonalGaussianConditionalDensity,
-    ELBODensity,
     ConcreteConditionalDensity
 )
 from cif.models.components.couplers import ChunkedSharedCoupler
@@ -31,14 +33,15 @@ class TestDiagonalGaussianDensity(unittest.TestCase):
 
     def test_elbo(self):
         batch_size = 1000
-        w = torch.rand(batch_size, *self.shape)
+        num_importance_samples = 1
+        noise = torch.rand(batch_size, *self.shape)
         with torch.no_grad():
-            log_prob = self.density.elbo(w)["elbo"]
+            log_prob = self.density.elbo(noise, num_importance_samples=num_importance_samples)["log-w"]
 
-        flat_w = w.flatten(start_dim=1).numpy()
-        scipy_log_prob = self.scipy_density.logpdf(flat_w).reshape(batch_size, 1)
+        flat_noise = noise.flatten(start_dim=1).numpy()
+        scipy_log_prob = self.scipy_density.logpdf(flat_noise).reshape(batch_size, 1, num_importance_samples)
 
-        self.assertEqual(log_prob.shape, (batch_size, 1))
+        self.assertEqual(log_prob.shape, scipy_log_prob.shape)
         self.assertLessEqual(abs((log_prob.numpy() - scipy_log_prob).max()), 1e-4)
 
     def test_samples(self):
@@ -136,28 +139,14 @@ class TestDiagonalGaussianConditionalDensity(unittest.TestCase):
             self.assertLess(errs.max(), 0.5)
             self.assertLess(errs.mean(), 0.05)
 
-    def test_entropy(self):
-        batch_size = 1000
-        cond_inputs = torch.rand(batch_size, *self.cond_shape)
 
-        with torch.no_grad():
-            entropies = self.density.entropy(cond_inputs)
-            mean_log_std = self.mean_log_std_map(cond_inputs)
-
-        self.assertEqual(entropies.shape, (batch_size, 1))
-
-        log_stddev = mean_log_std["log-scale"]
-        ground_truth_entropies = stats.norm.entropy(scale=torch.exp(log_stddev)).reshape(batch_size, -1).sum(axis=1, keepdims=True)
-        errors = np.abs(ground_truth_entropies - entropies.numpy())
-        self.assertLess(errors.max(), 1e-4)
-
-
-class TestELBODensity(unittest.TestCase):
+class TestCIFDensity(unittest.TestCase):
     def test_log_prob_format(self):
         batch_size = 1000
         x_dim = 40
         input_shape = (x_dim,)
         u_dim = 15
+        num_importance_samples = 5
 
         prior = DiagonalGaussianDensity(
             mean=torch.zeros(input_shape),
@@ -184,7 +173,7 @@ class TestELBODensity(unittest.TestCase):
 
         q_u_density = self._u_density(u_dim, x_dim)
 
-        density = ELBODensity(
+        density = CIFDensity(
             prior=prior,
             p_u_density=p_u_density,
             bijection=bijection,
@@ -192,9 +181,9 @@ class TestELBODensity(unittest.TestCase):
         )
 
         x = torch.rand(batch_size, *input_shape)
-        elbo = density.elbo(x)["elbo"]
+        elbo = density.elbo(x, num_importance_samples=num_importance_samples)["log-w"]
 
-        self.assertEqual(elbo.shape, (batch_size, 1))
+        self.assertEqual(elbo.shape, (batch_size, num_importance_samples, 1))
 
     def _u_density(self, u_dim, x_dim):
         return DiagonalGaussianConditionalDensity(

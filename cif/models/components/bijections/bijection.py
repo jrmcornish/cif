@@ -12,7 +12,7 @@ class Bijection(nn.Module):
 
     def forward(self, inputs, direction, **kwargs):
         if direction == "x-to-z":
-            assert inputs.shape[1:] == self.x_shape
+            assert inputs.shape[1:] == self.x_shape, f"Expected shape {self.x_shape}; received {inputs.shape[1:]}"
             result = self._x_to_z(inputs, **kwargs)
             assert result["z"].shape[1:] == self.z_shape
             return result

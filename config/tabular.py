@@ -30,6 +30,7 @@ def config(dataset, use_baseline):
 
         "dequantize": False,
 
+        "act_norm": False,
         "batch_norm": True,
         "batch_norm_apply_affine": use_baseline,
         "batch_norm_use_running_averages": False,
@@ -48,8 +49,10 @@ def config(dataset, use_baseline):
         "max_grad_norm": None,
         "epochs_per_test": 5,
 
-        "num_valid_elbo_samples": 5,
-        "num_test_elbo_samples": 10,
+        "train_objective": "iwae",
+        "num_train_importance_samples": 1,
+        "num_valid_importance_samples": 5,
+        "num_test_importance_samples": 10,
     }
 
 
@@ -170,7 +173,7 @@ def resflow_no_g(dataset, model, use_baseline):
     assert dataset == "miniboone"
 
     config = {
-        "schema_type": "resflow",
+        "schema_type": "flat-resflow",
         "num_density_layers": 10,
         "hidden_channels": None,
         "lipschitz_constant": None,

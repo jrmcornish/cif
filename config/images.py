@@ -34,8 +34,32 @@ def config(dataset, use_baseline):
         "epochs_per_test": 1,
         "early_stopping": True,
 
-        "num_valid_elbo_samples": 5,
-        "num_test_elbo_samples": 10
+        "train_objective": "iwae",
+        "num_train_importance_samples": 1,
+        "num_valid_importance_samples": 5,
+        "num_test_importance_samples": 10
+    }
+
+
+@provides("bernoulli-vae")
+def bernoulli_vae(dataset, model, use_baseline):
+    assert not use_baseline
+    return {
+        "schema_type": "bernoulli-vae",
+
+        "dequantize": False,
+        "binarize_scale": 255,
+
+        "logit_net": [200]*2,
+        "q_nets": [200]*2,
+        "num_z_channels": 50,
+
+        "train_batch_size": 100,
+        "valid_batch_size": 500,
+        "test_batch_size": 500,
+        "opt": "adam",
+        "lr": 1e-4,
+        "weight_decay": 0.
     }
 
 

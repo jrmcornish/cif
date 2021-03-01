@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.distributions as dist
 
 from .density import Density
 from ..networks import LipschitzNetwork
@@ -10,8 +11,23 @@ class WrapperDensity(Density):
         super().__init__()
         self.density = density
 
-    def _elbo(self, x):
-        return self.density.elbo(x)
+    def p_parameters(self):
+        return self.density.p_parameters()
+
+    def q_parameters(self):
+        return self.density.q_parameters()
+
+    # We override Density.elbo() to allow making changes e.g. before interleaving happens
+    def elbo(self, x, num_importance_samples, detach_q_params, detach_q_samples):
+        return self.density.elbo(
+            x,
+            num_importance_samples=num_importance_samples,
+            detach_q_params=detach_q_params,
+            detach_q_samples=detach_q_samples
+        )
+
+    def _elbo(self, x, detach_q_params, detach_q_samples):
+        assert False, "Wrapper Densities should not be preceded by standard Density layers"
 
     def _sample(self, num_samples):
         return self.density.sample(num_samples)
@@ -21,8 +37,28 @@ class WrapperDensity(Density):
 
 
 class DequantizationDensity(WrapperDensity):
-    def _elbo(self, x):
-        return super()._elbo(x.add_(torch.rand_like(x)))
+    def elbo(self, x, num_importance_samples, detach_q_params, detach_q_samples):
+        return super().elbo(
+            x.add_(torch.rand_like(x)),
+            num_importance_samples=num_importance_samples,
+            detach_q_params=detach_q_params,
+            detach_q_samples=detach_q_samples
+        )
+
+
+class BinarizationDensity(WrapperDensity):
+    def __init__(self, density, scale):
+        super().__init__(density)
+        self.scale = scale
+
+    def elbo(self, x, num_importance_samples, detach_q_params, detach_q_samples):
+        bernoulli = dist.bernoulli.Bernoulli(probs=x / self.scale)
+        return super().elbo(
+            bernoulli.sample(),
+            num_importance_samples=num_importance_samples,
+            detach_q_params=detach_q_params,
+            detach_q_samples=detach_q_samples
+        )
 
 
 class PassthroughBeforeEvalDensity(WrapperDensity):
@@ -40,29 +76,5 @@ class PassthroughBeforeEvalDensity(WrapperDensity):
         if not train_mode:
             self.training = True
             with torch.no_grad():
-                self.elbo(self.x)
+                self.elbo(self.x, num_importance_samples=1, detach_q_params=False, detach_q_samples=False)
         super().train(train_mode)
-
-
-class UpdateLipschitzBeforeForwardDensity(WrapperDensity):
-    def __init__(self, density):
-        super().__init__(density)
-        self.register_forward_pre_hook(self._update_lipschitz)
-
-    def _update_lipschitz(self, *args, **kwargs):
-        for m in self.density.modules():
-            if isinstance(m, LipschitzNetwork):
-                m.update_lipschitz_constant()
-
-
-class DataParallelDensity(nn.DataParallel):
-    def elbo(self, x):
-        return self("elbo", x)
-
-    def sample(self, num_samples):
-        # Bypass DataParallel
-        return self.module.sample(num_samples)
-
-    def fixed_sample(self, noise=None):
-        # Bypass DataParallel
-        return self.module.fixed_sample(noise=noise)
