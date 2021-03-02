@@ -1,3 +1,5 @@
+import warnings
+
 from .dsl import group, base, provides
 
 
@@ -96,6 +98,8 @@ def realnvp(dataset, model, use_baseline):
 
 @provides("glow")
 def glow(dataset, model, use_baseline):
+    warnings.warn("Glow may quickly diverge for certain random seeds - if this happens just retry. This behaviour appears to be consistent with that in https://github.com/openai/glow and https://github.com/y0ast/Glow-PyTorch")
+
     if use_baseline:
         config = {
             "num_scales": 3,
@@ -154,7 +158,7 @@ def glow(dataset, model, use_baseline):
 #   * They resize MNIST to 32x32 whereas we keep the dimension at 28x28
 #   * They do some kind of gradient normalisation, as well as gradient clipping
 #
-@provides("resflow")
+@provides("resflow-small")
 def resflow(dataset, model, use_baseline):
     logit_tf_lambda = {
         "mnist": 1e-6,
@@ -241,49 +245,8 @@ def resflow(dataset, model, use_baseline):
     }
 
 
-@provides("resflow-small")
-def resflow(dataset, model, use_baseline):
-    logit_tf_lambda = {
-        "mnist": 1e-6,
-        "fashion-mnist": 1e-6,
-        "cifar10": 0.05,
-    }[dataset]
-
-    return {
-        "schema_type": "multiscale-resflow",
-
-        "train_batch_size": 64,
-        "valid_batch_size": 128,
-        "test_batch_size": 128,
-        "epochs_per_test": 5,
-
-        "opt": "adam",
-        "lr": 1e-3,
-        "weight_decay": 0.,
-
-        "logit_tf_lambda": logit_tf_lambda,
-        "logit_tf_scale": 256,
-
-        "batch_norm": False,
-        "act_norm": True,
-
-        "reduce_memory": True,
-        "scales": [3, 3, 2],
-        "num_hidden_channels": 64,
-        "lipschitz_constant": 0.98,
-        "max_train_lipschitz_iters": None,
-        "max_test_lipschitz_iters": None,
-        "lipschitz_tolerance": 1e-3,
-        "num_output_fc_blocks": 2,
-        "output_fc_hidden_channels": [32] * 2,
-
-        "st_nets": [64] * 2,
-        "p_nets": [64] * 2,
-        "q_nets": [64] * 2
-    }
-
-
-@provides("resflow-paper")
+# Parameters used in "Residual flows for invertible generative modeling" by Chen et al. (2009)
+@provides("resflow-chen")
 def resflow(dataset, model, use_baseline):
     assert use_baseline, "Must use baseline model for this config"
 
@@ -320,9 +283,5 @@ def resflow(dataset, model, use_baseline):
         "lipschitz_tolerance": 1e-3,
         "num_output_fc_blocks": 4,
         "output_fc_hidden_channels": [128] * 2,
-
-        "st_nets": [32] * 2,
-        "p_nets": [32] * 2,
-        "q_nets": [32] * 2
     }
 
