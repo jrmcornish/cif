@@ -13,8 +13,21 @@ class SplitDensity(Density):
 
     def _elbo(self, x, detach_q_params, detach_q_samples):
         x1, x2 = torch.chunk(x, chunks=2, dim=self.dim)
-        result_1 = self.density_1.elbo(x1, detach_q_params=detach_q_params, detach_q_samples=detach_q_samples)
-        result_2 = self.density_2.elbo(x2, detach_q_params=detach_q_params, detach_q_samples=detach_q_samples)
+
+        result_1 = self.density_1(
+            "elbo",
+            x1,
+            detach_q_params=detach_q_params,
+            detach_q_samples=detach_q_samples
+        )
+
+        result_2 = self.density_2(
+            "elbo",
+            x2,
+            detach_q_params=detach_q_params,
+            detach_q_samples=detach_q_samples
+        )
+
         return {
             "log-p": result_1["log-p"] + result_2["log-p"],
             "log-q": result_1["log-q"] + result_2["log-q"],
