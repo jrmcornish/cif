@@ -86,7 +86,7 @@ def resflow(dataset, model, use_baseline):
 # TODO: Could also try p_nets=[128]*4, st_nets=[10]*2
 @provides("cond-affine")
 def cond_affine(dataset, model, use_baseline):
-    assert not use_baseline
+    assert not use_baseline, "Cannot use baseline model for this config"
 
     return {
         "schema_type": "cond-affine",
@@ -103,7 +103,7 @@ def cond_affine(dataset, model, use_baseline):
 # Gives z = x + mu(x) + sigma(x)*w, w ~ N(0, I)
 @provides("linear-cond-affine-like-resflow")
 def linear_cond_affine_like_resflow(dataset, model, use_baseline):
-    assert not use_baseline
+    assert not use_baseline, "Cannot use baseline model for this config"
     assert dataset != "bsds300", "BSDS300 is not yet implemented"
 
     num_u_channels = {
@@ -137,7 +137,7 @@ def linear_cond_affine_like_resflow(dataset, model, use_baseline):
 # Gives z = x + t(mu(x) + sigma(x)*w), w ~ N(0, I)
 @provides("nonlinear-cond-affine-like-resflow")
 def nonlinear_cond_affine_like_resflow(dataset, model, use_baseline):
-    assert not use_baseline
+    assert not use_baseline, "Cannot use baseline model for this config"
     assert dataset != "bsds300", "BSDS300 is not yet implemented"
 
     num_u_channels = {
@@ -171,8 +171,8 @@ def nonlinear_cond_affine_like_resflow(dataset, model, use_baseline):
 
 @provides("resflow-no-g")
 def resflow_no_g(dataset, model, use_baseline):
-    assert not use_baseline
-    assert dataset == "miniboone"
+    assert not use_baseline, "Cannot use baseline model for this config"
+    assert dataset == "miniboone", "Must use miniboone dataset for this config"
 
     config = {
         "schema_type": "flat-resflow",
@@ -248,7 +248,7 @@ def realnvp(dataset, model, use_baseline):
 
 @provides("sos")
 def sos(dataset, model, use_baseline):
-    assert use_baseline
+    assert use_baseline, "Must use baseline model for this config"
 
     return {
         "schema_type": "sos",

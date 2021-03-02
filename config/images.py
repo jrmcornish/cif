@@ -43,7 +43,8 @@ def config(dataset, use_baseline):
 
 @provides("bernoulli-vae")
 def bernoulli_vae(dataset, model, use_baseline):
-    assert not use_baseline
+    assert not use_baseline, "Cannot use baseline model for this config"
+
     return {
         "schema_type": "bernoulli-vae",
 
@@ -198,7 +199,7 @@ def resflow(dataset, model, use_baseline):
 # Larger version of "resflow" designed to have comparable parameters to our method
 @provides("resflow-big")
 def resflow(dataset, model, use_baseline):
-    assert use_baseline
+    assert use_baseline, "Must use baseline model for this config"
 
     logit_tf_lambda = {
         "mnist": 1e-6,
@@ -284,7 +285,7 @@ def resflow(dataset, model, use_baseline):
 
 @provides("resflow-paper")
 def resflow(dataset, model, use_baseline):
-    assert use_baseline
+    assert use_baseline, "Must use baseline model for this config"
 
     logit_tf_lambda = {
         "mnist": 1e-6,

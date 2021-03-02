@@ -11,7 +11,8 @@ group(
 
 @base
 def config(dataset, use_baseline):
-    assert not use_baseline
+    assert not use_baseline, "Cannot use baseline model for this config"
+
     return {
         "pure_cond_affine": False,
 
