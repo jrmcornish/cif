@@ -250,6 +250,8 @@ def resflow(dataset, model, use_baseline):
 def resflow(dataset, model, use_baseline):
     assert use_baseline, "Must use baseline model for this config"
 
+    warnings.warn("In order to fit onto a single GPU, we use a smaller batch size than in the original Resflow paper. This can be increased by re-enabling multi-GPU support.")
+
     logit_tf_lambda = {
         "mnist": 1e-6,
         "fashion-mnist": 1e-6,
@@ -259,7 +261,7 @@ def resflow(dataset, model, use_baseline):
     return {
         "schema_type": "multiscale-resflow",
 
-        "train_batch_size": 64,
+        "train_batch_size": 16,
         "valid_batch_size": 128,
         "test_batch_size": 128,
         "epochs_per_test": 5,
