@@ -12,7 +12,7 @@ for model in resflow affine maf maf-grid cond-affine-shallow-grid cond-affine-de
 done
 
 ## Tabular
-for model in resflow cond-affine linear-cond-affine-like-resflow nonlinear-cond-affine-like-resflow resflow-no-g maf realnvp sos nsf-ar; do
+for model in resflow cond-affine linear-cond-affine-like-resflow nonlinear-cond-affine-like-resflow maf realnvp sos nsf-ar; do
   for dataset in gas hepmass power miniboone bsds300; do
     ./main.py --model $model --dataset $dataset --config max_epochs=1 || echo $model $dataset >> tabular-cif-fails
     ./main.py --model $model --dataset $dataset --config max_epochs=1 --baseline || echo $model $dataset >> tabular-baseline-fails

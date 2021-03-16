@@ -169,37 +169,6 @@ def nonlinear_cond_affine_like_resflow(dataset, model, use_baseline):
     return config
 
 
-@provides("resflow-no-g")
-def resflow_no_g(dataset, model, use_baseline):
-    assert not use_baseline, "Cannot use baseline model for this config"
-    assert dataset == "miniboone", "Must use miniboone dataset for this config"
-
-    config = {
-        "schema_type": "flat-resflow",
-        "num_density_layers": 10,
-        "hidden_channels": None,
-        "lipschitz_constant": None,
-
-        "batch_norm": False,
-
-        "use_cond_affine": True,
-        "pure_cond_affine": True,
-
-        "num_u_channels": 43,
-        "st_nets": [100] * 4,
-        "p_mu_nets": "identity",
-        "p_sigma_nets": "learned-constant",
-        "q_nets": [100] * 4
-    }
-
-    if not use_baseline:
-        config["valid_batch_size"] = 1000
-        config["test_batch_size"] = 1000
-
-    return config
-
-
-
 @provides("maf")
 def maf(dataset, model, use_baseline):
     if dataset in ["gas", "power"]:

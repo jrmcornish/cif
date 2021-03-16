@@ -164,6 +164,7 @@ def resflow(dataset, model, use_baseline):
         "mnist": 1e-6,
         "fashion-mnist": 1e-6,
         "cifar10": 0.05,
+        "svhn": 0.05,
     }[dataset]
 
     return {
@@ -209,6 +210,7 @@ def resflow(dataset, model, use_baseline):
         "mnist": 1e-6,
         "fashion-mnist": 1e-6,
         "cifar10": 0.05,
+        "svhn": 0.05
     }[dataset]
 
     return {
@@ -256,6 +258,7 @@ def resflow(dataset, model, use_baseline):
         "mnist": 1e-6,
         "fashion-mnist": 1e-6,
         "cifar10": 0.05,
+        "svhn": 0.05,
     }[dataset]
 
     return {
