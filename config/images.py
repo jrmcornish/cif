@@ -202,7 +202,7 @@ def resflow(dataset, model, use_baseline):
 
 
 # Larger version of "resflow" designed to have comparable parameters to our method
-@provides("resflow-big")
+@provides("resflow-large")
 def resflow(dataset, model, use_baseline):
     assert use_baseline, "Must use baseline model for this config"
 
