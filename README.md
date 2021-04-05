@@ -13,7 +13,7 @@ First, install submodules:
 
 Next, install dependencies. If you use `conda`, the following will create an environment called `cif`:
 
-    conda env create -f environment.yml
+    conda env create -f environment-lock.yml
 
 Activate this with
 
@@ -39,14 +39,7 @@ This will download the data to `data/`. If `data/` is in the same directory as `
 
 To train our model on a simple 2D dataset, run:
 
-    CUDA_VISIBLE_DEVICES=0 ./main.py --model resflow --dataset 2uniforms
-
-It may be necessary to change `CUDA_VISIBLE_DEVICES=0` depending on the availability of device 0.
-
-> **Note:** It is recommended to specify `CUDA_VISIBLE_DEVICES` explicitly for all runs.
-> This is because, for generality, we always wrap our modules in `nn.DataParallel`, whether or not we are using multiple GPUs.
-> (This in turn helps with keeping `state_dict`s uniform and easy to save/load.)
-> As such, `./main.py` will default to running on all available CUDA devices, even for small datasets for which this is inefficient.
+    ./main.py --model resflow --dataset 2uniforms
 
 By default, this will create a directory inside `runs/` that contains
 

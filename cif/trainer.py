@@ -1,7 +1,6 @@
-import os
-from contextlib import suppress
 from collections import Counter
 import sys
+import warnings
 
 import numpy as np
 
@@ -58,8 +57,8 @@ class Trainer:
 
             train_metrics,
             train_loader,
-            opt,
-            lr_scheduler,
+            opts,
+            lr_schedulers,
             max_epochs,
             max_grad_norm,
 
@@ -76,7 +75,8 @@ class Trainer:
 
             writer,
             should_checkpoint_latest,
-            should_checkpoint_best_valid
+            should_checkpoint_best_valid,
+            checkpoint_to_load
     ):
         self._module = module
 
@@ -84,8 +84,8 @@ class Trainer:
 
         self._train_metrics = train_metrics
         self._train_loader = train_loader
-        self._opt = opt
-        self._lr_scheduler = lr_scheduler
+        self._opts = opts
+        self._lr_schedulers = lr_schedulers
         self._max_epochs = max_epochs
         self._max_grad_norm = max_grad_norm
 
@@ -109,7 +109,10 @@ class Trainer:
         self._trainer = Engine(self._train_batch)
 
         AverageMetric().attach(self._trainer)
-        ProgressBar(persist=True).attach(self._trainer, ["loss"])
+
+        # The keys of self._opts must correspond to the keys output by self._train_metrics,
+        # so we can use these here
+        ProgressBar(persist=True).attach(self._trainer, list(self._opts.keys()))
 
         self._trainer.add_event_handler(Events.ITERATION_COMPLETED, TerminateOnNan())
         self._trainer.add_event_handler(Events.ITERATION_COMPLETED, self._log_training_info)
@@ -139,17 +142,16 @@ class Trainer:
             self._trainer.add_event_handler(Events.EPOCH_COMPLETED, lambda _: self._save_checkpoint("latest"))
 
         try:
-            self._load_checkpoint("latest")
+            self._load_checkpoint(checkpoint_to_load)
         except FileNotFoundError:
-            print("Did not find `latest' checkpoint.", file=sys.stderr)
-
-            try:
-                self._load_checkpoint("best_valid")
-            except FileNotFoundError:
-                print("Did not find `best_valid' checkpoint.", file=sys.stderr)
+            print(f"Did not find `{checkpoint_to_load}' checkpoint.", file=sys.stderr)
 
     def train(self):
         self._trainer.run(data=self._train_loader, max_epochs=self._max_epochs)
+
+    def test(self):
+        self._module.eval()
+        return self._tester.run(data=self._test_loader).metrics
 
     def _train_batch(self, engine, batch):
         self._module.train()
@@ -157,24 +159,43 @@ class Trainer:
         x, _ = batch # TODO: Potentially pass y also for genericity
         x = x.to(self._device)
 
-        self._opt.zero_grad()
+        for param_name, opt in self._opts.items():
+            self._set_requires_grad(param_name, True)
+            opt.zero_grad()
 
-        train_metrics = self._train_metrics(self._module, x)
-        loss = train_metrics["loss"]
-        loss.backward()
+        all_values = self._train_metrics(self._module, x)
 
+        for param_name, loss in all_values["losses"].items():
+            self._isolate_params(param_name)
+            loss.backward()
+            self._clip_grad_norms(param_name)
+
+        for param_name, opt in self._opts.items():
+            opt.step()
+            self._lr_schedulers[param_name].step()
+
+        return {"metrics": all_values["losses"]}
+
+    def _isolate_params(self, param_name):
+        for other_param_name in self._opts:
+            self._set_requires_grad(other_param_name, False)
+
+        # Do this last in case parameters appear in multiple groups
+        self._set_requires_grad(param_name, True)
+
+    def _set_requires_grad(self, param_name, requires_grad):
+        for param in self._iter_params(param_name):
+            param.requires_grad = requires_grad
+
+    def _clip_grad_norms(self, param_name):
         if self._max_grad_norm is not None:
-            torch.nn.utils.clip_grad_norm_(self._module.parameters(), self._max_grad_norm)
+            for param in self._iter_params(param_name):
+                torch.nn.utils.clip_grad_norm_(param, self._max_grad_norm)
 
-        self._opt.step()
-
-        self._lr_scheduler.step()
-
-        return {"metrics": train_metrics}
-
-    def test(self):
-        self._module.eval()
-        return self._tester.run(data=self._test_loader).metrics
+    def _iter_params(self, param_name):
+        for group in self._opts[param_name].param_groups:
+            for param in group["params"]:
+                yield param
 
     @torch.no_grad()
     def _test_and_log(self, engine):
@@ -232,26 +253,29 @@ class Trainer:
 
         if i % self._STEPS_PER_LOSS_WRITE == 0:
             for k, v in engine.state.output["metrics"].items():
-                self._writer.write_scalar("train/" + k, v, global_step=i)
+                self._writer.write_scalar(f"train/{k}", v, global_step=i)
 
         # TODO: Inefficient to recompute this if we are doing gradient clipping
         if i % self._STEPS_PER_GRAD_WRITE == 0:
-            self._writer.write_scalar("train/grad-norm", self._get_grad_norm(), global_step=i)
+            for param_name in self._opts:
+                self._writer.write_scalar(f"train/grad-norm-{param_name}", self._get_grad_norm(param_name), global_step=i)
 
         # TODO: We should do this _before_ calling self._lr_scheduler.step(), since
         # we will not correspond to the learning rate used at iteration i otherwise
         if i % self._STEPS_PER_LR_WRITE == 0:
-            self._writer.write_scalar("train/lr", self._get_lr(), global_step=i)
+            for param_name in self._opts:
+                self._writer.write_scalar(f"train/lr-{param_name}", self._get_lr(param_name), global_step=i)
 
-    def _get_grad_norm(self):
+    def _get_grad_norm(self, param_name):
         norm = 0
-        for param in self._module.parameters():
+        for param in self._iter_params(param_name):
             if param.grad is not None:
                 norm += param.grad.norm().item()**2
         return np.sqrt(norm)
 
-    def _get_lr(self):
-        param_group, = self._opt.param_groups
+    def _get_lr(self, param_name):
+        # NOTE: Assumes a single param group (will fail otherwise)
+        param_group, = self._opts[param_name].param_groups
         return param_group["lr"]
 
     def _save_checkpoint(self, tag):
@@ -261,13 +285,24 @@ class Trainer:
             "epoch": self._trainer.state.epoch,
             "iteration": self._trainer.state.iteration,
             "module_state_dict": self._module.state_dict(),
-            "opt_state_dict": self._opt.state_dict(),
+            "opt_state_dicts": {
+                param_name: opt.state_dict() for param_name, opt in self._opts.items()
+            },
+            "lr_scheduler_state_dicts": self._get_lr_scheduler_state_dicts(),
             "best_valid_loss": self._best_valid_loss,
-            "num_bad_valid_epochs": self._num_bad_valid_epochs,
-            "lr_scheduler_state_dict": self._lr_scheduler.state_dict()
+            "num_bad_valid_epochs": self._num_bad_valid_epochs
         }
 
         self._writer.write_checkpoint(tag, checkpoint)
+
+    def _get_lr_scheduler_state_dicts(self):
+        with warnings.catch_warnings():
+            # See https://github.com/pytorch/pytorch/pull/31125#issuecomment-673654283
+            warnings.filterwarnings("ignore", message="Please also save or load the state of the optimizer when saving or loading the scheduler.")
+
+            return {
+                param_name: lr_scheduler.state_dict() for param_name, lr_scheduler in self._lr_schedulers.items()
+            }
 
     def _load_checkpoint(self, tag):
         checkpoint = self._writer.load_checkpoint(tag, device=self._device)
@@ -278,12 +313,14 @@ class Trainer:
             engine.state.iteration = checkpoint["iteration"]
 
         self._module.load_state_dict(checkpoint["module_state_dict"])
-        self._opt.load_state_dict(checkpoint["opt_state_dict"])
+
+        for param_name, state_dict in checkpoint["opt_state_dicts"].items():
+            self._opts[param_name].load_state_dict(state_dict)
+
+        for param_name, state_dict in checkpoint["lr_scheduler_state_dicts"].items():
+            self._lr_schedulers[param_name].load_state_dict(state_dict)
+
         self._best_valid_loss = checkpoint["best_valid_loss"]
         self._num_bad_valid_epochs = checkpoint["num_bad_valid_epochs"]
-        try:
-            self._lr_scheduler.load_state_dict(checkpoint["lr_scheduler_state_dict"])
-        except KeyError:
-            print("No lr scheduler in saved checkpoint")
 
         print(f"Loaded checkpoint `{tag}' after epoch {checkpoint['epoch']}", file=sys.stderr)

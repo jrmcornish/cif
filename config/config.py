@@ -2,7 +2,7 @@ import json
 
 from .dsl import CONFIG_GROUPS, CURRENT_CONFIG_GROUP, GridParams
 
-from . import two_d, tabular, images
+from . import two_d, tabular, images, gaussian
 
 
 def get_config_group(dataset):
@@ -55,8 +55,10 @@ def get_config(dataset, model, use_baseline):
             "num_u_channels": 0,
             "use_cond_affine": False,
             "pure_cond_affine": False,
-            "num_valid_elbo_samples": 1,
-            "num_test_elbo_samples": 1,
+
+            # No need to use IWAE, since we have a deterministic flow:
+            "num_valid_importance_samples": 1,
+            "num_test_importance_samples": 1,
         }
 
     return config

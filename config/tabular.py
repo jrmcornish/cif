@@ -30,6 +30,7 @@ def config(dataset, use_baseline):
 
         "dequantize": False,
 
+        "act_norm": False,
         "batch_norm": True,
         "batch_norm_apply_affine": use_baseline,
         "batch_norm_use_running_averages": False,
@@ -48,8 +49,10 @@ def config(dataset, use_baseline):
         "max_grad_norm": None,
         "epochs_per_test": 5,
 
-        "num_valid_elbo_samples": 5,
-        "num_test_elbo_samples": 10,
+        "train_objective": "iwae",
+        "num_train_importance_samples": 1,
+        "num_valid_importance_samples": 5,
+        "num_test_importance_samples": 10,
     }
 
 
@@ -83,7 +86,7 @@ def resflow(dataset, model, use_baseline):
 # TODO: Could also try p_nets=[128]*4, st_nets=[10]*2
 @provides("cond-affine")
 def cond_affine(dataset, model, use_baseline):
-    assert not use_baseline
+    assert not use_baseline, "Cannot use baseline model for this config"
 
     return {
         "schema_type": "cond-affine",
@@ -100,7 +103,8 @@ def cond_affine(dataset, model, use_baseline):
 # Gives z = x + mu(x) + sigma(x)*w, w ~ N(0, I)
 @provides("linear-cond-affine-like-resflow")
 def linear_cond_affine_like_resflow(dataset, model, use_baseline):
-    assert not use_baseline
+    assert not use_baseline, "Cannot use baseline model for this config"
+    assert dataset != "bsds300", "BSDS300 is not yet implemented"
 
     num_u_channels = {
         "miniboone": 43,
@@ -133,7 +137,8 @@ def linear_cond_affine_like_resflow(dataset, model, use_baseline):
 # Gives z = x + t(mu(x) + sigma(x)*w), w ~ N(0, I)
 @provides("nonlinear-cond-affine-like-resflow")
 def nonlinear_cond_affine_like_resflow(dataset, model, use_baseline):
-    assert not use_baseline
+    assert not use_baseline, "Cannot use baseline model for this config"
+    assert dataset != "bsds300", "BSDS300 is not yet implemented"
 
     num_u_channels = {
         "miniboone": 43,
@@ -162,37 +167,6 @@ def nonlinear_cond_affine_like_resflow(dataset, model, use_baseline):
         config["test_batch_size"] = 1000
 
     return config
-
-
-@provides("resflow-no-g")
-def resflow_no_g(dataset, model, use_baseline):
-    assert not use_baseline
-    assert dataset == "miniboone"
-
-    config = {
-        "schema_type": "resflow",
-        "num_density_layers": 10,
-        "hidden_channels": None,
-        "lipschitz_constant": None,
-
-        "batch_norm": False,
-
-        "use_cond_affine": True,
-        "pure_cond_affine": True,
-
-        "num_u_channels": 43,
-        "st_nets": [100] * 4,
-        "p_mu_nets": "identity",
-        "p_sigma_nets": "learned-constant",
-        "q_nets": [100] * 4
-    }
-
-    if not use_baseline:
-        config["valid_batch_size"] = 1000
-        config["test_batch_size"] = 1000
-
-    return config
-
 
 
 @provides("maf")
@@ -243,7 +217,7 @@ def realnvp(dataset, model, use_baseline):
 
 @provides("sos")
 def sos(dataset, model, use_baseline):
-    assert use_baseline
+    assert use_baseline, "Must use baseline model for this config"
 
     return {
         "schema_type": "sos",

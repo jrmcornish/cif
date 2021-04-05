@@ -9,14 +9,12 @@ import ast
 from pathlib import Path
 
 import sys
-sys.setrecursionlimit(3000)
+sys.setrecursionlimit(3000) # Necessary for Glow
 
 from config import get_datasets, get_models, get_config, get_schema, expand_grid
 
 
 parser = argparse.ArgumentParser()
-
-parser.add_argument("--resume", help="Directory of run to resume. Ignores other command-line settings for run.")
 
 parser.add_argument("--model", choices=get_models())
 parser.add_argument("--dataset", choices=get_datasets())
@@ -26,10 +24,22 @@ parser.add_argument("--checkpoints", choices=["best-valid", "latest", "both", "n
 parser.add_argument("--nosave", action="store_true", help="Don't save anything to disk")
 parser.add_argument("--data-root", default="data/", help="Location of training data (default: %(default)s)")
 parser.add_argument("--logdir-root", default="runs/", help="Location of log files (default: %(default)s)")
-parser.add_argument("--config", default=[], action="append", help="Override config entries. Specify as `key=value`.")
+
+parser.add_argument("--config", default=[], action="append", help="Override config entries at runtime. Specify as `key=value' (e.g. `--config max_epochs=50'). Any config value can be overridden, but some (e.g. `model') may lead to unforeseen consequences, so this should be used with care.")
+
+parser.add_argument("--load", help="Directory of a run to load. If this flag is specified, the following flags will be ignored silently: --model, --dataset, --baseline, --num-seeds, --checkpoints, --nosave, --data-root, --logdir-root. Their values *can* be overridden via --config, but this may lead to unforeseen consequences in some cases.")
+
+parser.add_argument("--print-config", action="store_true", help="Print the full config and exit")
+parser.add_argument("--print-schema", action="store_true", help="Print the model schema and exit")
+parser.add_argument("--print-model", action="store_true", help="Print the model and exit")
+parser.add_argument("--print-num-params", action="store_true", help="Print the number of parameters and exit")
+parser.add_argument("--test", action="store_true", help="Test model and exit instead of training.")
+
+args = parser.parse_args()
+
 
 def parse_config_arg(key_value):
-    assert "=" in key_value, "Must specify config items with format `key=value`"
+    assert "=" in key_value, "Must specify config items with format `key=value'"
 
     k, v = key_value.split("=", maxsplit=1)
 
@@ -43,17 +53,10 @@ def parse_config_arg(key_value):
 
     return k, v
 
-parser.add_argument("--print-config", action="store_true", help="Print the full config and exit")
-parser.add_argument("--print-schema", action="store_true", help="Print the model schema and exit")
-parser.add_argument("--print-model", action="store_true", help="Print the model and exit")
-parser.add_argument("--print-num-params", action="store_true", help="Print the number of parameters and exit")
-parser.add_argument("--test", action="store_true", help="Test model and exit instead of training.")
 
-args = parser.parse_args()
-
-
-if args.resume is None:
-    assert args.model is not None and args.dataset is not None
+if args.load is None:
+    assert args.model is not None, "Must specify --model"
+    assert args.dataset is not None, "Must specify --dataset"
 
     config = get_config(
         model=args.model,
@@ -61,23 +64,9 @@ if args.resume is None:
         use_baseline=args.baseline
     )
 
-    assert "model" not in config, "Should not specify model in config"
-    assert "datatset" not in config, "Should not specify dataset in config"
-    config = {
+    config_to_merge = {
         "model": args.model,
         "dataset": args.dataset,
-        **config
-    }
-
-    config = {**config, **dict(parse_config_arg(kv) for kv in args.config)}
-
-    if args.baseline:
-        assert config["num_u_channels"] == 0
-    else:
-        assert config["num_u_channels"] > 0
-
-    config = {
-        **config,
         "should_checkpoint_best_valid": args.checkpoints in ["best-valid", "both"],
         "should_checkpoint_latest": args.checkpoints in ["latest", "both"],
         "write_to_disk": not args.nosave,
@@ -85,12 +74,18 @@ if args.resume is None:
         "logdir_root": args.logdir_root
     }
 
+    for key in config_to_merge:
+        assert key not in config, f"Should not specify key `{key}' in config"
+
+    config = {**config, **config_to_merge}
+
 else:
-    with open(Path(args.resume) / "config.json", "r") as f:
+    with open(Path(args.load) / "config.json", "r") as f:
         config = json.load(f)
 
     args.num_seeds = 1
 
+config = {**config, **dict(parse_config_arg(kv) for kv in args.config)}
 
 should_train = True
 
@@ -126,7 +121,7 @@ if args.print_schema:
             print(json.dumps(get_schema(c), indent=4))
     should_train = False
 
-if should_train or args.test:
+if should_train:
     from cif.experiment import train, print_test_metrics
     with contextlib.suppress(KeyboardInterrupt):
         for c in grid:
@@ -135,6 +130,6 @@ if should_train or args.test:
                 c = {**c, "seed": int(time.time() * 1e6) % 2**32}
 
                 if args.test:
-                    print_test_metrics(config=c, resume_dir=args.resume)
+                    print_test_metrics(config=c, load_dir=args.load)
                 else:
-                    train(config=c, resume_dir=args.resume)
+                    train(config=c, load_dir=args.load)

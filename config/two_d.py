@@ -44,8 +44,10 @@ def config(dataset, use_baseline):
         "weight_decay": 0.,
         "epochs_per_test": 5,
 
-        "num_valid_elbo_samples": 10,
-        "num_test_elbo_samples": 100
+        "train_objective": "iwae",
+        "num_train_importance_samples": 1,
+        "num_valid_importance_samples": 10,
+        "num_test_importance_samples": 100
     }
 
 
@@ -78,7 +80,8 @@ def resflow(dataset, model, use_baseline):
 
 @provides("affine")
 def affine(dataset, model, use_baseline):
-    assert use_baseline
+    assert use_baseline, "Must use baseline model for this config"
+
     return {
         "schema_type": "affine",
         "num_density_layers": 10
@@ -118,7 +121,7 @@ def maf_grid(dataset, model, use_baseline):
 
 @provides("cond-affine-shallow-grid", "cond-affine-deep-grid")
 def cond_affine_grid(dataset, model, use_baseline):
-    assert not use_baseline
+    assert not use_baseline, "Cannot use baseline model for this config"
 
     if "deep" in model:
         num_layers = 5
@@ -142,14 +145,14 @@ def cond_affine_grid(dataset, model, use_baseline):
 
 @provides("dlgm-deep", "dlgm-shallow")
 def dlgm_deep(dataset, model, use_baseline):
-    assert not use_baseline
+    assert not use_baseline, "Cannot use baseline model for this config"
 
     if "deep" in model:
         cond_affine_model = "cond-affine-deep-grid"
     else:
         cond_affine_model = "cond-affine-shallow-grid"
 
-    config = cond_affine_shallow_grid(dataset=dataset, model=cond_affine_model, use_baseline=False)
+    config = cond_affine_grid(dataset=dataset, model=cond_affine_model, use_baseline=False)
 
     del config["st_nets"]
     config["s_nets"] = "fixed-constant"
@@ -181,6 +184,7 @@ def sos(dataset, model, use_baseline):
         "schema_type": "sos",
         
         "num_density_layers": 3 if use_baseline else 2,
+        "g_hidden_channels": [40] * 2,
         "num_polynomials_per_layer": 2,
         "polynomial_degree": 4,
 
@@ -247,12 +251,16 @@ def bnaf(dataset, model, use_baseline):
 
         "st_nets": [24] * 2,
         "p_nets": [24] * 3,
-        "q_nets": [24] * 3
+        "q_nets": [24] * 3,
+
+        "test_batch_size": 1000
     }
 
 
 @provides("ffjord")
 def ffjord(dataset, model, use_baseline):
+    raise NotImplementedError("Currently broken; require changes in experiment.py")
+
     return {
         "schema_type": "ffjord",
 
