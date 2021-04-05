@@ -266,7 +266,7 @@ class LipschitzNetwork(nn.Module):
         self.lipschitz_tolerance = lipschitz_tolerance
 
         self.register_forward_pre_hook(self._update_lipschitz_constant)
-        self.register_backward_hook(self._queue_lipschitz_update)
+        self.register_full_backward_hook(self._queue_lipschitz_update)
 
         self._requires_train_lipschitz_update = True
         self._requires_eval_lipschitz_update = True
