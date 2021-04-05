@@ -13,7 +13,7 @@ First, install submodules:
 
 Next, install dependencies. If you use `conda`, the following will create an environment called `cif`:
 
-    conda env create -f environment.yml
+    conda env create -f environment-lock.yml
 
 Activate this with
 
