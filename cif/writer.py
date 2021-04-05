@@ -56,14 +56,16 @@ class Writer:
 
         self._tag_group = tag_group
 
+        LINE_BUFFERING = 1
+
         sys.stdout = Tee(
             primary_file=self._STDOUT,
-            secondary_file=open(os.path.join(logdir, "stdout"), "a")
+            secondary_file=open(os.path.join(logdir, "stdout"), "a", buffering=LINE_BUFFERING)
         )
 
         sys.stderr = Tee(
             primary_file=self._STDERR,
-            secondary_file=open(os.path.join(logdir, "stderr"), "a")
+            secondary_file=open(os.path.join(logdir, "stderr"), "a", buffering=LINE_BUFFERING)
         )
 
     def write_scalar(self, tag, scalar_value, global_step=None):
