@@ -204,7 +204,7 @@ def resflow(dataset, model, use_baseline):
 # Larger version of "resflow" designed to have comparable parameters to our method
 @provides("resflow-large")
 def resflow(dataset, model, use_baseline):
-    assert use_baseline, "Must use baseline model for this config"
+    assert use_baseline, "A CIF version of this config is not yet implemented"
 
     logit_tf_lambda = {
         "mnist": 1e-6,
@@ -250,7 +250,7 @@ def resflow(dataset, model, use_baseline):
 # Parameters used in "Residual flows for invertible generative modeling" by Chen et al. (2009)
 @provides("resflow-chen")
 def resflow(dataset, model, use_baseline):
-    assert use_baseline, "Must use baseline model for this config"
+    assert use_baseline, "A CIF version of this config is not yet implemented"
 
     warnings.warn("In order to fit onto a single GPU, we use a smaller batch size than in the original Resflow paper. This can be increased by re-enabling multi-GPU support.")
 

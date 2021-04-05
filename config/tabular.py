@@ -124,12 +124,11 @@ def linear_cond_affine_like_resflow(dataset, model, use_baseline):
         "s_nets": "fixed-constant",
         "t_nets": "identity",
         "p_nets": [128] * 4,
-        "q_nets": GridParams([10] * 2, [100] * 4)
-    }
+        "q_nets": GridParams([10] * 2, [100] * 4),
 
-    if not use_baseline:
-        config["valid_batch_size"] = 1000
-        config["test_batch_size"] = 1000
+        "valid_batch_size": 1000,
+        "test_batch_size": 1000
+    }
 
     return config
 
@@ -159,12 +158,11 @@ def nonlinear_cond_affine_like_resflow(dataset, model, use_baseline):
         "s_nets": "fixed-constant",
         "t_nets": [128] * 2,
         "p_nets": [128] * 2,
-        "q_nets": GridParams([10] * 2, [100] * 4)
-    }
+        "q_nets": GridParams([10] * 2, [100] * 4),
 
-    if not use_baseline:
-        config["valid_batch_size"] = 1000
-        config["test_batch_size"] = 1000
+        "valid_batch_size": 1000,
+        "test_batch_size": 1000
+    }
 
     return config
 
@@ -217,7 +215,7 @@ def realnvp(dataset, model, use_baseline):
 
 @provides("sos")
 def sos(dataset, model, use_baseline):
-    assert use_baseline, "Must use baseline model for this config"
+    assert use_baseline, "A CIF version of this config is not yet implemented"
 
     return {
         "schema_type": "sos",
