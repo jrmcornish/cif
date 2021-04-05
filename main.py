@@ -16,7 +16,7 @@ from config import get_datasets, get_models, get_config, get_schema, expand_grid
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--resume", help="Directory of run to resume. Ignores other command-line settings for run.")
+parser.add_argument("--load", help="Directory of run to load. Ignores other command-line settings that affect run config (e.g. --model and --dataset).")
 
 parser.add_argument("--model", choices=get_models())
 parser.add_argument("--dataset", choices=get_datasets())
@@ -52,7 +52,7 @@ parser.add_argument("--test", action="store_true", help="Test model and exit ins
 args = parser.parse_args()
 
 
-if args.resume is None:
+if args.load is None:
     assert args.model is not None and args.dataset is not None
 
     config = get_config(
@@ -81,7 +81,7 @@ if args.resume is None:
     }
 
 else:
-    with open(Path(args.resume) / "config.json", "r") as f:
+    with open(Path(args.load) / "config.json", "r") as f:
         config = json.load(f)
 
     args.num_seeds = 1
@@ -130,6 +130,6 @@ if should_train:
                 c = {**c, "seed": int(time.time() * 1e6) % 2**32}
 
                 if args.test:
-                    print_test_metrics(config=c, resume_dir=args.resume)
+                    print_test_metrics(config=c, load_dir=args.load)
                 else:
-                    train(config=c, resume_dir=args.resume)
+                    train(config=c, load_dir=args.load)

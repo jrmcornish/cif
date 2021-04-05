@@ -18,10 +18,10 @@ from .metrics import metrics, rws, iwae, rws_dreg, iwae_alt
 from config import get_schema
 
 
-def train(config, resume_dir):
+def train(config, load_dir):
     density, trainer, writer = setup_experiment(
         config=config,
-        resume_dir=resume_dir,
+        load_dir=load_dir,
         checkpoint_to_load="latest"
     )
 
@@ -42,10 +42,10 @@ def train(config, resume_dir):
     trainer.train()
 
 
-def print_test_metrics(config, resume_dir):
+def print_test_metrics(config, load_dir):
     _, trainer, _ = setup_experiment(
         config={**config, "write_to_disk": False},
-        resume_dir=resume_dir,
+        load_dir=load_dir,
         checkpoint_to_load="best_valid"
     )
 
@@ -118,7 +118,7 @@ def load_run(run_dir, device):
     return density, train_loader, valid_loader, test_loader, config, checkpoint
 
 
-def setup_experiment(config, resume_dir, checkpoint_to_load):
+def setup_experiment(config, load_dir, checkpoint_to_load):
     torch.manual_seed(config["seed"])
     np.random.seed(config["seed"]+1)
     random.seed(config["seed"]+2)
@@ -131,16 +131,16 @@ def setup_experiment(config, resume_dir, checkpoint_to_load):
     )
 
     if config["write_to_disk"]:
-        if resume_dir is None:
+        if load_dir is None:
             logdir = config["logdir_root"]
             make_subdir = True
         else:
-            logdir = resume_dir
+            logdir = load_dir
             make_subdir = False
 
         writer = Writer(logdir=logdir, make_subdir=make_subdir, tag_group=config["dataset"])
     else:
-        writer = DummyWriter(logdir=resume_dir)
+        writer = DummyWriter(logdir=load_dir)
 
     if config["dataset"] in ["cifar10", "svhn", "fashion-mnist", "mnist"]:
         visualizer = ImageDensityVisualizer(writer=writer)
