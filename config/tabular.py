@@ -104,7 +104,7 @@ def cond_affine(dataset, model, use_baseline):
 @provides("linear-cond-affine-like-resflow")
 def linear_cond_affine_like_resflow(dataset, model, use_baseline):
     assert not use_baseline, "Cannot use baseline model for this config"
-    assert dataset != "bsds300", "BSDS300 is not yet implemented"
+    assert dataset != "bsds300", "BSDS300 has not yet been tested"
 
     num_u_channels = {
         "miniboone": 43,
@@ -137,7 +137,7 @@ def linear_cond_affine_like_resflow(dataset, model, use_baseline):
 @provides("nonlinear-cond-affine-like-resflow")
 def nonlinear_cond_affine_like_resflow(dataset, model, use_baseline):
     assert not use_baseline, "Cannot use baseline model for this config"
-    assert dataset != "bsds300", "BSDS300 is not yet implemented"
+    assert dataset != "bsds300", "BSDS300 has not yet been tested"
 
     num_u_channels = {
         "miniboone": 43,
@@ -215,7 +215,7 @@ def realnvp(dataset, model, use_baseline):
 
 @provides("sos")
 def sos(dataset, model, use_baseline):
-    assert use_baseline, "A CIF version of this config is not yet implemented"
+    assert use_baseline, "A CIF version of this config has not yet been tested"
 
     return {
         "schema_type": "sos",

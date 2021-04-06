@@ -1,9 +1,13 @@
 #!/bin/bash
 
+# Script to test that all experiments can at least execute successfully.
+# Intended to be run from tests/
+
 set -o nounset
 set -o errexit
 
-FAILURES_DIR=smoke-test-failures
+cd ..
+FAILURES_DIR=tests/smoke-test-failures
 mkdir "$FAILURES_DIR"
 
 ## 2D
@@ -30,6 +34,11 @@ done
 
 for model in resflow cond-affine linear-cond-affine-like-resflow nonlinear-cond-affine-like-resflow maf realnvp nsf-ar; do
   for dataset in gas hepmass power miniboone bsds300; do
+    if [[ "$dataset" == bsds300 ]]; then
+      [[ "$model" == linear-cond-affine-like-resflow ]] && continue
+      [[ "$model" == nonlinear-cond-affine-like-resflow ]] && continue
+    fi
+
     ./main.py --model $model --dataset $dataset --config max_epochs=1 || echo $model $dataset >> "$FAILURES_DIR"/tabular-cif
   done
 done
@@ -46,16 +55,26 @@ done
 
 # CIF
 
-for model in bernoulli-vae realnvp glow resflow-small resflow-large resflow-chen; do
+for model in bernoulli-vae realnvp glow resflow-small; do
   for dataset in mnist fashion-mnist cifar10 svhn; do
+    if [[ "$model" == glow ]]; then
+      [[ "$dataset" == mnist ]] && continue
+      [[ "$dataset" == fashion-mnist ]] && continue
+    fi
+
     ./main.py --model $model --dataset $dataset --config max_epochs=1 || echo $model $dataset >> "$FAILURES_DIR"/image-cif
   done
 done
 
 # Baseline
 
-for model in realnvp glow resflow-small; do
+for model in realnvp glow resflow-small resflow-large resflow-chen; do
   for dataset in mnist fashion-mnist cifar10 svhn; do
+    if [[ "$model" == glow ]]; then
+      [[ "$dataset" == mnist ]] && continue
+      [[ "$dataset" == fashion-mnist ]] && continue
+    fi
+
     ./main.py --model $model --dataset $dataset --config max_epochs=1 --baseline || echo $model $dataset >> "$FAILURES_DIR"/image-baseline
   done
 done

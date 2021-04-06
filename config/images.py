@@ -98,6 +98,10 @@ def realnvp(dataset, model, use_baseline):
 
 @provides("glow")
 def glow(dataset, model, use_baseline):
+    # Technically the CIF (i.e. non-baseline) version  *does* work on MNIST and FashionMNIST.
+    # However, these aren't tested so it's safer just to raise an error for now.
+    assert dataset in ["cifar10", "svhn"], "Currently only implemented for images of size 3x32x32"
+
     warnings.warn("Glow may quickly diverge for certain random seeds - if this happens just retry. This behaviour appears to be consistent with that in https://github.com/openai/glow and https://github.com/y0ast/Glow-PyTorch")
 
     if use_baseline:
@@ -204,7 +208,7 @@ def resflow(dataset, model, use_baseline):
 # Larger version of "resflow" designed to have comparable parameters to our method
 @provides("resflow-large")
 def resflow(dataset, model, use_baseline):
-    assert use_baseline, "A CIF version of this config is not yet implemented"
+    assert use_baseline, "A CIF version of this config has not yet been tested"
 
     logit_tf_lambda = {
         "mnist": 1e-6,
@@ -250,7 +254,7 @@ def resflow(dataset, model, use_baseline):
 # Parameters used in "Residual flows for invertible generative modeling" by Chen et al. (2009)
 @provides("resflow-chen")
 def resflow(dataset, model, use_baseline):
-    assert use_baseline, "A CIF version of this config is not yet implemented"
+    assert use_baseline, "A CIF version of this config has not yet been tested"
 
     warnings.warn("In order to fit onto a single GPU, we use a smaller batch size than in the original Resflow paper. This can be increased by re-enabling multi-GPU support.")
 
@@ -289,4 +293,3 @@ def resflow(dataset, model, use_baseline):
         "num_output_fc_blocks": 4,
         "output_fc_hidden_channels": [128] * 2,
     }
-
