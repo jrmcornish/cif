@@ -206,7 +206,7 @@ def resflow(dataset, model, use_baseline):
 
 
 # Larger version of "resflow" designed to have comparable parameters to our method
-@provides("resflow-large")
+@provides("resflow-big")
 def resflow(dataset, model, use_baseline):
     assert use_baseline, "A CIF version of this config has not yet been tested"
 

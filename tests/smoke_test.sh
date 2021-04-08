@@ -68,7 +68,7 @@ done
 
 # Baseline
 
-for model in realnvp glow resflow-small resflow-large resflow-chen; do
+for model in realnvp glow resflow-small resflow-big resflow-chen; do
   for dataset in mnist fashion-mnist cifar10 svhn; do
     if [[ "$model" == glow ]]; then
       [[ "$dataset" == mnist ]] && continue
