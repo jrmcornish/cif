@@ -68,6 +68,36 @@ For comparison purposes, for each model we also provide a standard baseline flow
 
 To inspect the model (either CIF or baseline) used for a given dataset, add the `--print-schema` argument to show a high-level schema of the model that is used, and the `--print-model` argument to see the actual PyTorch object created. To see the number of parameters used by the model, add `--print-num-params`.
 
+## Pretrained models
+
+For ease of reference, we have uploaded the following pretrained models:
+
+- [ResFlow (big)](https://www.dropbox.com/s/bmr87nw6ze85ie2/baseline-resflow-cifar10.tar.gz?dl=1)
+- [CIF-ResFlow](https://www.dropbox.com/s/orankdgt16e7iox/cif-resflow-cifar10.tar.gz?dl=1)
+
+See Table 2 in the [paper](https://arxiv.org/abs/1909.13833).
+The above files contain all data associated with the training run, including training and test loss over the course of training.
+To compute the final test losses, extract both and run
+
+    # Baseline
+    ./main.py --load baseline-resflow-cifar10 --test
+
+    # CIF
+    ./main.py --load cif-resflow-cifar10 --test --config num_test_importance_samples=100 --config test_batch_size=16
+
+These runs were carried out after the most recent [arXiv submission](https://arxiv.org/abs/1909.13833) and so differ slightly from what is reported there.
+In particular, the baseline here obtained a test BPD of 3.408, as opposed to 3.422 reported in the paper.
+On the other hand, the CIF obtained the same test BPD of 3.334 as was reported in the paper.
+(However, note that since evaluation of CIFs is not exact, this score may differ slightly between tests.)
+
+Alternatively, to train these same models again from scratch, do the following:
+
+    # Baseline
+    ./main.py --model resflow-big --dataset cifar10 --baseline
+
+    # CIF
+    ./main.py --model resflow-small --dataset cifar10 --baseline
+
 ## Specifying models
 
 ### Configs
