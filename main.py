@@ -65,8 +65,6 @@ if args.load is None:
     )
 
     config_to_merge = {
-        "model": args.model,
-        "dataset": args.dataset,
         "should_checkpoint_best_valid": args.checkpoints in ["best-valid", "both"],
         "should_checkpoint_latest": args.checkpoints in ["latest", "both"],
         "write_to_disk": not args.nosave,

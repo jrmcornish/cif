@@ -61,7 +61,14 @@ def get_config(dataset, model, use_baseline):
             "num_test_importance_samples": 1,
         }
 
-    return config
+    assert "model" not in config, "Should not specify `model' in config"
+    assert "dataset" not in config, "Should not specify `dataset' in config"
+
+    return {
+        "model": model,
+        "dataset": dataset,
+        **config
+    }
 
 
 def expand_grid_generator(config):
