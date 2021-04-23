@@ -25,6 +25,10 @@ def metrics(density, x, num_importance_samples):
     }
 
 
+# NOTE: technically this isn't IwAE since we don't subtract off
+# `np.log(num_importance_samples)` However, this isn't a problem since this
+# function is intended only to be used only at training time (cf. `metrics()`
+# above)
 def iwae(density, x, num_importance_samples, detach_q):
     log_w = density.elbo(
         x=x,
