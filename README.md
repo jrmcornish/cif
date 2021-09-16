@@ -96,7 +96,7 @@ Alternatively, to train these same models again from scratch, do the following:
     ./main.py --model resflow-big --dataset cifar10 --baseline
 
     # CIF
-    ./main.py --model resflow-small --dataset cifar10 --baseline
+    ./main.py --model resflow-small --dataset cifar10
 
 ## Specifying models
 
